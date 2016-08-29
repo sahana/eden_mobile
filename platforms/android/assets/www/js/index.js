@@ -1,50 +1,93 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+/**
+ * Sahana Eden Mobile
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * Copyright (c) 2016: Sahana Software Foundation
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+"use strict";
+
+/**
+ * EdenMobile Module
+ */
+var EdenMobile = angular.module("EdenMobile", []);
+EdenMobile.controller("EdenMobileMain", [
+    '$scope', function($scope) {
+        $scope.name = "Sahana Eden Mobile";
+    }
+]);
+
+/**
+ * Cordova App
  */
 var app = {
-    // Application Constructor
+
+    /**
+     * Application Constructor
+     */
     initialize: function() {
         this.bindEvents();
     },
-    // Bind Event Listeners
-    //
-    // Bind any events that are required on startup. Common events are:
-    // 'load', 'deviceready', 'offline', and 'online'.
+
+    /**
+     * Bind Event Listeners
+     *
+     * Bind any events that are required on startup. Common events are:
+     * 'load', 'deviceready', 'offline', and 'online'.
+     */
     bindEvents: function() {
         document.addEventListener('deviceready', this.onDeviceReady, false);
     },
-    // deviceready Event Handler
-    //
-    // The scope of 'this' is the event. In order to call the 'receivedEvent'
-    // function, we must explicitly call 'app.receivedEvent(...);'
+
+    /**
+     * deviceready Event Handler
+     *
+     * The scope of 'this' is the event. In order to call the 'receivedEvent'
+     * function, we must explicitly call 'app.receivedEvent(...);'
+     */
     onDeviceReady: function() {
         app.receivedEvent('deviceready');
     },
-    // Update DOM on a Received Event
-    receivedEvent: function(id) {
-        var parentElement = document.getElementById(id);
-        var listeningElement = parentElement.querySelector('.listening');
-        var receivedElement = parentElement.querySelector('.received');
 
+    /**
+     * Update DOM on a Received Event
+     */
+    receivedEvent: function(id) {
+
+        // Remnants of the Cordova helloWorld app
+        // @todo: remove
+        var parentElement = document.getElementById(id),
+            listeningElement = parentElement.querySelector('.listening'),
+            receivedElement = parentElement.querySelector('.received');
         listeningElement.setAttribute('style', 'display:none;');
         receivedElement.setAttribute('style', 'display:block;');
 
+        // Log the event (@todo: remove?)
         console.log('Received Event: ' + id);
+
+        // Bootstrap EdenMobile
+        // (must wait for deviceready to be able to use Cordova Plugins from Angular app)
+        if (id == "deviceready") {
+            angular.bootstrap(document.body, ['EdenMobile']);
+        }
     }
 };
 
