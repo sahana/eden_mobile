@@ -74,11 +74,11 @@ var app = {
 
         // Remnants of the Cordova helloWorld app
         // @todo: remove
-        var parentElement = document.getElementById(id),
-            listeningElement = parentElement.querySelector('.listening'),
-            receivedElement = parentElement.querySelector('.received');
-        listeningElement.setAttribute('style', 'display:none;');
-        receivedElement.setAttribute('style', 'display:block;');
+//         var parentElement = document.getElementById(id),
+//             listeningElement = parentElement.querySelector('.listening'),
+//             receivedElement = parentElement.querySelector('.received');
+//         listeningElement.setAttribute('style', 'display:none;');
+//         receivedElement.setAttribute('style', 'display:block;');
 
         // Log the event (@todo: remove?)
         console.log('Received Event: ' + id);

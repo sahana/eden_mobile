@@ -42,22 +42,43 @@
         <meta name="format-detection" content="telephone=no">
         <meta name="msapplication-tap-highlight" content="no">
         <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width">
-        <link rel="stylesheet" type="text/css" href="css/index.css">
+
+        <link rel="stylesheet" type="text/css" href="vendor/ionic/css/ionic.css"/>
+<!--         <link rel="stylesheet" type="text/css" href="css/index.css"/> -->
+
+        <!-- Using bundle instead of individual libraries
+        <script type="text/javascript" src="vendor/ionic/js/ionic.js"></script>
+        <script type="text/javascript" src="vendor/angular/js/angular.js"></script>
+        <script type="text/javascript" src="vendor/angular/js/angular-animate.js"></script>
+        <script type="text/javascript" src="vendor/angular/js/angular-sanitize.js"></script>
+        <script type="text/javascript" src="vendor/angular/js/angular-ui-router.js"></script>
+        <script type="text/javascript" src="vendor/ionic/js/ionic-angular.js"></script>
+        -->
+        <script type="text/javascript" src="vendor/ionic/js/ionic.bundle.js"></script>
+
         <title>Sahana Eden Mobile</title>
+
     </head>
     <body>
         <div class="app" ng-controller="EdenMobileMain">
-            <h1>{{name}}</h1>
+            <div class="bar bar-header bar-dark">
+                <button class="button icon ion-navicon"></button>
+                <h1 class="title">{{name}}</h1>
+                <button class="button icon ion-android-more-vertical"></button>
+            </div>
             <!-- Remnants of the Cordova helloWorld app
                  @todo: remove
-            -->
+            <h1>{{name}}</h1>
             <div id="deviceready" class="blink">
                 <p class="event listening">Connecting to Device</p>
                 <p class="event received">Device is Ready</p>
             </div>
+            -->
+            <div class="bar bar-footer bar-positive">
+                <div class="title">Footer</div>
+            </div>
         </div>
         <script type="text/javascript" src="cordova.js"></script>
-        <script type="text/javascript" src="vendor/angular/angular.js"></script>
         <script type="text/javascript" src="js/index.js"></script>
     </body>
 </html>
