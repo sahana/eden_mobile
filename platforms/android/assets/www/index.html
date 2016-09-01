@@ -23,6 +23,7 @@
     OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
     WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 -->
+
 <html>
     <head>
         <!--
@@ -61,24 +62,39 @@
     </head>
     <body>
         <div class="app" ng-controller="EdenMobileMain">
-            <div class="bar bar-header bar-dark">
-                <button class="button icon ion-navicon"></button>
-                <h1 class="title">{{name}}</h1>
-                <button class="button icon ion-android-more-vertical"></button>
-            </div>
-            <!-- Remnants of the Cordova helloWorld app
-                 @todo: remove
-            <h1>{{name}}</h1>
-            <div id="deviceready" class="blink">
-                <p class="event listening">Connecting to Device</p>
-                <p class="event received">Device is Ready</p>
-            </div>
-            -->
-            <div class="bar bar-footer bar-positive">
-                <div class="title">Footer</div>
-            </div>
+
+            <ion-side-menus enable-menu-with-back-views="true">
+                <!-- Left menu -->
+                <ion-side-menu side="left">
+                    <ul class="list">
+                        <a class="item" href="#/">
+                            Home
+                        </a>
+                        <a class="item" href="#/tasks">
+                            Tasks
+                        </a>
+                        <a class="item" href="#/sync">
+                            Synchronize
+                        </a>
+                        <a class="item" href="#/settings">
+                            Settings
+                        </a>
+                    </ul>
+                </ion-side-menu>
+
+                <ion-side-menu-content>
+                    <section eden-menu="exp"></section>
+                    <!-- Main content, usually <ion-nav-view> -->
+                    <ion-nav-view></ion-nav-view>
+                    <section eden-footer="exp"></section>
+                </ion-side-menu-content>
+
+            </ion-side-menus>
+
         </div>
         <script type="text/javascript" src="cordova.js"></script>
         <script type="text/javascript" src="js/index.js"></script>
+        <script type="text/javascript" src="js/main.js"></script>
+        <script type="text/javascript" src="js/routing.js"></script>
     </body>
 </html>

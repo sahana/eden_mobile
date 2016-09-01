@@ -1,5 +1,5 @@
 /**
- * Sahana Eden Mobile
+ * Sahana Eden Mobile - Application and Module Globals
  *
  * Copyright (c) 2016: Sahana Software Foundation
  *
@@ -28,17 +28,12 @@
 /**
  * EdenMobile Module
  */
-var EdenMobile = angular.module("EdenMobile", []);
-EdenMobile.controller("EdenMobileMain", [
-    '$scope', function($scope) {
-        $scope.name = "Sahana Eden Mobile";
-    }
-]);
+var EdenMobile = angular.module('EdenMobile', ['ionic']);
 
 /**
  * Cordova App
  */
-var app = {
+var CordovaApp = {
 
     /**
      * Application Constructor
@@ -64,21 +59,13 @@ var app = {
      * function, we must explicitly call 'app.receivedEvent(...);'
      */
     onDeviceReady: function() {
-        app.receivedEvent('deviceready');
+        CordovaApp.receivedEvent('deviceready');
     },
 
     /**
      * Update DOM on a Received Event
      */
     receivedEvent: function(id) {
-
-        // Remnants of the Cordova helloWorld app
-        // @todo: remove
-//         var parentElement = document.getElementById(id),
-//             listeningElement = parentElement.querySelector('.listening'),
-//             receivedElement = parentElement.querySelector('.received');
-//         listeningElement.setAttribute('style', 'display:none;');
-//         receivedElement.setAttribute('style', 'display:block;');
 
         // Log the event (@todo: remove?)
         console.log('Received Event: ' + id);
@@ -91,4 +78,4 @@ var app = {
     }
 };
 
-app.initialize();
+CordovaApp.initialize();
