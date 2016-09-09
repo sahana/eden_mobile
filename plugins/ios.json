@@ -9,6 +9,9 @@
     "installed_plugins": {
         "cordova-plugin-whitelist": {
             "PACKAGE_NAME": "org.sahanafoundation.eden_mobile"
+        },
+        "cordova-sqlite-storage": {
+            "PACKAGE_NAME": "org.sahanafoundation.eden_mobile"
         }
     },
     "dependent_plugins": {}
