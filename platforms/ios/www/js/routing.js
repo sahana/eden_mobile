@@ -25,43 +25,45 @@
 
 "use strict";
 
-EdenMobile.config(function($stateProvider, $urlRouterProvider) {
+EdenMobile.config(['$stateProvider', '$urlRouterProvider',
+    function($stateProvider, $urlRouterProvider) {
 
-    // Default states
-    $stateProvider
-        .state('index', {
-            url: '/',
-            templateUrl: 'templates/home.html',
-            controller: "EdenMobileMain"
-        })
-        .state('tasks', {
-            url: '/tasks',
-            templateUrl: 'templates/tasks.html',
-            controller: "EdenMobileMain"
-        })
-        .state('sync', {
-            url: '/sync',
-            templateUrl: 'templates/sync.html',
-            controller: "EdenMobileMain"
-        })
-        .state('settings', {
-            url: '/settings',
-            views: {
-                '': {
-                    templateUrl: 'templates/settings.html',
-                    controller: "EdenMobileSettings"
+        // Default states
+        $stateProvider
+            .state('index', {
+                url: '/',
+                templateUrl: 'templates/home.html',
+                controller: "EdenMobileMain"
+            })
+            .state('tasks', {
+                url: '/tasks',
+                templateUrl: 'templates/tasks.html',
+                controller: "EdenMobileMain"
+            })
+            .state('sync', {
+                url: '/sync',
+                templateUrl: 'templates/sync.html',
+                controller: "EdenMobileMain"
+            })
+            .state('settings', {
+                url: '/settings',
+                views: {
+                    '': {
+                        templateUrl: 'templates/settings.html',
+                        controller: "EdenMobileSettings"
+                    },
+                    'about@settings': {
+                        templateUrl: 'templates/about.html',
+                        controller: "EdenMobileAbout"
+                    }
                 },
-                'about@settings': {
-                    templateUrl: 'templates/about.html',
-                    controller: "EdenMobileAbout"
-                }
-            },
-        });
+            });
 
-    // Default to index state
-    $urlRouterProvider.otherwise("/");
+        // Default to index state
+        $urlRouterProvider.otherwise("/");
 
-});
+    }
+]);
 
 EdenMobile.directive('edenTopbar', function() {
     return {

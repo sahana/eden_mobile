@@ -56,6 +56,8 @@
         <script type="text/javascript" src="vendor/ionic/js/ionic-angular.js"></script>
         -->
         <script type="text/javascript" src="vendor/ionic/js/ionic.bundle.js"></script>
+        <script type="text/javascript" src="vendor/angular/js/angular-translate.js"></script>
+        <script type="text/javascript" src="vendor/angular/js/angular-translate-loader-static-files.js"></script>
 
         <title>Sahana Eden Mobile</title>
 
@@ -69,18 +71,10 @@
                     <div class="bar bar-header bar-energized">
                     </div>
                     <ul class="list has-header">
-                        <a menu-close="true" class="item" href="#/">
-                            Home
-                        </a>
-                        <a menu-close="true" class="item" href="#/tasks">
-                            Tasks
-                        </a>
-                        <a menu-close="true" class="item" href="#/sync">
-                            Synchronize
-                        </a>
-                        <a menu-close="true" class="item" href="#/settings">
-                            Settings
-                        </a>
+                        <a menu-close="true" class="item" href="#/" translate="Home"></a>
+                        <a menu-close="true" class="item" href="#/tasks" translate="Tasks"></a>
+                        <a menu-close="true" class="item" href="#/sync" translate="Synchronize"></a>
+                        <a menu-close="true" class="item" href="#/settings" translate="Settings"></a>
                     </ul>
                 </ion-side-menu>
 
@@ -98,6 +92,7 @@
         <script type="text/javascript" src="js/index.js"></script>
         <script type="text/javascript" src="js/main.js"></script>
         <script type="text/javascript" src="js/routing.js"></script>
+        <script type="text/javascript" src="js/i18n.js"></script>
         <script type="text/javascript" src="js/settings.js"></script>
     </body>
 </html>

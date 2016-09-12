@@ -28,7 +28,7 @@
 /**
  * EdenMobile Module
  */
-var EdenMobile = angular.module('EdenMobile', ['ionic']);
+var EdenMobile = angular.module('EdenMobile', ['ionic', 'pascalprecht.translate']);
 
 /**
  * Cordova App
