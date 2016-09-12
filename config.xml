@@ -2,10 +2,10 @@
 <widget id="org.sahanafoundation.eden_mobile" version="0.0.1" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <name>EdenMobile</name>
     <description>
-        A sample Apache Cordova application that responds to the deviceready event.
+        A mobile application for Sahana Eden
     </description>
-    <author email="dev@cordova.apache.org" href="http://cordova.io">
-        Apache Cordova Team
+    <author email="sahana-eden@googlegroups.com" href="http://eden.sahanafoundation.org">
+        Sahana Eden Project
     </author>
     <content src="index.html" />
     <plugin name="cordova-plugin-whitelist" spec="1" />
