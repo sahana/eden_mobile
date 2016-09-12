@@ -23,6 +23,9 @@
         },
         "cordova-sqlite-storage": {
             "PACKAGE_NAME": "org.sahanafoundation.eden_mobile"
+        },
+        "cordova_app_version_plugin": {
+            "PACKAGE_NAME": "org.sahanafoundation.eden_mobile"
         }
     },
     "dependent_plugins": {},
@@ -34,10 +37,19 @@
             "clobbers": [
                 "SQLitePlugin"
             ]
+        },
+        {
+            "file": "plugins/cordova_app_version_plugin/www/getAppVersion.js",
+            "id": "cordova_app_version_plugin.getAppVersion",
+            "pluginId": "cordova_app_version_plugin",
+            "clobbers": [
+                "cordova.plugins.version"
+            ]
         }
     ],
     "plugin_metadata": {
         "cordova-plugin-whitelist": "1.2.2",
-        "cordova-sqlite-storage": "1.4.7"
+        "cordova-sqlite-storage": "1.4.7",
+        "cordova_app_version_plugin": "0.2.6"
     }
 }

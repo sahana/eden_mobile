@@ -14,5 +14,13 @@
         },
         "is_top_level": true,
         "variables": {}
+    },
+    "cordova_app_version_plugin": {
+        "source": {
+            "type": "registry",
+            "id": "cordova_app_version_plugin"
+        },
+        "is_top_level": true,
+        "variables": {}
     }
 }

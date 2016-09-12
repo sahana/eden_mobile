@@ -1,5 +1,11 @@
 <ion-view view-title="Settings">
     <ion-content class="has-header has-footer">
-        <h2>Settings</h2>
+        <h2 class="padding">Settings</h2>
+        <div class="list">
+            <div class="item item-divider">
+                <h3>About {{appname}}</h3>
+            </div>
+            <div ui-view="about"></div>
+        </div>
     </ion-content>
 </ion-view>

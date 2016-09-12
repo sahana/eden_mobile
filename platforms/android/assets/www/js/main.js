@@ -28,5 +28,6 @@
 EdenMobile.controller("EdenMobileMain", [
     '$scope', function($scope) {
         $scope.appname = "Sahana Eden Mobile";
+        $scope.vendor = "Sahana Software Foundation";
     }
 ]);

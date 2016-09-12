@@ -12,6 +12,9 @@
         },
         "cordova-sqlite-storage": {
             "PACKAGE_NAME": "org.sahanafoundation.eden_mobile"
+        },
+        "cordova_app_version_plugin": {
+            "PACKAGE_NAME": "org.sahanafoundation.eden_mobile"
         }
     },
     "dependent_plugins": {}

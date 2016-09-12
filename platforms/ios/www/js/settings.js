@@ -25,9 +25,14 @@
 
 "use strict";
 
-EdenMobile.controller("EdenMobileMain", [
+EdenMobile
+.controller("EdenMobileSettings", [
     '$scope', function($scope) {
-        $scope.appname = "Sahana Eden Mobile";
-        $scope.vendor = "Sahana Software Foundation";
+//         $scope.appname = "Settings";
     }
-]);
+])
+.controller("EdenMobileAbout", [
+    '$scope', function($scope, $cordovaAppVersion) {
+        $scope.version = window.cordova.plugins.version.getAppVersion()
+    }
+])
