@@ -36,7 +36,7 @@ EdenMobile.config(['$translateProvider', function($translateProvider) {
             'en_US': 'en',
             'en_UK': 'en',
             'en_GB': 'en',
-            'sv_SE': 'sv',
+            'sv_SE': 'sv'
       })
       .determinePreferredLanguage();
     }

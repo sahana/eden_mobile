@@ -1,5 +1,5 @@
 {
-    "About+APP": "About {{appname}}",
+    "About+APPNAME": "About {{appname}}",
     "Home": "Home",
     "Homepage": "Homepage",
     "Settings": "Settings",
