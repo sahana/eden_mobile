@@ -1,0 +1,21 @@
+<ion-view view-title="DataCreate">
+    <div class="bar bar-stable bar-subheader">
+        <a href="#/data/{{formName}}" class="button icon-left ion-arrow-left-a"></a>
+        <h2 class="title">Create {{formName}}</h2>
+        <div class="buttons">
+            <button class="button icon-left ion-checkmark-round" ng-click="submit(user)"></button>
+        </div>
+    </div>
+    <ion-content id="main" class="has-header has-subheader has-footer">
+        <p class="padding">Create-form for &quot;{{formName}}&quot;</p>
+        <form novalidate>
+            First Name:<br>
+            <input type="text" ng-model="user.firstName"><br>
+            Last Name:<br>
+            <input type="text" ng-model="user.lastName">
+            <br><br>
+        </form>
+        <p>form = {{user}}</p>
+        <p>master = {{master}}</p>
+    </ion-content>
+</ion-view>
