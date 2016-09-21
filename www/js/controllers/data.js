@@ -29,7 +29,8 @@
  * List of forms
  */
 EdenMobile.controller("EdenMobileDataForms", [
-    '$scope', '$stateParams', function($scope, $stateParams) {
+    '$scope', '$stateParams', '$emdb',
+    function($scope, $stateParams, $emdb) {
         // pass
     }
 ]);
@@ -38,7 +39,8 @@ EdenMobile.controller("EdenMobileDataForms", [
  * List of records
  */
 EdenMobile.controller("EdenMobileDataList", [
-    '$scope', '$stateParams', function($scope, $stateParams) {
+    '$scope', '$stateParams', '$emdb',
+    function($scope, $stateParams) {
         $scope.formName = $stateParams.formName;
     }
 ]);
@@ -47,8 +49,8 @@ EdenMobile.controller("EdenMobileDataList", [
  * Create-form
  */
 EdenMobile.controller("EdenMobileDataCreate", [
-    '$scope', '$stateParams', 'EMDialogs', 'EMDatabase',
-    function($scope, $stateParams, EMDialogs, EMDatabase) {
+    '$scope', '$stateParams', '$emdb', 'EMDialogs',
+    function($scope, $stateParams, $emdb, EMDialogs) {
         $scope.formName = $stateParams.formName;
 
         $scope.master = {firstName: "John", lastName: "Doe"};
@@ -68,7 +70,8 @@ EdenMobile.controller("EdenMobileDataCreate", [
  * Update-form
  */
 EdenMobile.controller("EdenMobileDataUpdate", [
-    '$scope', '$stateParams', function($scope, $stateParams) {
+    '$scope', '$stateParams', '$emdb',
+    function($scope, $stateParams, $emdb) {
         $scope.formName = $stateParams.formName;
         $scope.recordID = $stateParams.recordID;
     }
