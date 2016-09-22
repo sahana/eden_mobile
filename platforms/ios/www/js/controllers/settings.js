@@ -33,6 +33,6 @@ EdenMobile
 ])
 .controller("EdenMobileAbout", [
     '$scope', function($scope, $cordovaAppVersion) {
-        $scope.version = window.cordova.plugins.version.getAppVersion()
+        $scope.version = window.cordova.plugins.version.getAppVersion();
     }
 ]);

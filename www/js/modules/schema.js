@@ -1,5 +1,5 @@
 /**
- * Sahana Eden Mobile - Standard Popup Dialogs Service
+ * Sahana Eden Mobile - Default Database Schema
  *
  * Copyright (c) 2016: Sahana Software Foundation
  *
@@ -23,28 +23,58 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
+var emSchemaVersion = '1';
 
-EdenMobile.factory('EMDialogs', ['$ionicPopup', '$timeout', function ($ionicPopup, $timeout) {
+var emDefaultSchema = {
 
-    // @status: work in progress
+    /**
+     * Table to store the current schema version
+     */
+    'em_version': {
+        'version': {
+            type: 'string',
+            label: 'Version',
+            notnull: true
+        },
+        _records: [
+            {'version': emSchemaVersion}
+        ]
+    },
 
-    var dialogs = {
-
-        /**
-         * Show a confirmation popup
-         */
-        confirmation: function(msg) {
-
-            var confirmationPopup = $ionicPopup.show({
-                title: msg
-            });
-            // auto-hide after 1 second
-            $timeout(function() {
-                confirmationPopup.close();
-            }, 1000);
+    /**
+     * Table to store table schemas
+     */
+    'em_schema': {
+        'name': {
+            type: 'string',
+            label: 'Name',
+            notnull: true
+        },
+        'schema': {
+            type: 'json',
+            label: 'Schema',
+            notnull: true
         }
-    };
-    return dialogs;
-}]);
+    },
 
+    /**
+     * Default schema for person records (for testing)
+     *
+     * @todo: remove
+     */
+    'person': {
+        'first_name': {
+            type: 'string',
+            label: 'First Name',
+            notnull: true
+        },
+        'last_name': {
+            type: 'string',
+            label: 'Last Name'
+        },
+        'date_of_birth': {
+            type: 'date',
+            label: 'Date of Birth'
+        }
+    }
+};

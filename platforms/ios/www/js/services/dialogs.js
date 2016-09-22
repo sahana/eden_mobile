@@ -37,7 +37,7 @@ EdenMobile.factory('EMDialogs', ['$ionicPopup', '$timeout', function ($ionicPopu
         confirmation: function(msg) {
 
             var confirmationPopup = $ionicPopup.show({
-                title: msg,
+                title: msg
             });
             // auto-hide after 1 second
             $timeout(function() {

@@ -36,7 +36,7 @@ EdenMobile.config(['$stateProvider', '$urlRouterProvider',
                 controller: "EdenMobileDefault"
             })
             .state('data', {
-                abstract: true,
+                'abstract': true,
                 url: '/data',
                 template: '<ui-view/>'
             })
@@ -76,7 +76,7 @@ EdenMobile.config(['$stateProvider', '$urlRouterProvider',
                         templateUrl: 'views/about.html',
                         controller: "EdenMobileAbout"
                     }
-                },
+                }
             });
 
         // Default to index state
@@ -88,11 +88,11 @@ EdenMobile.config(['$stateProvider', '$urlRouterProvider',
 EdenMobile.directive('edenTopbar', function() {
     return {
         templateUrl: 'views/topbar.html'
-    }
+    };
 });
 
 EdenMobile.directive('edenFooter', function() {
     return {
         templateUrl: 'views/footer.html'
-    }
+    };
 });
