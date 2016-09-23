@@ -232,7 +232,7 @@ var emSQL = (function() {
             if (fieldNames) {
                 fields = [];
                 for (var i=fieldNames.length; i--;) {
-                    fields.push(quoted(tableName + '.' + fieldNames[i]));
+                    fields.push(tableName + '.' + fieldNames[i]);
                 }
                 fields = fields.join(',');
             }

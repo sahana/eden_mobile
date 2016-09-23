@@ -94,62 +94,79 @@ EdenMobile.factory('$emdb', [function () {
         }
 
         // Create the table
-        var table = emSQL.Table(tableName, schema);
-        db.sqlBatch([
-                table.drop(),
-                table.create()
-            ], function() {
-
-                // Add table definition to registry
-                tables[tableName] = schema;
-
-                if (tableName == 'em_schema') {
-                    // Save all existing schemas
-                    for (tableName in tables) {
-                        saveSchema(db, tableName);
-                    }
-                } else if (tables.hasOwnProperty('em_schema')) {
-                    // Save this schema
+        var table = emSQL.Table(tableName, schema),
+            sql = [table.drop(), table.create()];
+        db.sqlBatch(sql, function() {
+            // Add table definition to registry
+            tables[tableName] = schema;
+            if (tableName == 'em_schema') {
+                // Save all existing schemas
+                for (tableName in tables) {
                     saveSchema(db, tableName);
                 }
+            } else if (tables.hasOwnProperty('em_schema')) {
+                // Save this schema
+                saveSchema(db, tableName);
+            }
+            // Generate prepop SQL
+            var prepop = [];
+            if (schema.hasOwnProperty('_records')) {
+                var records = schema._records,
+                    record;
 
-                // Generate prepop SQL
-                var prepop = [];
-                if (schema.hasOwnProperty('_records')) {
-                    var records = schema._records,
-                        record;
-
-                    for (var i=0, len=records.length; i<len; i++) {
-                        record = records[i];
-                        var sql = table.insert(record);
-                        if (sql) {
-                            prepop.push(sql);
-                        }
+                for (var i=0, len=records.length; i<len; i++) {
+                    record = records[i];
+                    var sql = table.insert(record);
+                    if (sql) {
+                        prepop.push(sql);
                     }
                 }
-
-                // Prepop + callback
-                if (prepop.length) {
-                    db.sqlBatch(prepop, callback, errorCallback);
-                } else if (callback) {
-                    callback();
-                }
-
-            }, errorCallback
-        );
+            }
+            // Prepop + callback
+            if (prepop.length) {
+                db.sqlBatch(prepop, callback, errorCallback);
+            } else if (callback) {
+                callback();
+            }
+        }, errorCallback);
     };
 
     /**
-     * Populate the database on first run
+     * Create and populate all tables from default schema
      *
      * @param {object} db - the database handle
      */
     var firstRun = function(db) {
 
-        // alert('First run!');
+        for (var tableName in emDefaultSchema) {
+            defineTable(db, tableName, emDefaultSchema[tableName]);
+        }
+    };
 
-        defineTable(db, 'em_schema', emDefaultSchema.em_schema);
-        defineTable(db, 'em_version', emDefaultSchema.em_version);
+    /**
+     * Load all current schemas from em_schema table
+     *
+     * @param {object} db - the database handle
+     *
+     * @todo: check schema version and handle schema migrations
+     */
+    var loadSchema = function(db) {
+
+        var table = emSQL.Table('em_schema', emDefaultSchema.em_schema),
+            sql = table.select(['name', 'schema']);
+
+        db.executeSql(sql, [], function(result) {
+            var rows = result.rows,
+                row;
+            for (var i=0, len=rows.length; i<len; i++) {
+                row = rows.item(i);
+                try {
+                    tables[row.name] = JSON.parse(row.schema);
+                } catch(e) {
+                    alert('Error parsing schema for table ' + row.name);
+                }
+            }
+        }, errorCallback);
     };
 
     /**
@@ -160,18 +177,14 @@ EdenMobile.factory('$emdb', [function () {
     var checkFirstRun = function(db) {
 
         // Check if em_version table exists
-        db.executeSql('SELECT DISTINCT tbl_name FROM sqlite_master WHERE tbl_name = "em_version"', [],
-            function(result) {
-                if (!result.rows.length) {
-                    firstRun(db);
-                } else {
-                    // alert('Database already populated!');
-                    // @todo: check schema version and handle schema migrations
-                    // @todo: read schemas from em_schema table
-                }
-            },
-            errorCallback
-        );
+        var sql = 'SELECT DISTINCT tbl_name FROM sqlite_master WHERE tbl_name = "em_version"';
+        db.executeSql(sql, [], function(result) {
+            if (!result.rows.length) {
+                firstRun(db);
+            } else {
+                loadSchema(db);
+            }
+        }, errorCallback);
     };
 
     /**
@@ -194,9 +207,7 @@ EdenMobile.factory('$emdb', [function () {
                 alert('Error opening database: ' + JSON.stringify(error));
             }
         );
-
         return db;
-
     };
 
     /**
