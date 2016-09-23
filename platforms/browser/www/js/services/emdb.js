@@ -25,7 +25,7 @@
 
 "use strict";
 
-EdenMobile.factory('$emdb', [function () {
+EdenMobile.factory('$emdb', ['$rootScope', function ($rootScope) {
 
     // @status: work in progress
 
@@ -194,21 +194,20 @@ EdenMobile.factory('$emdb', [function () {
      */
     var openDatabase = function(dbSpec) {
 
-        var db = null;
-
-        window.sqlitePlugin.openDatabase(dbSpec,
+        return window.sqlitePlugin.openDatabase(dbSpec,
             function(dbHandle) {
-                db = dbHandle;
-                // alert("Successfully opened database!");
-                checkFirstRun(db);
+                checkFirstRun(dbHandle);
             },
             function(error) {
                 // Maybe platform not supported (e.g. browser)
                 alert('Error opening database: ' + JSON.stringify(error));
             }
         );
-        return db;
     };
+
+    // Open the database on init
+    var dbSpec = {name: 'emdb.db', location: 'default'},
+        db = openDatabase(dbSpec);
 
     /**
      * Table API
@@ -223,14 +222,17 @@ EdenMobile.factory('$emdb', [function () {
 
         self.tableName = tableName;
         self.schema = tables[tableName];
-    }
 
-    // Open the database on init
-    var dbSpec = {
-        name: 'emdb.db',
-        location: 'default'
-    };
-    var db = openDatabase(dbSpec);
+        self.insert = function(data, callback) {
+            var table = emSQL.Table(self.tableName, self.schema),
+                sql = table.insert(data);
+            db.executeSql(sql[0], sql[1], function(result) {
+                if (callback) {
+                    callback(result.insertId);
+                }
+            }, errorCallback);
+        };
+    }
 
     /**
      * The $emdb API
@@ -238,6 +240,9 @@ EdenMobile.factory('$emdb', [function () {
     var api = {
 
         // @todo: Implement API methods
+        table: function(tableName) {
+            return new Table(tableName);
+        }
     };
     return api;
 

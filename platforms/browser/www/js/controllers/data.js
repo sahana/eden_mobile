@@ -49,19 +49,33 @@ EdenMobile.controller("EdenMobileDataList", [
  * Create-form
  */
 EdenMobile.controller("EdenMobileDataCreate", [
-    '$scope', '$stateParams', '$emdb', 'EMDialogs',
-    function($scope, $stateParams, $emdb, EMDialogs) {
+    '$scope', '$state', '$stateParams', '$emdb', 'EMDialogs',
+    function($scope, $state, $stateParams, $emdb, EMDialogs) {
+
         $scope.formName = $stateParams.formName;
 
-        $scope.master = {firstName: "John", lastName: "Doe"};
-
-        $scope.submit = function(user) {
-            $scope.master = angular.copy(user);
-            EMDialogs.confirmation('Record created');
+        // @todo: use actual defaults from table schema
+        $scope.master = {
+            first_name: "John",
+            last_name: "Doe",
+        };
+        $scope.submit = function(form) {
+            // @todo: validate
+            $scope.master = angular.copy(form);
+            $emdb.table('person').insert(form, function(recordID) {
+                // Show confirmation popup and go back to list
+                EMDialogs.confirmation('Record created', function() {
+                    $state.go('data.list',
+                        {formName: $scope.formName},
+                        {location: 'replace'}
+                    );
+                });
+            });
         };
         $scope.reset = function() {
-            $scope.user = angular.copy($scope.master);
+            $scope.form = angular.copy($scope.master);
         };
+        // @todo: expose reset in UI
         $scope.reset();
     }
 ]);

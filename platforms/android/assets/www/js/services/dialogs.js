@@ -34,7 +34,7 @@ EdenMobile.factory('EMDialogs', ['$ionicPopup', '$timeout', function ($ionicPopu
         /**
          * Show a confirmation popup
          */
-        confirmation: function(msg) {
+        confirmation: function(msg, callback) {
 
             var confirmationPopup = $ionicPopup.show({
                 title: msg
@@ -42,7 +42,10 @@ EdenMobile.factory('EMDialogs', ['$ionicPopup', '$timeout', function ($ionicPopu
             // auto-hide after 1 second
             $timeout(function() {
                 confirmationPopup.close();
-            }, 1000);
+                if (callback) {
+                    callback();
+                }
+            }, 800);
         }
     };
     return dialogs;
