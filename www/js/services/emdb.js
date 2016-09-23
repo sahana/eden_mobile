@@ -37,7 +37,7 @@ EdenMobile.factory('$emdb', [function () {
     /**
      * Generic error callback for database transactions
      *
-     * @param {object} error: the error object
+     * @param {object} error - the error object
      */
     var errorCallback = function(error) {
         alert("Error processing SQL: " + JSON.stringify(error));

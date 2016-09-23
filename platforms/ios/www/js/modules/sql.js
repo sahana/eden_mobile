@@ -28,6 +28,15 @@
 var emSQL = (function() {
 
     /**
+     * Helper function to quote identifiers
+     *
+     * @param {string} identifier - the identifier
+     */
+    var quoted = function(identifier) {
+        return '"' + identifier + '"';
+    };
+
+    /**
      * SQL helper for field expressions
      *
      * @param {string} name - the field name
@@ -83,7 +92,7 @@ var emSQL = (function() {
                     sqlType = 'TEXT';
                     break;
             }
-            sqlDef = self.name + ' ' + sqlType;
+            sqlDef = quoted(self.name) + ' ' + sqlType;
 
             // Check other field constraints
             var sqlContraints = [];
@@ -100,9 +109,13 @@ var emSQL = (function() {
         /**
          * SQL Name of the field
          */
-        self.sqlName = function() {
+        self.sqlName = function(tableName) {
 
-            return self.name;
+            if (tableName) {
+                return quoted(tableName + '.' + self.name);
+            } else {
+                return quoted(self.name);
+            }
         };
 
         /**
@@ -160,46 +173,81 @@ var emSQL = (function() {
         };
 
         /**
-         * SQL to drop the table
-         */
-        self.drop = function() {
-            return 'DROP TABLE IF EXISTS "' + self.tableName + '"';
-        };
-
-        /**
          * SQL to insert new records
+         *
+         * @param {object} data - the data to insert, as {fieldname: value}
          */
         self.insert = function(data) {
 
             var fields = [],
                 values = [],
-                placeholders = [],
-                schema = self.schema;
+                schema = self.schema,
+                field,
+                fieldName,
+                fieldParams,
+                sqlName,
+                sqlValue;
 
-            for (var fieldName in data) {
-
-                var fieldParams = schema[fieldName];
+            for (fieldName in data) {
+                fieldParams = schema[fieldName];
                 if (fieldParams) {
-                    var field = new Field(fieldName, fieldParams);
-
-                    var sqlName = field.sqlName(),
-                        sqlValue = field.sqlValue(data[fieldName]);
-
+                    field = new Field(fieldName, fieldParams);
+                    sqlName = field.sqlName();
+                    sqlValue = field.sqlValue(data[fieldName]);
                     if (sqlName && sqlValue) {
                         fields.push(sqlName);
                         values.push(sqlValue);
-                        placeholders.push('?');
                     }
                 }
             }
 
-            var sql = [
-                'INSERT INTO "' + self.tableName + '"',
-                '(' + fields.join(',') + ')',
-                'VALUES (' + placeholders.join(',') + ')'
-            ];
-            return [sql.join(' '), values];
+            var placeholders = values.map(() => '?').join(',');
 
+            var sql = [
+                'INSERT INTO ' + quoted(self.tableName),
+                '(' + fields.join(',') + ')',
+                'VALUES (' + placeholders + ')'
+            ];
+
+            return [sql.join(' '), values];
+        };
+
+        /**
+         * SQL to select records
+         *
+         * @param {Array} fieldNames - array of field names
+         * @param {query} query - an SQL query expression (WHERE)
+         */
+        self.select = function(fieldNames, query) {
+
+            var where = query;
+            if (typeof fieldNames === 'string') {
+                where = fieldNames;
+                fieldNames = query;
+            }
+
+            var tableName = self.tableName,
+                fields = '*';
+
+            if (fieldNames) {
+                fields = [];
+                for (var i=fieldNames.length; i--;) {
+                    fields.push(quoted(tableName + '.' + fieldNames[i]));
+                }
+                fields = fields.join(',');
+            }
+            var sql = 'SELECT ' + fields + ' FROM ' + quoted(tableName);
+            if (where) {
+                sql += (' WHERE ' + where);
+            }
+            return sql;
+        };
+
+        /**
+         * SQL to drop the table
+         */
+        self.drop = function() {
+            return 'DROP TABLE IF EXISTS ' + quoted(self.tableName);
         };
     }
 
