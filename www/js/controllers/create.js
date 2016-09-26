@@ -1,5 +1,5 @@
 /**
- * Sahana Eden Mobile - Data Forms Controllers
+ * Sahana Eden Mobile - Create-Form Controller
  *
  * Copyright (c) 2016: Sahana Software Foundation
  *
@@ -26,31 +26,11 @@
 "use strict";
 
 /**
- * List of forms
- */
-EdenMobile.controller("EdenMobileDataForms", [
-    '$scope', '$stateParams', '$emdb',
-    function($scope, $stateParams, $emdb) {
-        // pass
-    }
-]);
-
-/**
- * List of records
- */
-EdenMobile.controller("EdenMobileDataList", [
-    '$scope', '$stateParams', '$emdb',
-    function($scope, $stateParams) {
-        $scope.formName = $stateParams.formName;
-    }
-]);
-
-/**
- * Create-form
+ * Create-Form Controller
  */
 EdenMobile.controller("EdenMobileDataCreate", [
-    '$scope', '$state', '$stateParams', '$emdb', 'EMDialogs',
-    function($scope, $state, $stateParams, $emdb, EMDialogs) {
+    '$scope', '$state', '$stateParams', '$emdb', '$emDialog',
+    function($scope, $state, $stateParams, $emdb, $emDialog) {
 
         $scope.formName = $stateParams.formName;
 
@@ -64,7 +44,7 @@ EdenMobile.controller("EdenMobileDataCreate", [
             $scope.master = angular.copy(form);
             $emdb.table('person').insert(form, function(recordID) {
                 // Show confirmation popup and go back to list
-                EMDialogs.confirmation('Record created', function() {
+                $emDialog.confirmation('Record created', function() {
                     $state.go('data.list',
                         {formName: $scope.formName},
                         {location: 'replace'}
@@ -77,16 +57,5 @@ EdenMobile.controller("EdenMobileDataCreate", [
         };
         // @todo: expose reset in UI
         $scope.reset();
-    }
-]);
-
-/**
- * Update-form
- */
-EdenMobile.controller("EdenMobileDataUpdate", [
-    '$scope', '$stateParams', '$emdb',
-    function($scope, $stateParams, $emdb) {
-        $scope.formName = $stateParams.formName;
-        $scope.recordID = $stateParams.recordID;
     }
 ]);

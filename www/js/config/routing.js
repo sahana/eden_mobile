@@ -42,12 +42,12 @@ EdenMobile.config(['$stateProvider', '$urlRouterProvider',
             })
             .state('data.forms', {
                 url: '/forms',
-                templateUrl: 'views/data/forms.html',
-                controller: "EdenMobileDataForms"
+                templateUrl: 'views/data/formlist.html',
+                controller: "EdenMobileFormList"
             })
             .state('data.list', {
                 url: '/{formName}',
-                templateUrl: 'views/data/list.html',
+                templateUrl: 'views/data/datalist.html',
                 controller: "EdenMobileDataList"
             })
             .state('data.create', {
@@ -62,18 +62,18 @@ EdenMobile.config(['$stateProvider', '$urlRouterProvider',
             })
             .state('sync', {
                 url: '/sync',
-                templateUrl: 'views/sync.html',
+                templateUrl: 'views/sync/index.html',
                 controller: "EdenMobileDefault"
             })
             .state('settings', {
                 url: '/settings',
                 views: {
                     '': {
-                        templateUrl: 'views/settings.html',
+                        templateUrl: 'views/settings/index.html',
                         controller: "EdenMobileSettings"
                     },
                     'about@settings': {
-                        templateUrl: 'views/about.html',
+                        templateUrl: 'views/settings/about.html',
                         controller: "EdenMobileAbout"
                     }
                 }

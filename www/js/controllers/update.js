@@ -1,5 +1,5 @@
 /**
- * Sahana Eden Mobile - Standard Popup Dialogs Service
+ * Sahana Eden Mobile - Update-Form Controller
  *
  * Copyright (c) 2016: Sahana Software Foundation
  *
@@ -25,29 +25,13 @@
 
 "use strict";
 
-EdenMobile.factory('$emDialog', ['$ionicPopup', '$timeout', function ($ionicPopup, $timeout) {
-
-    // @status: work in progress
-
-    var dialogs = {
-
-        /**
-         * Show a confirmation popup
-         */
-        confirmation: function(msg, callback) {
-
-            var confirmationPopup = $ionicPopup.show({
-                title: msg
-            });
-            // auto-hide after 1 second
-            $timeout(function() {
-                confirmationPopup.close();
-                if (callback) {
-                    callback();
-                }
-            }, 800);
-        }
-    };
-    return dialogs;
-}]);
-
+/**
+ * Update-form
+ */
+EdenMobile.controller("EdenMobileDataUpdate", [
+    '$scope', '$stateParams', '$emdb',
+    function($scope, $stateParams, $emdb) {
+        $scope.formName = $stateParams.formName;
+        $scope.recordID = $stateParams.recordID;
+    }
+]);

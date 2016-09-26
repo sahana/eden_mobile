@@ -7,16 +7,10 @@
         </div>
     </div>
     <ion-content class="padding has-header has-subheader has-footer">
+        <p>{{records.length}} Records</p>
         <div class="list">
-            <div class="card">
-                <a class="item item-text-wrap" href="#/data/person/1">
-                    Card for Person 1
-                </a>
-            </div>
-            <div class="card">
-                <a class="item item-text-wrap" href="#/data/person/2">
-                    Card for Person 2
-                </a>
+            <div class="card" ng-repeat="record in records">
+                <em-data-card form="{{formName}}"/>
             </div>
         </div>
     </ion-content>

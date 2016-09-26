@@ -1,5 +1,5 @@
 /**
- * Sahana Eden Mobile - Standard Popup Dialogs Service
+ * Sahana Eden Mobile - Form Builder
  *
  * Copyright (c) 2016: Sahana Software Foundation
  *
@@ -25,29 +25,14 @@
 
 "use strict";
 
-EdenMobile.factory('$emDialog', ['$ionicPopup', '$timeout', function ($ionicPopup, $timeout) {
+EdenMobile.factory('$emForm', [function () {
 
-    // @status: work in progress
+    /**
+     * The $emForms API
+     */
+    var api = {
 
-    var dialogs = {
-
-        /**
-         * Show a confirmation popup
-         */
-        confirmation: function(msg, callback) {
-
-            var confirmationPopup = $ionicPopup.show({
-                title: msg
-            });
-            // auto-hide after 1 second
-            $timeout(function() {
-                confirmationPopup.close();
-                if (callback) {
-                    callback();
-                }
-            }, 800);
-        }
     };
-    return dialogs;
-}]);
+    return api;
 
+}]);

@@ -25,7 +25,7 @@
 
 "use strict";
 
-EdenMobile.factory('$emdb', ['$rootScope', function ($rootScope) {
+EdenMobile.factory('$emdb', [function () {
 
     // @status: work in progress
 
@@ -212,8 +212,6 @@ EdenMobile.factory('$emdb', ['$rootScope', function ($rootScope) {
     /**
      * Table API
      *
-     * @todo: implement this
-     *
      * @param {string} tableName: the table name
      */
     function Table(tableName) {
@@ -223,6 +221,11 @@ EdenMobile.factory('$emdb', ['$rootScope', function ($rootScope) {
         self.tableName = tableName;
         self.schema = tables[tableName];
 
+        /**
+         * Insert new records into table
+         *
+         * @todo: document parameters
+         */
         self.insert = function(data, callback) {
             var table = emSQL.Table(self.tableName, self.schema),
                 sql = table.insert(data);
@@ -232,6 +235,39 @@ EdenMobile.factory('$emdb', ['$rootScope', function ($rootScope) {
                 }
             }, errorCallback);
         };
+
+        /**
+         * Select records from table
+         *
+         * @param {Array} fields - list of field names to extract
+         * @param {string} query - SQL WHERE expression
+         * @param {function} callback - callback function to process
+         *                              the result: function(result)
+         */
+        self.select = function(fields, query, callback) {
+
+            var table = emSQL.Table(self.tableName, self.schema),
+                sql = null;
+
+            // Flexible argument list (only callback is required)
+            switch(arguments.length) {
+                case 3:
+                    sql = table.select(fields, query);
+                    break;
+                case 2:
+                    callback = query;
+                    sql = table.select(fields);
+                    break;
+                case 1:
+                    callback = fields;
+                    sql = table.select();
+                    break;
+            }
+
+            if (sql && callback) {
+                db.executeSql(sql, [], callback, errorCallback);
+            }
+        };
     }
 
     /**
@@ -239,7 +275,6 @@ EdenMobile.factory('$emdb', ['$rootScope', function ($rootScope) {
      */
     var api = {
 
-        // @todo: Implement API methods
         table: function(tableName) {
             return new Table(tableName);
         }
