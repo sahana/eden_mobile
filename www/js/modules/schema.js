@@ -80,7 +80,8 @@ var emDefaultSchema = {
         },
         _strings: {
             name: 'Person',
-            namePlural: 'Persons'
+            namePlural: 'Persons',
+            icon: 'ion-person-stalker'
         }
     }
 };

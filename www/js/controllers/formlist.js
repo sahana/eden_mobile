@@ -61,21 +61,20 @@ EdenMobile.directive("emFormCard", [
             $emdb.table(formName).then(function(table) {
 
                 var strings = table.schema._strings,
-                    cardLabel = formName;
+                    cardLabel = formName,
+                    cardIcon = 'ion-folder';
                 if (strings) {
                     cardLabel = strings.namePlural || strings.name || cardLabel;
+                    cardIcon = strings.icon || cardIcon;
                 }
-
-                // @todo: read icon class from strings,
-                //        fall back to a generic icon
 
                 // Construct the data card template
                 // @todo: add an add-button into the card?
                 var cardTemplate = '<a class="item item-icon-left" href="#/data/' + formName + '">' +
-                                '<i class="icon ion-person-stalker"></i>' +
-                                cardLabel +
-                                '<span class="badge badge-assertive">' + numRows + '</span>' +
-                                '</a>';
+                                   '<i class="icon ' + cardIcon + '"></i>' +
+                                   cardLabel +
+                                   '<span class="badge badge-assertive">' + numRows + '</span>' +
+                                   '</a>';
 
                 // Compile the data card template against the scope,
                 // then render it in place of the directive
