@@ -25,14 +25,21 @@
 
 "use strict";
 
-EdenMobile.factory('$emdb', [function () {
+EdenMobile.factory('$emdb', ['$q', function ($q) {
 
     // @status: work in progress
 
     /**
      * The table definitions
      */
-    var tables = {};
+    var tables = {},
+        pendingTables = {};
+
+    /**
+     * DB Status Promise
+     */
+    var dbStatus = $q.defer(),
+        dbReady = dbStatus.promise;
 
     /**
      * Generic error callback for database transactions
@@ -124,9 +131,11 @@ EdenMobile.factory('$emdb', [function () {
             }
             // Prepop + callback
             if (prepop.length) {
-                db.sqlBatch(prepop, callback, errorCallback);
+                db.sqlBatch(prepop, function() {
+                    callback(tableName);
+                }, errorCallback);
             } else if (callback) {
-                callback();
+                callback(tableName);
             }
         }, errorCallback);
     };
@@ -138,9 +147,43 @@ EdenMobile.factory('$emdb', [function () {
      */
     var firstRun = function(db) {
 
-        for (var tableName in emDefaultSchema) {
-            defineTable(db, tableName, emDefaultSchema[tableName]);
+        var tablesDefined = $q.defer(),
+            tableName;
+
+        // Schedule tables to define
+        pendingTables = {};
+        for (tableName in emDefaultSchema) {
+            if (tableName[0] != '_') {
+                pendingTables[tableName] = null;
+            }
         }
+
+        // Callback for defineTable to report progress
+        var whenTableDefined = function(tableName) {
+
+            pendingTables[tableName] = true;
+
+            // Check for pending table definitions
+            var ready = true;
+            for (var t in pendingTables) {
+                if (pendingTables[t] === null) {
+                    ready = false;
+                    break;
+                }
+            }
+            // Resolve promise when all tables are defined
+            if (ready) {
+                tablesDefined.resolve(true);
+            }
+        };
+
+        for (tableName in pendingTables) {
+            defineTable(db,
+                        tableName,
+                        emDefaultSchema[tableName],
+                        whenTableDefined);
+        }
+        return tablesDefined.promise;
     };
 
     /**
@@ -152,7 +195,8 @@ EdenMobile.factory('$emdb', [function () {
      */
     var loadSchema = function(db) {
 
-        var table = emSQL.Table('em_schema', emDefaultSchema.em_schema),
+        var schemaLoaded = $q.defer(),
+            table = emSQL.Table('em_schema', emDefaultSchema.em_schema),
             sql = table.select(['name', 'schema']);
 
         db.executeSql(sql, [], function(result) {
@@ -166,7 +210,10 @@ EdenMobile.factory('$emdb', [function () {
                     alert('Error parsing schema for table ' + row.name);
                 }
             }
+            schemaLoaded.resolve(true);
         }, errorCallback);
+
+        return schemaLoaded.promise;
     };
 
     /**
@@ -180,9 +227,13 @@ EdenMobile.factory('$emdb', [function () {
         var sql = 'SELECT DISTINCT tbl_name FROM sqlite_master WHERE tbl_name = "em_version"';
         db.executeSql(sql, [], function(result) {
             if (!result.rows.length) {
-                firstRun(db);
+                firstRun(db).then(function() {
+                    dbStatus.resolve(true);
+                });
             } else {
-                loadSchema(db);
+                loadSchema(db).then(function() {
+                    dbStatus.resolve(true);
+                });
             }
         }, errorCallback);
     };
@@ -201,6 +252,8 @@ EdenMobile.factory('$emdb', [function () {
             function(error) {
                 // Maybe platform not supported (e.g. browser)
                 alert('Error opening database: ' + JSON.stringify(error));
+                tables = emDefaultSchema;
+                dbStatus.resolve(true);
             }
         );
     };
@@ -251,16 +304,16 @@ EdenMobile.factory('$emdb', [function () {
 
             // Flexible argument list (only callback is required)
             switch(arguments.length) {
-                case 3:
-                    sql = table.select(fields, query);
+                case 1:
+                    callback = fields;
+                    sql = table.select();
                     break;
                 case 2:
                     callback = query;
                     sql = table.select(fields);
                     break;
-                case 1:
-                    callback = fields;
-                    sql = table.select();
+                default:
+                    sql = table.select(fields, query);
                     break;
             }
 
@@ -273,10 +326,28 @@ EdenMobile.factory('$emdb', [function () {
     /**
      * The $emdb API
      */
+    var apiNotReady = function(error) {
+        alert('Database Error: ' + error);
+    };
+
     var api = {
 
+        tables: function() {
+            return dbReady.then(function() {
+                var tableNames = [];
+                for (var tn in tables) {
+                    if (tn[0] != '_' && tn.substring(0, 3) != 'em_') {
+                        tableNames.push(tn);
+                    }
+                }
+                return tableNames;
+            }, apiNotReady);
+        },
+
         table: function(tableName) {
-            return new Table(tableName);
+            return dbReady.then(function() {
+                return new Table(tableName);
+            }, apiNotReady);
         }
     };
     return api;

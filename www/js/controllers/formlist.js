@@ -32,5 +32,60 @@ EdenMobile.controller("EdenMobileFormList", [
     '$scope', '$stateParams', '$emdb',
     function($scope, $stateParams, $emdb) {
 
+        // @todo: get form names from $emdb
+        $emdb.tables().then(function(tableNames) {
+            var forms = [], tableName;
+            for (var i=0, len=tableNames.length; i<len; i++) {
+                tableName = tableNames[i];
+                // @todo: get number of records from database
+                forms.push({formName: tableName, numRows: 0});
+            }
+            $scope.forms = forms;
+        });
+    }
+]);
+
+/**
+ * Directive for cards in form list
+ */
+EdenMobile.directive("emFormCard", [
+    '$compile', '$emdb',
+    function($compile, $emdb) {
+
+        var renderCard = function($scope, elem, attr) {
+
+            var form = $scope.form,
+                formName = form.formName,
+                numRows = form.numRows;
+
+            $emdb.table(formName).then(function(table) {
+
+                var strings = table.schema._strings,
+                    cardLabel = formName;
+                if (strings) {
+                    cardLabel = strings.namePlural || strings.name || cardLabel;
+                }
+
+                // @todo: read icon class from strings,
+                //        fall back to a generic icon
+
+                // Construct the data card template
+                // @todo: add an add-button into the card?
+                var cardTemplate = '<a class="item item-icon-left" href="#/data/' + formName + '">' +
+                                '<i class="icon ion-person-stalker"></i>' +
+                                cardLabel +
+                                '<span class="badge badge-assertive">' + numRows + '</span>' +
+                                '</a>';
+
+                // Compile the data card template against the scope,
+                // then render it in place of the directive
+                var compiled = $compile(cardTemplate)($scope);
+                elem.replaceWith(compiled);
+            });
+        };
+
+        return {
+            link: renderCard
+        };
     }
 ]);

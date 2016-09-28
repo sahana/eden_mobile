@@ -37,21 +37,25 @@ EdenMobile.controller("EdenMobileDataCreate", [
         // @todo: use actual defaults from table schema
         $scope.master = {
             first_name: "John",
-            last_name: "Doe",
+            last_name: "Doe"
         };
         $scope.submit = function(form) {
             // @todo: validate
             $scope.master = angular.copy(form);
-            $emdb.table('person').insert(form, function(recordID) {
-                // Show confirmation popup and go back to list
-                $emDialog.confirmation('Record created', function() {
-                    $state.go('data.list',
-                        {formName: $scope.formName},
-                        {location: 'replace'}
-                    );
+
+            $emdb.table('person').then(function(table) {
+                table.insert(form, function(recordID) {
+                    // Show confirmation popup and go back to list
+                    $emDialog.confirmation('Record created', function() {
+                        $state.go('data.list',
+                            {formName: $scope.formName},
+                            {location: 'replace'}
+                        );
+                    });
                 });
             });
         };
+
         $scope.reset = function() {
             $scope.form = angular.copy($scope.master);
         };

@@ -32,56 +32,58 @@ EdenMobile.controller("EdenMobileDataList", [
     '$scope', '$stateParams', '$emdb',
     function($scope, $stateParams, $emdb) {
 
-        var formName = $stateParams.formName,
-            table = $emdb.table(formName);
+        var formName = $stateParams.formName;
 
-        // @todo: check that we have a schema for table,
-        // otherwise raise error and return to form list
+        $emdb.table(formName).then(function(table) {
 
-        // Pass formName to scope
-        $scope.formName = formName;
+            // @todo: check that we have a schema for table,
+            // otherwise raise error and return to form list
 
-        // Get strings
-        var strings = table.schema._strings,
-            listTitle = formName;
-        if (strings) {
-            listTitle = strings.namePlural || strings.name || listTitle;
-        }
-        $scope.listTitle = listTitle;
+            // Pass formName to scope
+            $scope.formName = formName;
 
-        // Read card config
-        var cardConfig = table.schema._card,
-            fields;
-        if (cardConfig) {
-            fields = cardConfig.fields;
-        }
+            // Get strings
+            var strings = table.schema._strings,
+                listTitle = formName;
+            if (strings) {
+                listTitle = strings.namePlural || strings.name || listTitle;
+            }
+            $scope.listTitle = listTitle;
 
-        // Apply fallbacks
-        if (!fields) {
-            // Get all fields
-            fields = [];
-            for (var fieldName in table.schema) {
-                if (fieldName[0] != '_') {
-                    fields.push(fieldName);
+            // Read card config
+            var cardConfig = table.schema._card,
+                fields;
+            if (cardConfig) {
+                fields = cardConfig.fields;
+            }
+
+            // Apply fallbacks
+            if (!fields) {
+                // Get all fields
+                fields = [];
+                for (var fieldName in table.schema) {
+                    if (fieldName[0] != '_') {
+                        fields.push(fieldName);
+                    }
                 }
             }
-        }
 
-        // Make sure 'id' field is loaded (required by directive)
-        if (fields.indexOf('id') == -1) {
-            fields.push('id');
-        }
-
-        // Select all existing records
-        $scope.records = [];
-        table.select(fields, function(result) {
-            var rows = result.rows,
-                records = [];
-            for (var i=0, len=rows.length; i<len; i++) {
-                records.push(rows.item(i));
+            // Make sure 'id' field is loaded (required by directive)
+            if (fields.indexOf('id') == -1) {
+                fields.push('id');
             }
-            $scope.records = records;
-            $scope.$apply();
+
+            // Select all existing records
+            $scope.records = [];
+            table.select(fields, function(result) {
+                var rows = result.rows,
+                    records = [];
+                for (var i=0, len=rows.length; i<len; i++) {
+                    records.push(rows.item(i));
+                }
+                $scope.records = records;
+                $scope.$apply();
+            });
         });
     }
 ]);
@@ -95,28 +97,30 @@ EdenMobile.directive("emDataCard", [
 
         var renderCard = function($scope, elem, attr) {
 
-            var formName = $scope.formName,
-                table = $emdb.table(formName),
-                cardConfig = table.schema._card,
-                titleTemplate;
+            var formName = $scope.formName;
 
-            // Read the card config
-            if (cardConfig) {
-                titleTemplate = cardConfig.title;
-            }
+            $emdb.table(formName).then(function(table) {
+                var cardConfig = table.schema._card,
+                    titleTemplate;
 
-            // Apply fallbacks
-            if (!titleTemplate) {
-                titleTemplate = 'Record #{{record.id}}';
-            }
+                // Read the card config
+                if (cardConfig) {
+                    titleTemplate = cardConfig.title;
+                }
 
-            // Construct the data card template
-            var cardTemplate = '<a class="item item-text-wrap" href="#/data/{{formName}}/{{record.id}}">' + titleTemplate + '</a>';
+                // Apply fallbacks
+                if (!titleTemplate) {
+                    titleTemplate = 'Record #{{record.id}}';
+                }
 
-            // Compile the data card template against the scope,
-            // then render it in place of the directive
-            var compiled = $compile(cardTemplate)($scope);
-            elem.replaceWith(compiled);
+                // Construct the data card template
+                var cardTemplate = '<a class="item item-text-wrap" href="#/data/{{formName}}/{{record.id}}">' + titleTemplate + '</a>';
+
+                // Compile the data card template against the scope,
+                // then render it in place of the directive
+                var compiled = $compile(cardTemplate)($scope);
+                elem.replaceWith(compiled);
+            });
         };
 
         return {

@@ -1,13 +1,10 @@
 <ion-view view-title="DataForms">
     <ion-content class="has-header has-footer">
         <h2 class="padding" translate="Data"></h2>
-        <p class="padding">List of available data forms</p>
         <div class="list">
-            <a class="item item-icon-left" href="#/data/person">
-                <i class="icon ion-person-stalker"></i>
-                Persons
-                <span class="badge badge-assertive">2</span>
-            </a>
+            <div ng-repeat="form in forms">
+                <em-form-card form="{{form}}"/>
+            </div>
         </div>
     </ion-content>
 </ion-view>

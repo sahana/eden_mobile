@@ -80,7 +80,7 @@ var emDefaultSchema = {
         },
         _strings: {
             name: 'Person',
-            namePlural: 'Persons',
+            namePlural: 'Persons'
         }
     }
 };
