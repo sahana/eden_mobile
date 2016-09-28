@@ -59,8 +59,6 @@ var emDefaultSchema = {
 
     /**
      * Default schema for person records (for testing)
-     *
-     * @todo: remove
      */
     'person': {
         'first_name': {
@@ -75,6 +73,14 @@ var emDefaultSchema = {
         'date_of_birth': {
             type: 'date',
             label: 'Date of Birth'
+        },
+        _card: {
+            fields: ['first_name', 'last_name'],
+            title: '{{record.first_name}} {{record.last_name}}'
+        },
+        _strings: {
+            name: 'Person',
+            namePlural: 'Persons',
         }
     }
 };

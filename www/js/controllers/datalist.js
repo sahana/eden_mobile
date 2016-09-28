@@ -38,19 +38,42 @@ EdenMobile.controller("EdenMobileDataList", [
         // @todo: check that we have a schema for table,
         // otherwise raise error and return to form list
 
-        // Pass formName to view (@todo: should have name_nice_plural from form config)
+        // Pass formName to scope
         $scope.formName = formName;
 
-        // Get fields for table
-        var fields = [];
-        for (var fieldName in table.schema) {
-            if (fieldName[0] != '_') {
-                fields.push(fieldName);
+        // Get strings
+        var strings = table.schema._strings,
+            listTitle = formName;
+        if (strings) {
+            listTitle = strings.namePlural || strings.name || listTitle;
+        }
+        $scope.listTitle = listTitle;
+
+        // Read card config
+        var cardConfig = table.schema._card,
+            fields;
+        if (cardConfig) {
+            fields = cardConfig.fields;
+        }
+
+        // Apply fallbacks
+        if (!fields) {
+            // Get all fields
+            fields = [];
+            for (var fieldName in table.schema) {
+                if (fieldName[0] != '_') {
+                    fields.push(fieldName);
+                }
             }
         }
-        $scope.records = [];
+
+        // Make sure 'id' field is loaded (required by directive)
+        if (fields.indexOf('id') == -1) {
+            fields.push('id');
+        }
 
         // Select all existing records
+        $scope.records = [];
         table.select(fields, function(result) {
             var rows = result.rows,
                 records = [];
@@ -69,23 +92,35 @@ EdenMobile.controller("EdenMobileDataList", [
 EdenMobile.directive("emDataCard", [
     '$compile', '$emdb',
     function($compile, $emdb) {
-        return {
-            link: function($scope, elem, attr) {
 
-                // @todo: get the fields from the form definition
-                // @todo: render the fields into the card template
-                var formName = $scope.formName,
-                    cardTemplate = "Person {{record.id}}";
+        var renderCard = function($scope, elem, attr) {
 
-                // Get form name nice from $emdb
-                var card = '<a class="item item-text-wrap" href="#/data/{{formName}}/{{record.id}}">' + cardTemplate + '</a>';
+            var formName = $scope.formName,
+                table = $emdb.table(formName),
+                cardConfig = table.schema._card,
+                titleTemplate;
 
-                // Compile the data card against the scope
-                var compiled = $compile(card)($scope);
-
-                // Render the data card in place of the directive
-                elem.replaceWith(compiled);
+            // Read the card config
+            if (cardConfig) {
+                titleTemplate = cardConfig.title;
             }
+
+            // Apply fallbacks
+            if (!titleTemplate) {
+                titleTemplate = 'Record #{{record.id}}';
+            }
+
+            // Construct the data card template
+            var cardTemplate = '<a class="item item-text-wrap" href="#/data/{{formName}}/{{record.id}}">' + titleTemplate + '</a>';
+
+            // Compile the data card template against the scope,
+            // then render it in place of the directive
+            var compiled = $compile(cardTemplate)($scope);
+            elem.replaceWith(compiled);
+        };
+
+        return {
+            link: renderCard
         };
     }
 ]);
