@@ -244,6 +244,20 @@ var emSQL = (function() {
         };
 
         /**
+         * SQL to count records
+         *
+         * @param {string} query - SQL WHERE expression
+         */
+        self.count = function(query) {
+
+            var sql = 'SELECT COUNT(id) AS number FROM ' + quoted(tableName);
+            if (query) {
+                sql += (' WHERE ' + query);
+            }
+            return sql;
+        };
+
+        /**
          * SQL to drop the table
          */
         self.drop = function() {

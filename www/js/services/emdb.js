@@ -51,6 +51,15 @@ EdenMobile.factory('$emdb', ['$q', function ($q) {
     };
 
     /**
+     * Generic error callback for deferred API methods
+     *
+     * @param {string} error - the error message
+     */
+    var apiNotReady = function(error) {
+        alert('Database Error: ' + error);
+    };
+
+    /**
      * Save the current schema for a table in the database
      *
      * @param {object} db - the database handle
@@ -144,6 +153,9 @@ EdenMobile.factory('$emdb', ['$q', function ($q) {
      * Create and populate all tables from default schema
      *
      * @param {object} db - the database handle
+     *
+     * @returns {promise} a promise that is resolved when all tables
+     *                    are created and pre-populated
      */
     var firstRun = function(db) {
 
@@ -191,6 +203,9 @@ EdenMobile.factory('$emdb', ['$q', function ($q) {
      *
      * @param {object} db - the database handle
      *
+     * @returns {promise} a promise that is resolved when all
+     *                    table schemas are loaded
+     *
      * @todo: check schema version and handle schema migrations
      */
     var loadSchema = function(db) {
@@ -217,7 +232,8 @@ EdenMobile.factory('$emdb', ['$q', function ($q) {
     };
 
     /**
-     * Check whether database has already been populated
+     * Populate the database if first run, otherwise just load
+     * the schema. Resolves the dbReady promise when complete.
      *
      * @param {object} db - the database handle
      */
@@ -251,9 +267,13 @@ EdenMobile.factory('$emdb', ['$q', function ($q) {
             },
             function(error) {
                 // Maybe platform not supported (e.g. browser)
+                // @todo: more useful error message
                 alert('Error opening database: ' + JSON.stringify(error));
                 tables = emDefaultSchema;
-                dbStatus.resolve(true);
+                // @todo: Better to reject? (=> would block browser platform
+                //        hence couldn't use it for basic debugging, therefore
+                //        currently resolving it, albeit into false)
+                dbStatus.resolve(false);
             }
         );
     };
@@ -277,7 +297,10 @@ EdenMobile.factory('$emdb', ['$q', function ($q) {
         /**
          * Insert new records into table
          *
-         * @todo: document parameters
+         * @param {object} data - an object with the data to insert:
+         *                        {fieldName: value}
+         * @param {function} callback - callback function to process
+         *                              the result: function(recordID)
          */
         self.insert = function(data, callback) {
             var table = emSQL.Table(self.tableName, self.schema),
@@ -321,17 +344,46 @@ EdenMobile.factory('$emdb', ['$q', function ($q) {
                 db.executeSql(sql, [], callback, errorCallback);
             }
         };
+
+        /**
+         * Count records
+         *
+         * @param {string} query - SQL WHERE expression
+         * @param {function} callback - callback function to process
+         *                              the result: function(number)
+         */
+        self.count = function(query, callback) {
+
+            var table = emSQL.Table(self.tableName, self.schema),
+                sql = null;
+
+            if (arguments.length == 1) {
+                callback = query;
+                sql = table.count();
+            } else {
+                sql = table.count(query);
+            }
+
+            db.executeSql(sql, [], function(result) {
+                var number = result.rows.item(0).number;
+                if (callback) {
+                    callback(number);
+                }
+            }, errorCallback);
+        }
     }
 
     /**
      * The $emdb API
      */
-    var apiNotReady = function(error) {
-        alert('Database Error: ' + error);
-    };
-
     var api = {
 
+        /**
+         * List of all table names in the current schema
+         *
+         * @returns {promise} a promise that resolves into an Array
+         *                    of table names
+         */
         tables: function() {
             return dbReady.then(function() {
                 var tableNames = [];
@@ -344,6 +396,14 @@ EdenMobile.factory('$emdb', ['$q', function ($q) {
             }, apiNotReady);
         },
 
+        /**
+         * Table API
+         *
+         * @param {string} tableName - the tablename
+         *
+         * @returns {promise} a promise that resolves into an instance
+         *                    of the table API for the requested table
+         */
         table: function(tableName) {
             return dbReady.then(function() {
                 return new Table(tableName);
