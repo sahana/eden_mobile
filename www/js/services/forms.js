@@ -30,17 +30,23 @@ EdenMobile.factory('$emForm', [function () {
     var createWidget = function(field, attr) {
 
         var fieldType = field.type,
+            writable = field.writable,
             widgetType;
 
         // @todo: ability to override the widget
 
-        switch(fieldType) {
-            case 'date':
-                widgetType = '<em-date-widget>';
-                break;
-            default:
-                widgetType = '<em-text-widget>';
-                break;
+        if (writable || typeof writable == 'undefined') {
+            switch(fieldType) {
+                case 'date':
+                    widgetType = '<em-date-widget>';
+                    break;
+                default:
+                    widgetType = '<em-text-widget>';
+                    break;
+            }
+        } else {
+            widgetType = '<em-text-widget>';
+            attr.disabled = 'disabled';
         }
 
         var widget = angular.element(widgetType);
@@ -62,7 +68,14 @@ EdenMobile.factory('$emForm', [function () {
 
         var self = this;
         self.schema = schema;
-        self.fields = fields;
+
+        if (fields) {
+            // Use field list as specified
+            self.fields = fields;
+        } else {
+            // Use _form attribute in schema
+            self.fields = schema._form;
+        }
 
         self.render = function(scopeName) {
 
@@ -73,6 +86,21 @@ EdenMobile.factory('$emForm', [function () {
             var form = angular.element('<div class="list">'),
                 fields = self.fields,
                 schema = self.schema;
+
+            if (!fields) {
+                // Lookup readable/writable fields from schema
+                fields = [];
+                for (var fieldName in schema) {
+                    if (fieldName[0] != '_') {
+                        var field = schema[fieldName],
+                            readable = field.readable,
+                            writable = field.writable;
+                        if (readable !== false || writable) {
+                            fields.push(fieldName);
+                        }
+                    }
+                }
+            }
 
             for (var i=0, len=fields.length; i<len; i++) {
 
@@ -125,14 +153,8 @@ EdenMobile.directive("emDataForm", [
 
             $emdb.table(formName).then(function(table) {
 
-                var form = $emForm.form(
-                    table.schema,
-
-                    // @todo: still hardcoded,
-                    //        lookup "_fields" in schema,
-                    //        fall back to all readable fields in schema
-                    ["first_name", "last_name", "date_of_birth"]
-                );
+                var schema = table.schema,
+                    form = $emForm.form(schema);
 
                 // Compile the form HTML against the scope,
                 // then render it in place of the directive

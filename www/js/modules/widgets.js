@@ -42,8 +42,13 @@ EdenMobile.directive("emTextWidget", [
 
             // Create the text input
             var textInput = angular.element('<input type="text">'),
-                model = attr['ngModel'],
-                placeholder = attr['placeholder'];
+                model = attr.ngModel,
+                placeholder = attr.placeholder,
+                disabled = attr.disabled;
+
+            if (disabled) {
+                textInput.attr('disabled', disabled);
+            }
             if (placeholder) {
                 textInput.attr('placeholder', placeholder);
             }
