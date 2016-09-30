@@ -51,6 +51,7 @@ EdenMobile.factory('$emForm', [function () {
 
         var widget = angular.element(widgetType);
 
+        // Apply widget attributes
         if (attr) {
             for (var a in attr) {
                 widget.attr(a, attr[a]);
@@ -85,16 +86,28 @@ EdenMobile.factory('$emForm', [function () {
 
             var form = angular.element('<div class="list">'),
                 fields = self.fields,
-                schema = self.schema;
+                schema = self.schema,
+                widget,
+                fieldName,
+                fieldParameters,
+                fieldAttr,
+                placeholder;
 
+
+            // Determine form fields
             if (!fields) {
+
+                var field,
+                    readable,
+                    writable;
+
                 // Lookup readable/writable fields from schema
                 fields = [];
-                for (var fieldName in schema) {
+                for (fieldName in schema) {
                     if (fieldName[0] != '_') {
-                        var field = schema[fieldName],
-                            readable = field.readable,
-                            writable = field.writable;
+                        field = schema[fieldName];
+                        readable = field.readable;
+                        writable = field.writable;
                         if (readable !== false || writable) {
                             fields.push(fieldName);
                         }
@@ -102,24 +115,26 @@ EdenMobile.factory('$emForm', [function () {
                 }
             }
 
+            // Create widgets
             for (var i=0, len=fields.length; i<len; i++) {
 
-                var fieldName = fields[i],
-                    fieldParameters = schema[fieldName],
-                    widget = null;
+                fieldName = fields[i];
+                fieldParameters = schema[fieldName];
 
                 if (fieldParameters) {
-                    var fieldAttr = {
+                    placeholder = fieldParameters.placeholder,
+                    fieldAttr = {
                         'label': fieldParameters.label,
                         'ng-model': scopeName + '.' + fieldName
                     };
-
+                    if (placeholder) {
+                        fieldAttr.placeholder = placeholder;
+                    }
                     widget = createWidget(fieldParameters, fieldAttr);
-                }
-                if (widget) {
                     form.append(widget);
                 }
             }
+
             return form;
 
         }
@@ -143,7 +158,7 @@ EdenMobile.factory('$emForm', [function () {
 /**
  * Directive for data form
  */
-EdenMobile.directive("emDataForm", [
+EdenMobile.directive('emDataForm', [
     '$compile', '$emdb', '$emForm',
     function($compile, $emdb, $emForm) {
 

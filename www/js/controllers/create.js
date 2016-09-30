@@ -28,38 +28,75 @@
 /**
  * Create-Form Controller
  */
-EdenMobile.controller("EdenMobileDataCreate", [
+EdenMobile.controller('EdenMobileDataCreate', [
     '$scope', '$state', '$stateParams', '$emdb', '$emDialog',
     function($scope, $state, $stateParams, $emdb, $emDialog) {
 
         $scope.formName = $stateParams.formName;
 
-        // @todo: use actual defaults from table schema
-        $scope.master = {
-            first_name: "John",
-            last_name: "Doe"
-        };
-        $scope.submit = function(form) {
-            // @todo: validate
-            $scope.master = angular.copy(form);
+        // Start with empty master (populated asynchronously)
+        $scope.master = {};
 
-            $emdb.table('person').then(function(table) {
-                table.insert(form, function(recordID) {
-                    // Show confirmation popup and go back to list
-                    $emDialog.confirmation('Record created', function() {
-                        $state.go('data.list',
-                            {formName: $scope.formName},
-                            {location: 'replace'}
-                        );
-                    });
-                });
+        // Read default values from schema
+        $emdb.table('person').then(function(table) {
+
+            var schema = table.schema,
+                master = $scope.master,
+                form = $scope.form,
+                defaultValue,
+                currentValue;
+
+            for (var fieldName in schema) {
+                if (fieldName[0] == '_') {
+                    continue;
+                }
+                defaultValue = schema[fieldName].default;
+                if (defaultValue !== undefined) {
+                    // Store in master
+                    if (master[fieldName] === undefined) {
+                        master[fieldName] = defaultValue;
+                    }
+                    // Copy into form
+                    currentValue = form[fieldName];
+                    if (currentValue === undefined) {
+                        form[fieldName] = defaultValue;
+                    }
+                }
+            }
+
+            // Update scope
+            $scope.$apply();
+        });
+
+        var confirmCreate = function(recordID) {
+            // Show confirmation popup and go back to list
+            $emDialog.confirmation('Record created', function() {
+                $state.go('data.list',
+                    {formName: $scope.formName},
+                    {location: 'replace'}
+                );
             });
         };
 
+        $scope.submit = function(form) {
+
+            // @todo: validate
+
+            // Copy to master (only useful if not changing state)
+            //$scope.master = angular.copy(form);
+
+            // Commit to database and confirm
+            $emdb.table('person').then(function(table) {
+                table.insert(form, confirmCreate);
+            });
+        };
+
+        // @todo: expose reset in UI
         $scope.reset = function() {
             $scope.form = angular.copy($scope.master);
         };
-        // @todo: expose reset in UI
+
+        // Initial reset
         $scope.reset();
     }
 ]);

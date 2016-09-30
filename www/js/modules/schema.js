@@ -64,11 +64,13 @@ var emDefaultSchema = {
         'first_name': {
             type: 'string',
             label: 'First Name',
+            placeholder: 'Jane',
             notnull: true
         },
         'last_name': {
             type: 'string',
-            label: 'Last Name'
+            label: 'Last Name',
+            placeholder: 'Doe'
         },
         'date_of_birth': {
             type: 'date',

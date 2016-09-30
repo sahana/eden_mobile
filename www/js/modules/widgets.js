@@ -28,7 +28,7 @@
 /**
  * Simple text input widget
  */
-EdenMobile.directive("emTextWidget", [
+EdenMobile.directive('emTextWidget', [
     '$compile',
     function($compile) {
 
@@ -77,7 +77,7 @@ EdenMobile.directive("emTextWidget", [
 /**
  * Simple date input widget
  */
-EdenMobile.directive("emDateWidget", [
+EdenMobile.directive('emDateWidget', [
     '$compile',
     function($compile) {
 
