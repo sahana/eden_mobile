@@ -201,13 +201,55 @@ var emSQL = (function() {
                 }
             }
 
-            var placeholders = values.map(() => '?').join(',');
+            var placeholders = values.map(() => '?').join(','),
+                sql = [
+                    'INSERT INTO ' + quoted(self.tableName),
+                    '(' + fields.join(',') + ')',
+                    'VALUES (' + placeholders + ')'
+                ];
 
-            var sql = [
-                'INSERT INTO ' + quoted(self.tableName),
-                '(' + fields.join(',') + ')',
-                'VALUES (' + placeholders + ')'
-            ];
+            return [sql.join(' '), values];
+        };
+
+        /**
+         * SQL to update records
+         *
+         * @param {object} data - the data to update, as {fieldname: value}
+         * @param {string} query - SQL WHERE expression
+         */
+        self.update = function(data, query) {
+
+            var fields = [],
+                values = [],
+                schema = self.schema,
+                field,
+                fieldName,
+                fieldParams,
+                sqlName,
+                sqlValue;
+
+            for (fieldName in data) {
+                fieldParams = schema[fieldName];
+                if (fieldParams) {
+                    field = new Field(fieldName, fieldParams);
+                    sqlName = field.sqlName();
+                    sqlValue = field.sqlValue(data[fieldName]);
+                    if (sqlName && sqlValue) {
+                        fields.push(sqlName);
+                        values.push(sqlValue);
+                    }
+                }
+            }
+
+            var placeholders = fields.map((fieldName) => fieldName + '=?').join(','),
+                sql = [
+                    'UPDATE ' + quoted(self.tableName),
+                    'SET ' + placeholders
+                ];
+
+            if (query) {
+                sql.push('WHERE ' + query);
+            }
 
             return [sql.join(' '), values];
         };

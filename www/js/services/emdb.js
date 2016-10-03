@@ -295,7 +295,7 @@ EdenMobile.factory('$emdb', ['$q', function ($q) {
         self.schema = tables[tableName];
 
         /**
-         * Insert new records into table
+         * Insert new records into this table
          *
          * @param {object} data - an object with the data to insert:
          *                        {fieldName: value}
@@ -313,7 +313,38 @@ EdenMobile.factory('$emdb', ['$q', function ($q) {
         };
 
         /**
-         * Select records from table
+         * Update records in this table
+         *
+         * @param {object} data - an object with the data to insert:
+         *                        {fieldName: value}
+         * @param {query} query - SQL WHERE expression
+         * @param {function} callback - callback function to process
+         *                              the result: function(rowsAffected)
+         */
+        self.update = function(data, query, callback) {
+
+            var table = emSQL.Table(self.tableName, self.schema),
+                sql = null;
+
+            switch(arguments.length) {
+                case 2:
+                    callback = query;
+                    sql = table.update(data);
+                    break;
+                default:
+                    sql = table.update(data, query);
+                    break;
+            }
+
+            db.executeSql(sql[0], sql[1], function(result) {
+                if (callback) {
+                    callback(result.rowsAffected);
+                }
+            }, errorCallback);
+        };
+
+        /**
+         * Select records from this table
          *
          * @param {Array} fields - list of field names to extract
          * @param {string} query - SQL WHERE expression
