@@ -55,6 +55,15 @@ EdenMobile.controller("EdenMobileDataUpdate", [
                 }
             }
 
+            // Set the form title
+            var strings = table.schema._strings,
+                formTitle = formName;
+            if (strings) {
+                formTitle = strings.name || listTitle;
+            }
+            $scope.formTitle = formTitle;
+            $scope.$apply();
+
             // Extract current record
             table.select(fields, query, function(records, result) {
 

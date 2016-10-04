@@ -1,5 +1,7 @@
 {
     "About+APPNAME": "About {{appname}}",
+    "Add+FORMTITLE": "Add {{formtitle}}",
+    "Edit+FORMTITLE": "Edit {{formtitle}}",
     "Home": "Home",
     "Homepage": "Homepage",
     "Settings": "Settings",

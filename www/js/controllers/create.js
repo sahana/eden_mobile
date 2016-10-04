@@ -48,6 +48,15 @@ EdenMobile.controller('EdenMobileDataCreate', [
                 defaultValue,
                 currentValue;
 
+            // Set the form title
+            var strings = table.schema._strings,
+                formTitle = formName;
+            if (strings) {
+                formTitle = strings.name || listTitle;
+            }
+            $scope.formTitle = formTitle;
+
+            // Apply defaults
             for (var fieldName in schema) {
                 if (fieldName[0] == '_') {
                     continue;

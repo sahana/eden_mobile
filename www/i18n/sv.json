@@ -1,5 +1,7 @@
 {
     "About+APPNAME": "Om {{appname}}",
+    "Add+FORMTITLE": "Lägg till {{formtitle}}",
+    "Edit+FORMTITLE": "Redigera {{formtitle}}",
     "Home": "Hem",
     "Homepage": "Startsida",
     "Settings": "Inställningar",
