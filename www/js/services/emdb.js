@@ -349,7 +349,10 @@ EdenMobile.factory('$emdb', ['$q', function ($q) {
          * @param {Array} fields - list of field names to extract
          * @param {string} query - SQL WHERE expression
          * @param {function} callback - callback function to process
-         *                              the result: function(result)
+         *                              the result: function(records, result),
+         *                              where records is an Array with the
+         *                              database items converted into form
+         *                              data format
          */
         self.select = function(fields, query, callback) {
 
@@ -360,6 +363,7 @@ EdenMobile.factory('$emdb', ['$q', function ($q) {
             switch(arguments.length) {
                 case 1:
                     callback = fields;
+                    fields = null;
                     sql = table.select();
                     break;
                 case 2:
@@ -372,7 +376,15 @@ EdenMobile.factory('$emdb', ['$q', function ($q) {
             }
 
             if (sql && callback) {
-                db.executeSql(sql, [], callback, errorCallback);
+                db.executeSql(sql, [], function(result) {
+                    var records = [];
+                    for (var i=0, len=result.rows.length; i<len; i++) {
+                        var record = table.formData(fields, result.rows.item(i));
+                        records.push(record);
+                    }
+                    callback(records, result);
+
+                }, errorCallback);
             }
         };
 
@@ -401,7 +413,7 @@ EdenMobile.factory('$emdb', ['$q', function ($q) {
                     callback(number);
                 }
             }, errorCallback);
-        }
+        };
     }
 
     /**

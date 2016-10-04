@@ -4,10 +4,10 @@
         <h2 class="title">{{formName}} #{{recordID}}</h2>
         <div class="buttons">
             <button class="button icon-left ion-trash-b button-assertive" style="margin-right:0.2rem;"></button>
-            <button class="button icon-left ion-checkmark-round"></button>
+            <button class="button button-positive icon-left ion-checkmark-round" ng-click="submit(form)"></button>
         </div>
     </div>
-    <ion-content class="padding has-header has-subheader has-footer">
-        <p>Update-form for &quot;{{formName}}&quot; #{{recordID}}</p>
+    <ion-content id="main" class="has-header has-subheader has-footer">
+        <em-data-form form-name="{{formName}}"></em-data-form>
     </ion-content>
 </ion-view>

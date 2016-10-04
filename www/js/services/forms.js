@@ -27,6 +27,12 @@
 
 EdenMobile.factory('$emForm', [function () {
 
+    /**
+     * Build a form widget, applying em-*-widget directives
+     *
+     * @param {object} field - the field parameters (from schema)
+     * @param {object} attr - attributes for the widget
+     */
     var createWidget = function(field, attr) {
 
         var fieldType = field.type,
@@ -59,11 +65,15 @@ EdenMobile.factory('$emForm', [function () {
         }
 
         return widget;
-    }
+    };
 
 
     /**
      * Form API
+     *
+     * @param {object} schema - the table schema for the form
+     * @param {Array} fields - list of field names to render in
+     *                         the form (in order of appearance)
      */
     function Form(schema, fields) {
 
@@ -78,6 +88,13 @@ EdenMobile.factory('$emForm', [function () {
             self.fields = schema._form;
         }
 
+        /**
+         * Render the form
+         *
+         * @param {string} scopeName - name of the scope object
+         *                             holding the form data (default: 'form')
+         * @returns {DOMNode} - the angular-enhanced DOM node for the form
+         */
         self.render = function(scopeName) {
 
             if (!scopeName) {
@@ -122,7 +139,7 @@ EdenMobile.factory('$emForm', [function () {
                 fieldParameters = schema[fieldName];
 
                 if (fieldParameters) {
-                    placeholder = fieldParameters.placeholder,
+                    placeholder = fieldParameters.placeholder;
                     fieldAttr = {
                         'label': fieldParameters.label,
                         'ng-model': scopeName + '.' + fieldName
@@ -136,8 +153,7 @@ EdenMobile.factory('$emForm', [function () {
             }
 
             return form;
-
-        }
+        };
 
     }
 
@@ -146,9 +162,17 @@ EdenMobile.factory('$emForm', [function () {
      */
     var api = {
 
+        /**
+         * Form API
+         *
+         * @param {object} schema - the table schema for the form
+         * @param {Array} fields - list of field names to render in
+         *                         the form (in order of appearance)
+         * @returns {instance} - a Form instance
+         */
         form: function(schema, fields) {
             return new Form(schema, fields);
-        },
+        }
 
     };
     return api;
@@ -162,6 +186,15 @@ EdenMobile.directive('emDataForm', [
     '$compile', '$emdb', '$emForm',
     function($compile, $emdb, $emForm) {
 
+        /**
+         * Widget renderer
+         *
+         * @param {object} $scope - reference to the current scope
+         * @param {DOMNode} elem - the angular-enhanced DOM node for
+         *                         the element applying the directive
+         * @param {object} attr - object containing the attributes of
+         *                        the element
+         */
         var renderForm = function($scope, elem, attr) {
 
             var formName = attr.formName;

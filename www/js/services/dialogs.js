@@ -33,21 +33,50 @@ EdenMobile.factory('$emDialog', ['$ionicPopup', '$timeout', function ($ionicPopu
 
         /**
          * Show a confirmation popup
+         *
+         * @param {string} msg - the message to show
+         * @param {function} callback - callback function to execute
+         *                              after closing the popup
          */
         confirmation: function(msg, callback) {
 
             var confirmationPopup = $ionicPopup.show({
                 title: msg
             });
-            // auto-hide after 1 second
+
+            // auto-hide after 800ms
             $timeout(function() {
                 confirmationPopup.close();
                 if (callback) {
                     callback();
                 }
             }, 800);
+        },
+
+        /**
+         * Show an error popup with user confirmation
+         *
+         * @param {string} msg - the message to show
+         * @param {function} callback - callback function to execute
+         *                              after closing the popup
+         */
+        error: function(msg, callback) {
+
+            var errorPopup = $ionicPopup.show({
+                title: msg,
+                buttons: [
+                    {
+                        text: '<b>Close</b>',
+                        type: 'button-positive',
+                        onTap: function(e) {
+                            if (callback) {
+                                callback();
+                            }
+                        }
+                    }
+                ]
+            });
         }
     };
     return dialogs;
 }]);
-

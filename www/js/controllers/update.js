@@ -29,9 +29,97 @@
  * Update-form
  */
 EdenMobile.controller("EdenMobileDataUpdate", [
-    '$scope', '$stateParams', '$emdb',
-    function($scope, $stateParams, $emdb) {
-        $scope.formName = $stateParams.formName;
-        $scope.recordID = $stateParams.recordID;
+    '$scope', '$state', '$stateParams', '$emdb', '$emDialog',
+    function($scope, $state, $stateParams, $emdb, $emDialog) {
+
+        var formName = $stateParams.formName,
+            recordID = $stateParams.recordID,
+            query = formName + '.id=' + recordID;
+
+        $scope.formName = formName;
+        $scope.recordID = recordID;
+
+        // Start with empty master (populated asynchronously)
+        $scope.master = {};
+
+        // Read default values from schema
+        $emdb.table(formName).then(function(table) {
+
+            // Get form fields from schema
+            var schema = table.schema,
+                fields = [];
+
+            for (var fieldName in schema) {
+                if (fieldName[0] != '_') {
+                    fields.push(fieldName);
+                }
+            }
+
+            // Extract current record
+            table.select(fields, query, function(records, result) {
+
+                var form = $scope.form,
+                    master = $scope.master;
+
+                if (records.length == 1) {
+
+                    // Write data into both master and form
+                    var row = records[0];
+                    for (var i=0, len=fields.length; i<len; i++) {
+                        var field = fields[i],
+                            value = row[field];
+                        if (value !== undefined) {
+                            master[field] = value;
+                            form[field] = value;
+                        }
+                    }
+
+                    // Update scope
+                    $scope.$apply();
+
+                } else {
+
+                    // Show error popup, then go back to list
+                    $emDialog.error('Record not found', function() {
+                        $state.go('data.list',
+                            {formName: $scope.formName},
+                            {location: 'replace'}
+                        );
+                    });
+                }
+            });
+
+        });
+
+        var confirmUpdate = function(recordID) {
+            // Show confirmation popup and go back to list
+            $emDialog.confirmation('Record updated', function() {
+                $state.go('data.list',
+                    {formName: $scope.formName},
+                    {location: 'replace'}
+                );
+            });
+        };
+
+        $scope.submit = function(form) {
+
+            // @todo: validate
+
+            // Copy to master (only useful if not changing state)
+            //$scope.master = angular.copy(form);
+
+            // Commit to database and confirm
+            $emdb.table('person').then(function(table) {
+                table.update(form, query, confirmUpdate);
+            });
+        };
+
+        // @todo: expose reset in UI
+        $scope.reset = function() {
+            $scope.form = angular.copy($scope.master);
+        };
+
+        // Initial reset
+        $scope.reset();
     }
 ]);

@@ -32,13 +32,15 @@ EdenMobile.controller('EdenMobileDataCreate', [
     '$scope', '$state', '$stateParams', '$emdb', '$emDialog',
     function($scope, $state, $stateParams, $emdb, $emDialog) {
 
-        $scope.formName = $stateParams.formName;
+        var formName = $stateParams.formName;
+
+        $scope.formName = formName;
 
         // Start with empty master (populated asynchronously)
         $scope.master = {};
 
         // Read default values from schema
-        $emdb.table('person').then(function(table) {
+        $emdb.table(formName).then(function(table) {
 
             var schema = table.schema,
                 master = $scope.master,
@@ -50,7 +52,7 @@ EdenMobile.controller('EdenMobileDataCreate', [
                 if (fieldName[0] == '_') {
                     continue;
                 }
-                defaultValue = schema[fieldName].default;
+                defaultValue = schema[fieldName]['default'];
                 if (defaultValue !== undefined) {
                     // Store in master
                     if (master[fieldName] === undefined) {

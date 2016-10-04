@@ -75,12 +75,7 @@ EdenMobile.controller("EdenMobileDataList", [
 
             // Select all existing records
             $scope.records = [];
-            table.select(fields, function(result) {
-                var rows = result.rows,
-                    records = [];
-                for (var i=0, len=rows.length; i<len; i++) {
-                    records.push(rows.item(i));
-                }
+            table.select(fields, function(records, result) {
                 $scope.records = records;
                 $scope.$apply();
             });
@@ -101,20 +96,23 @@ EdenMobile.directive("emDataCard", [
 
             $emdb.table(formName).then(function(table) {
                 var cardConfig = table.schema._card,
-                    titleTemplate;
+                    titleTemplate,
+                    cardTemplate,
+                    target = 'data.update({formName:&quot;{{formName}}&quot;,recordID:{{record.id}}})';
 
                 // Read the card config
                 if (cardConfig) {
                     titleTemplate = cardConfig.title;
                 }
-
-                // Apply fallbacks
+                // Apply fallback
                 if (!titleTemplate) {
                     titleTemplate = 'Record #{{record.id}}';
                 }
 
                 // Construct the data card template
-                var cardTemplate = '<a class="item item-text-wrap" href="#/data/{{formName}}/{{record.id}}">' + titleTemplate + '</a>';
+                cardTemplate = '<a class="item item-text-wrap" ' +
+                               'ui-sref="' + target + '">' +
+                               titleTemplate + '</a>';
 
                 // Compile the data card template against the scope,
                 // then render it in place of the directive

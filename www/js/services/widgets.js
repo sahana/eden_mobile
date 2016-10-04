@@ -32,6 +32,15 @@ EdenMobile.directive('emTextWidget', [
     '$compile',
     function($compile) {
 
+        /**
+         * Widget renderer
+         *
+         * @param {object} $scope - reference to the current scope
+         * @param {DOMNode} elem - the angular-enhanced DOM node for
+         *                         the element applying the directive
+         * @param {object} attr - object containing the attributes of
+         *                        the element
+         */
         var renderWidget = function($scope, elem, attr) {
 
             // Create the label
@@ -81,6 +90,15 @@ EdenMobile.directive('emDateWidget', [
     '$compile',
     function($compile) {
 
+        /**
+         * Widget renderer
+         *
+         * @param {object} $scope - reference to the current scope
+         * @param {DOMNode} elem - the angular-enhanced DOM node for
+         *                         the element applying the directive
+         * @param {object} attr - object containing the attributes of
+         *                        the element
+         */
         var renderWidget = function($scope, elem, attr) {
 
             // Create the label

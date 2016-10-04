@@ -108,6 +108,10 @@ var emSQL = (function() {
 
         /**
          * SQL Name of the field
+         *
+         * @param {any} tableName - the table name to prefix the
+         *                          field name, no prefix will be
+         *                          applied if omitted
          */
         self.sqlName = function(tableName) {
 
@@ -120,6 +124,8 @@ var emSQL = (function() {
 
         /**
          * SQL Value for the field
+         *
+         * @param {any} value - the value from the form
          */
         self.sqlValue = function(value) {
 
@@ -136,6 +142,33 @@ var emSQL = (function() {
                     break;
             }
             return sqlValue;
+        };
+
+        /**
+         * Convert a database value into its corresponding form
+         * data type
+         *
+         * @param {any} value - the value return from the database
+         */
+        self.formValue = function(value) {
+
+            var params = self.params,
+                formValue = value;
+
+            if (value !== undefined && value !== null) {
+                switch(params.type) {
+                    // @todo: elaborate (e.g. date, time, datetime)
+                    case 'date':
+                        formValue = new Date(value);
+                        break;
+                    case 'json':
+                        formValue = JSON.parse(value);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            return formValue;
         };
     }
 
@@ -305,6 +338,49 @@ var emSQL = (function() {
         self.drop = function() {
             return 'DROP TABLE IF EXISTS ' + quoted(self.tableName);
         };
+
+        /**
+         * Convert database values into form data format
+         *
+         * @param {Array} fieldNames - list of field names
+         * @param {object} item - the database record
+         *
+         * @return {object} - the form data
+         */
+        self.formData = function(fieldNames, item) {
+
+            var schema = self.schema,
+                formData = {},
+                fieldName;
+
+            if (!fieldNames) {
+                fieldNames = [];
+                for (fieldName in schema) {
+                    if (fieldName[0] != '_') {
+                        fieldNames.push(fieldName);
+                    }
+                }
+            }
+
+            for (var i=0, len=fieldNames.length; i<len; i++) {
+
+                var field,
+                    formValue;
+
+                fieldName = fieldNames[i];
+
+                if (schema.hasOwnProperty(fieldName)) {
+                    if (item.hasOwnProperty(fieldName)) {
+                        field = new Field(fieldName, schema[fieldName]);
+                        formValue = field.formValue(item[fieldName]);
+                    } else {
+                        formValue = null;
+                    }
+                    formData[fieldName] = formValue;
+                }
+            }
+            return formData;
+        };
     }
 
     /**
@@ -314,10 +390,13 @@ var emSQL = (function() {
 
         /**
          * Expose the Table API
+         *
+         * @param {string} tableName - the table name
+         * @param {object} schema - the table schema
          */
         Table: function(tableName, schema) {
             return new Table(tableName, schema);
-        }
+        },
 
     };
     return api;
