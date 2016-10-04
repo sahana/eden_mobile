@@ -410,7 +410,7 @@ var emSQL = (function() {
          */
         Table: function(tableName, schema) {
             return new Table(tableName, schema);
-        },
+        }
 
     };
     return api;
