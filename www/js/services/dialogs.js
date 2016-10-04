@@ -76,6 +76,38 @@ EdenMobile.factory('$emDialog', ['$ionicPopup', '$timeout', function ($ionicPopu
                     }
                 ]
             });
+        },
+
+        /**
+         * Show a popup asking for user confirmation
+         *
+         * @param {string} title - title describing the action to confirm
+         * @param {string} question - the question to ask
+         * @param {function} actionCallback - callback function to execute
+         *                                    if the user confirms the action
+         * @param {function} cancelCallback - callback function to execute
+         *                                    if the user cancels the action
+         */
+        confirmAction: function(title, question, actionCallback, cancelCallback) {
+
+            var confirmPopup = $ionicPopup.confirm({
+                title: title,
+                template: question
+            });
+
+            confirmPopup.then(function(response) {
+                if (response) {
+                    // User confirmed action
+                    if (actionCallback) {
+                        actionCallback();
+                    }
+                } else {
+                    // User cancelled action
+                    if (cancelCallback) {
+                        cancelCallback();
+                    }
+                }
+            });
         }
     };
     return dialogs;

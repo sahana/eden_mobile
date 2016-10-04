@@ -234,7 +234,7 @@ var emSQL = (function() {
                 }
             }
 
-            var placeholders = values.map(() => '?').join(','),
+            var placeholders = values.map(value => '?').join(','),
                 sql = [
                     'INSERT INTO ' + quoted(self.tableName),
                     '(' + fields.join(',') + ')',
@@ -326,6 +326,20 @@ var emSQL = (function() {
         self.count = function(query) {
 
             var sql = 'SELECT COUNT(id) AS number FROM ' + quoted(tableName);
+            if (query) {
+                sql += (' WHERE ' + query);
+            }
+            return sql;
+        };
+
+        /**
+         * SQL to delete records
+         *
+         * @param {string} query - SQL WHERE expression
+         */
+        self.deleteRecords = function(query) {
+
+            var sql = 'DELETE FROM ' + quoted(tableName);
             if (query) {
                 sql += (' WHERE ' + query);
             }

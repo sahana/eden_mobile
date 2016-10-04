@@ -70,6 +70,7 @@ EdenMobile.controller('EdenMobileDataCreate', [
             $scope.$apply();
         });
 
+        // Confirmation message for successful create
         var confirmCreate = function(recordID) {
             // Show confirmation popup and go back to list
             $emDialog.confirmation('Record created', function() {
@@ -80,6 +81,7 @@ EdenMobile.controller('EdenMobileDataCreate', [
             });
         };
 
+        // Submit-function
         $scope.submit = function(form) {
 
             // @todo: validate

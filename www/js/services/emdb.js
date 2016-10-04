@@ -389,6 +389,33 @@ EdenMobile.factory('$emdb', ['$q', function ($q) {
         };
 
         /**
+         * Delete records
+         *
+         * @param {string} query - SQL WHERE expression
+         * @param {function} callback - callback function to process
+         *                              the result: function(number)
+         */
+        self.deleteRecords = function(query, callback) {
+
+            var table = emSQL.Table(self.tableName, self.schema),
+                sql = null;
+
+            if (arguments.length == 1) {
+                callback = query;
+                sql = table.deleteRecords();
+            } else {
+                sql = table.deleteRecords(query);
+            }
+
+            db.executeSql(sql, [], function(result) {
+                var number = result.rowsAffected;
+                if (callback) {
+                    callback(number);
+                }
+            }, errorCallback);
+        };
+
+        /**
          * Count records
          *
          * @param {string} query - SQL WHERE expression

@@ -91,6 +91,7 @@ EdenMobile.controller("EdenMobileDataUpdate", [
 
         });
 
+        // Confirmation message for successful update
         var confirmUpdate = function(recordID) {
             // Show confirmation popup and go back to list
             $emDialog.confirmation('Record updated', function() {
@@ -101,6 +102,7 @@ EdenMobile.controller("EdenMobileDataUpdate", [
             });
         };
 
+        // Submit function
         $scope.submit = function(form) {
 
             // @todo: validate
@@ -109,9 +111,35 @@ EdenMobile.controller("EdenMobileDataUpdate", [
             //$scope.master = angular.copy(form);
 
             // Commit to database and confirm
-            $emdb.table('person').then(function(table) {
+            $emdb.table(formName).then(function(table) {
                 table.update(form, query, confirmUpdate);
             });
+        };
+
+        // Confirmation message for successful delete
+        var confirmDelete = function(rowsAffected) {
+            // Show confirmation popup and go back to list
+            // @todo: should this actually check that rowsAffected is 1?
+            $emDialog.confirmation('Record deleted', function() {
+                $state.go('data.list',
+                    {formName: $scope.formName},
+                    {location: 'replace'}
+                );
+            });
+        };
+
+        // Delete-action
+        $scope.deleteRecord = function() {
+
+            $emDialog.confirmAction(
+                'Delete Record',
+                'Are you sure you want to delete this record?',
+                function() {
+                    $emdb.table(formName).then(function(table) {
+                        table.deleteRecords(query, confirmDelete);
+                    });
+                }
+            );
         };
 
         // @todo: expose reset in UI
