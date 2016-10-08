@@ -130,7 +130,7 @@ var emSQL = (function() {
         self.sqlValue = function(value) {
 
             var params = self.params,
-                sqlValue = null;
+                sqlValue;
 
             switch(params.type) {
                 // @todo: elaborate (e.g. date, time, datetime)
@@ -227,7 +227,7 @@ var emSQL = (function() {
                     field = new Field(fieldName, fieldParams);
                     sqlName = field.sqlName();
                     sqlValue = field.sqlValue(data[fieldName]);
-                    if (sqlName && sqlValue) {
+                    if (sqlName &&  sqlValue !== undefined) {
                         fields.push(sqlName);
                         values.push(sqlValue);
                     }
@@ -267,7 +267,7 @@ var emSQL = (function() {
                     field = new Field(fieldName, fieldParams);
                     sqlName = field.sqlName();
                     sqlValue = field.sqlValue(data[fieldName]);
-                    if (sqlName && sqlValue) {
+                    if (sqlName && sqlValue !== undefined) {
                         fields.push(sqlName);
                         values.push(sqlValue);
                     }

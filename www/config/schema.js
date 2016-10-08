@@ -58,6 +58,16 @@ var emDefaultSchema = {
     },
 
     /**
+     * Table to store settings
+     */
+    'em_config': {
+        'settings': {
+            type: 'json',
+            label: 'Settings'
+        },
+    },
+
+    /**
      * Default schema for person records (for testing)
      */
     'person': {

@@ -61,7 +61,7 @@ EdenMobile.controller('EdenMobileDataCreate', [
                 if (fieldName[0] == '_') {
                     continue;
                 }
-                defaultValue = schema[fieldName]['default'];
+                defaultValue = schema[fieldName].defaultValue;
                 if (defaultValue !== undefined) {
                     // Store in master
                     if (master[fieldName] === undefined) {
@@ -93,14 +93,23 @@ EdenMobile.controller('EdenMobileDataCreate', [
         // Submit-function
         $scope.submit = function(form) {
 
-            // @todo: validate
-
-            // Copy to master (only useful if not changing state)
-            //$scope.master = angular.copy(form);
-
-            // Commit to database and confirm
             $emdb.table('person').then(function(table) {
-                table.insert(form, confirmCreate);
+
+                // @todo: validate
+                var empty = true;
+                for (var field in form) {
+                    if (form[field] !== undefined && form[field] !== null) {
+                        empty = false;
+                        break;
+                    }
+                }
+                if (!empty) {
+                    // Copy to master (only useful if not changing state)
+                    //$scope.master = angular.copy(form);
+
+                    // Commit to database and confirm
+                    table.insert(form, confirmCreate);
+                }
             });
         };
 

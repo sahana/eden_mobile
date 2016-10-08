@@ -62,7 +62,7 @@ EdenMobile.controller("EdenMobileDataUpdate", [
                 formTitle = strings.name || listTitle;
             }
             $scope.formTitle = formTitle;
-            $scope.$apply();
+            //$scope.$apply();
 
             // Extract current record
             table.select(fields, query, function(records, result) {
@@ -114,14 +114,23 @@ EdenMobile.controller("EdenMobileDataUpdate", [
         // Submit function
         $scope.submit = function(form) {
 
-            // @todo: validate
-
-            // Copy to master (only useful if not changing state)
-            //$scope.master = angular.copy(form);
-
-            // Commit to database and confirm
             $emdb.table(formName).then(function(table) {
-                table.update(form, query, confirmUpdate);
+
+                // @todo: validate
+                var empty = true;
+                for (var field in form) {
+                    if (form[field] !== undefined && form[field] !== null) {
+                        empty = false;
+                        break;
+                    }
+                }
+                if (!empty) {
+                    // Copy to master (only useful if not changing state)
+                    //$scope.master = angular.copy(form);
+
+                    // Commit to database and confirm
+                    table.update(form, query, confirmUpdate);
+                }
             });
         };
 

@@ -1,5 +1,5 @@
 /**
- * Sahana Eden Mobile - Settings Controllers
+ * Sahana Eden Mobile - Configuration Settings and Defaults
  *
  * Copyright (c) 2016: Sahana Software Foundation
  *
@@ -23,16 +23,29 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
+var emSettings = {
 
-EdenMobile
-.controller("EdenMobileSettings", [
-    '$scope', function($scope) {
-//         $scope.appname = "Settings";
+    'server': {
+
+        _title: 'Sahana Server Settings',
+        _help: 'Server information for data uploads',
+
+        'url': {
+            type: 'url',
+            label: 'Sahana Server URL',
+            help: 'The URL of the Sahana Server to upload data to',
+            placeholder: 'http://sahana.example.com/eden'
+        },
+        'username': {
+            type: 'string',
+            label: 'Username for Sahana Server',
+            help: 'The username to use for data uploads',
+            placeholder: 'admin@example.com'
+        },
+        'password': {
+            type: 'password',
+            label: 'Password for Sahana Server',
+            help: 'The password to use for data uploads'
+        }
     }
-])
-.controller("EdenMobileAbout", [
-    '$scope', function($scope, $cordovaAppVersion) {
-        $scope.version = window.cordova.plugins.version.getAppVersion();
-    }
-]);
+};

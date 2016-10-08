@@ -46,6 +46,9 @@ EdenMobile.factory('$emForm', [function () {
                 case 'date':
                     widgetType = '<em-date-widget>';
                     break;
+                case 'password':
+                    widgetType = '<em-text-widget type="password">';
+                    break;
                 default:
                     widgetType = '<em-text-widget>';
                     break;
@@ -172,6 +175,10 @@ EdenMobile.factory('$emForm', [function () {
          */
         form: function(schema, fields) {
             return new Form(schema, fields);
+        },
+
+        widget: function(field, attr) {
+            return createWidget(field, attr);
         }
 
     };
@@ -187,7 +194,7 @@ EdenMobile.directive('emDataForm', [
     function($compile, $emdb, $emForm) {
 
         /**
-         * Widget renderer
+         * Form renderer
          *
          * @param {object} $scope - reference to the current scope
          * @param {DOMNode} elem - the angular-enhanced DOM node for
