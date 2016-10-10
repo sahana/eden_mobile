@@ -43,6 +43,9 @@ EdenMobile.factory('$emForm', [function () {
 
         if (writable || typeof writable == 'undefined') {
             switch(fieldType) {
+                case 'boolean':
+                    widgetType = '<em-boolean-widget>';
+                    break;
                 case 'date':
                     widgetType = '<em-date-widget>';
                     break;

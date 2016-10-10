@@ -70,6 +70,9 @@ var emSQL = (function() {
                 case 'text':
                     sqlType = 'TEXT';
                     break;
+                case 'boolean':
+                    sqlType = 'INTEGER';
+                    break;
                 case 'integer':
                     sqlType = 'INTEGER';
                     break;
@@ -134,6 +137,13 @@ var emSQL = (function() {
 
             switch(params.type) {
                 // @todo: elaborate (e.g. date, time, datetime)
+                case 'boolean':
+                    if (!value) {
+                        sqlValue = 0;
+                    } else {
+                        sqlValue = 1;
+                    }
+                    break;
                 case 'json':
                     sqlValue = JSON.stringify(value);
                     break;
@@ -158,6 +168,13 @@ var emSQL = (function() {
             if (value !== undefined && value !== null) {
                 switch(params.type) {
                     // @todo: elaborate (e.g. date, time, datetime)
+                    case 'boolean':
+                        if (!value) {
+                            formValue = false;
+                        } else {
+                            formValue = true;
+                        }
+                        break;
                     case 'date':
                         formValue = new Date(value);
                         break;

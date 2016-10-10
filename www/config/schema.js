@@ -86,9 +86,10 @@ var emDefaultSchema = {
             type: 'date',
             label: 'Date of Birth'
         },
-        _form: ['first_name',
-                'last_name',
-                'date_of_birth'
+        _form: [
+            'first_name',
+            'last_name',
+            'date_of_birth'
         ],
         _card: {
             fields: ['first_name', 'last_name'],

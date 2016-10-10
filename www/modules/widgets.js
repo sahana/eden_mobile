@@ -28,7 +28,14 @@
 (function() {
 
     /**
-     * @todo: docstring
+     * Copy directive attributes to a generated element, using the
+     * attribute map of the directive to map camelCase notation to
+     * dash notation, e.g. ngModel becomes ng-model.
+     *
+     * @param {object} ngAttr - the directive's DOM attributes
+     * @param {DOMNode} element - the target element
+     * @param {Array} validAttr - the attributes to copy in camelCase
+     *                            notation
      */
     function copyAttr(ngAttr, element, validAttr) {
 
@@ -49,7 +56,13 @@
     }
 
     /**
-     * @todo: docstring
+     * Directive em-text-widget: a text input widget
+     *
+     * @param {string} type - the input type ('text'|'password'), default 'text'
+     *
+     * @example <em-text-widget type='password'>
+     *
+     * @returns {string} - the text entered (or null if empty)
      */
     EdenMobile.directive('emTextWidget', [
         '$compile',
@@ -101,7 +114,11 @@
     ]);
 
     /**
-     * @todo: docstring
+     * Directive em-date-widget: a widget with date picker (calendar)
+     *
+     * @example <em-date-widget>
+     *
+     * @returns {Date} - the selected date
      */
     EdenMobile.directive('emDateWidget', [
         '$compile',
@@ -151,4 +168,48 @@
         }
     ]);
 
+    /**
+     * Directive em-boolean-widget: a checkbox widget
+     *
+     * @example <em-boolean-widget>
+     *
+     * @returns {boolean} - true|false
+     */
+    EdenMobile.directive('emBooleanWidget', [
+        '$compile',
+        function($compile) {
+
+            /**
+            * Widget renderer
+            *
+            * @param {object} $scope - reference to the current scope
+            * @param {DOMNode} elem - the angular-enhanced DOM node for
+            *                         the element applying the directive
+            * @param {object} attr - object containing the attributes of
+            *                        the element
+            */
+            var renderWidget = function($scope, elem, attr) {
+
+                // Create the input
+                var widget = angular.element('<ion-checkbox>')
+                                    .addClass('item item-checkbox-right')
+                                    .html(attr.label || '');
+
+                // Input attributes
+                copyAttr(attr, widget, [
+                    'ngModel',
+                    'disabled',
+                ]);
+
+                // Compile the widget against the scope, then
+                // render it in place of the directive
+                var compiled = $compile(widget)($scope);
+                elem.replaceWith(compiled);
+            };
+
+            return {
+                link: renderWidget
+            };
+        }
+    ]);
 }());
