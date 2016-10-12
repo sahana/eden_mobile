@@ -28,7 +28,7 @@
 /**
  * Create-Form Controller
  */
-EdenMobile.controller('EdenMobileDataCreate', [
+EdenMobile.controller('EMDataCreate', [
     '$scope', '$state', '$stateParams', 'emDB', 'emDialogs',
     function($scope, $state, $stateParams, emDB, emDialogs) {
 
