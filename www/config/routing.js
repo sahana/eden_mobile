@@ -32,8 +32,7 @@ EdenMobile.config(['$stateProvider', '$urlRouterProvider',
         $stateProvider
             .state('index', {
                 url: '/',
-                templateUrl: 'views/home.html',
-//                 controller: "EMDefault"
+                templateUrl: 'views/home.html'
             })
             .state('data', {
                 'abstract': true,

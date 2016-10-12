@@ -64,7 +64,7 @@ var emDefaultSchema = {
         'settings': {
             type: 'json',
             label: 'Settings'
-        },
+        }
     },
 
     /**

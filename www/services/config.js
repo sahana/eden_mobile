@@ -25,242 +25,297 @@
 
 "use strict";
 
-EdenMobile.factory('emConfig', ['$q', 'emDB', function ($q, emDB) {
+EdenMobile.factory('emConfig', [
+    '$q', 'emDB', 'emSettings',
+    function ($q, emDB, emSettings) {
 
-    var settings = angular.copy(emSettings),
-        settingsStatus = $q.defer(),
-        settingsLoaded = settingsStatus.promise,
-        settingsID = null;
+        // The current settings
+        var currentSettings = {};
 
-    /**
-     * Read the current values of configuration settings from
-     * the database, automatically called during initialization
-     * of this service
-     *
-     * @param {Array} records - the records in the em_config table
-     *
-     * (second parameter 'results' from table.select() unused)
-     */
-    var loadSettings = function(records) {
-
-        if (records.length > 0) {
-
-            var currentSettings = records[0].settings,
-                defaultValues,
-                currentValues,
-                section,
-                key;
-
-            for (section in currentSettings) {
-                if (!settings.hasOwnProperty(section)) {
-                    continue;
-                }
-                defaultValues = settings[section];
-                currentValues = currentSettings[section];
-                for (key in currentValues) {
-                    if (!defaultValues.hasOwnProperty(key)) {
-                        continue;
-                    }
-                    defaultValues[key].currentValue = currentValues[key];
-                }
-            }
-
-            // Store the record ID for later updates
-            settingsID = records[0].id;
-        }
-
-        // Resolve the promise
-        settingsStatus.resolve(settings);
-    };
-
-    // Initial loading of the current configuration
-    // values from the database:
-    emDB.table('em_config').then(function(table) {
-        table.select(['id', 'settings'], loadSettings);
-    });
-
-    var settingsChanged = false;
-
-    /**
-     * Settings API Prototype
-     */
-    function Settings() {}
-
-    /**
-     * Get a list of all sections in the settings
-     *
-     * @returns {Array} - an array of section names
-     */
-    Settings.prototype.sections = function() {
-
-        var sections = [];
-        for (var sectionName in settings) {
-            sections.push(sectionName);
-        }
-        return sections;
-    };
-
-    /**
-     * Getter for sections, used to build the config form
-     *
-     * @param {string} sectionName - the section name
-     *
-     * @returns {object} - the current section object (see emSettings for structure)
-     */
-    Settings.prototype.section = function(sectionName) {
-
-        return settings[sectionName];
-    };
-
-    /**
-     * Getter for individual settings
-     *
-     * @param {string} key - the key as 'sectionKey.settingKey'
-     *
-     * @returns {mixed} - the current value for the key, or undefined if
-     *                    the key doesn't exist
-     */
-    Settings.prototype.get = function(key) {
-
-        var currentValue,
-            keys = key.split('.');
-
-        if (keys.length == 2) {
-
-            var sectionKey = keys[0],
-                settingKey = keys[1],
-                section = settings[sectionKey],
-                setting;
-
-            if (section !== undefined) {
-                setting = section[settingKey];
-                if (setting) {
-                    currentValue = setting.currentValue;
-                    if (currentValue === undefined) {
-                        currentValue = setting.defaultValue;
-                    }
-                }
-            }
-        }
-        return currentValue;
-    };
-
-    /**
-     * Setter for individual settings
-     *
-     * @param {string} key - the key as 'sectionKey.settingKey'
-     * @param {mixed} value - the new value (must be JSON-serializable)
-     */
-    Settings.prototype.set = function(key, value) {
-
-        var keys = key.split('.');
-
-        if (keys.length == 2) {
-
-            var sectionKey = keys[0],
-                settingKey = keys[1],
-                section = settings[sectionKey];
-
-            if (section) {
-                var setting = section[settingKey];
-                if (setting) {
-                    setting.currentValue = value;
-                }
-            }
-        }
-    };
-
-    /**
-     * Save the current settings in the database
-     *
-     * @param {function} callback - callback function to invoke after successfully
-     *                              storing the current settings in the database,
-     *                              takes no parameters
-     */
-    Settings.prototype.save = function(callback, $scope) {
-
-        var currentSettings = {},
-            empty = true,
-            currentSection,
-            emptySection,
-            sectionKey,
-            section,
-            key,
-            value;
-
-        // Collect current values
-        for (sectionKey in settings) {
-            section = settings[sectionKey];
-
-            currentSection = {};
-            emptySection = true;
-            for (key in section) {
-                value = section[key].currentValue;
-                if (value !== undefined) {
-                    emptySection = false;
-                    currentSection[key] = value;
-                }
-            }
-            if (!emptySection) {
-                empty = false;
-                currentSettings[sectionKey] = currentSection;
-            }
-        }
-
-        settingsChanged = false;
-
-        // Store in DB (need to know whether there are any DB settings)
-        if (!empty) {
-            emDB.table('em_config').then(function(table) {
-
-                var data = {settings: currentSettings};
-
-                if (settingsID) {
-                    table.update(data, 'id=' + settingsID, function() {
-                        if (callback) {
-                            callback();
-                        }
-                    });
-                } else {
-                    table.insert(data, function(insertID) {
-                        settingsID = insertID;
-                        if (callback) {
-                            callback();
-                        }
-                    });
-                }
-            });
-        }
-    };
-
-    var api = {
+        // Status handling
+        var settingsStatus = $q.defer(),
+            settingsLoaded = settingsStatus.promise,
+            settingsChanged = false,
+            settingsID = null;
 
         /**
-         * Wrapper for Settings
-         *
-         * @param {function} callback - callback function to apply the settings,
-         *                              function(settings), where settings is an
-         *                              instance of the Settings API
-         *
-         * @example emConfig.apply(function(settings) { ... });
-         *
+         * Load the default values for all settings
          */
-        apply: function(callback) {
+        var loadDefaults = function() {
 
-            settingsLoaded.then(function() {
+            var name,
+                section,
+                values,
+                empty,
+                key;
 
-                var settingsAPI = new Settings();
-                if (callback) {
-                    callback(settingsAPI);
+            for (name in emSettings) {
+                if (name[0] != '_') {
+                    section = emSettings[name];
+                    values = {};
+                    empty = true;
+                    for (key in section) {
+                        if (key[0] != '_') {
+                            values[key] = section[key].defaultValue;
+                            empty = false;
+                        }
+                    }
+                    if (!empty) {
+                        currentSettings[name] = values;
+                    }
                 }
+            }
+        };
 
-                if (settingsChanged) {
-                    SettingsAPI.save();
+        /**
+         * Read the current values of configuration settings from
+         * the database, automatically called during initialization
+         * of this service
+         *
+         * @param {Array} records - the records in the em_config table
+         *
+         * (second parameter 'results' from table.select() unused)
+         */
+        var loadSettings = function(records) {
+
+            if (records.length > 0) {
+
+                var settings = records[0].settings,
+                    name,
+                    section,
+                    values,
+                    empty,
+                    key,
+                    sectionDefaults;
+
+                for (name in emSettings) {
+
+                    if (name[0] == '_' || !settings.hasOwnProperty(name)) {
+                        continue;
+                    }
+                    section = settings[name];
+                    sectionDefaults = emSettings[name];
+
+                    values = currentSettings[name] || {};
+                    empty = true;
+
+                    for (key in section) {
+                        if (!sectionDefaults.hasOwnProperty(key)) {
+                            continue;
+                        }
+                        values[key] = section[key];
+                        empty = false;
+                    }
+                    if (!empty) {
+                        currentSettings[name] = values;
+                    }
                 }
-            });
-        }
-    };
+                // Store the record ID for later updates
+                settingsID = records[0].id;
+            }
+            // Resolve the promise
+            settingsStatus.resolve(settings);
+        };
 
-    return api;
+        // Load the defaults
+        loadDefaults();
 
-}]);
+        // Initial loading of the current configuration values from the database:
+        emDB.table('em_config').then(function(table) {
+            table.select(['id', 'settings'], loadSettings);
+        });
+
+        /**
+         * Settings API Prototype
+         */
+        function Settings() {}
+
+        /**
+         * Get a copy of the currentSettings object (e.g. to use in scope)
+         *
+         * @returns {object} - an object with a deep copy of currentSettings
+         */
+        Settings.prototype.copy = function() {
+            return angular.copy(currentSettings);
+        };
+
+        /**
+         * Getter for individual settings
+         *
+         * @param {string} key - the key as 'sectionKey.settingKey'
+         *
+         * @returns {mixed} - the current value for the key, or undefined if
+         *                    the key doesn't exist
+         *
+         * @example serverURL = settings.get('server.url');
+         */
+        Settings.prototype.get = function(key) {
+
+            var currentValue,
+                keys = key.split('.');
+
+            if (keys.length == 2) {
+
+                var sectionKey = keys[0],
+                    settingKey = keys[1],
+                    section = currentSettings[sectionKey],
+                    setting;
+
+                if (section !== undefined) {
+                    currentValue = section[settingKey];
+                }
+            }
+            return currentValue;
+        };
+
+        /**
+         * Setter for individual settings
+         *
+         * @param {string} key - the key as 'sectionKey.settingKey'
+         * @param {mixed} value - the new value (must be JSON-serializable)
+         *
+         * @example settings.set('server.url', 'http://eden.example.com');
+         */
+        Settings.prototype.set = function(key, value) {
+
+            var keys = key.split('.');
+
+            if (keys.length == 2) {
+
+                var sectionKey = keys[0],
+                    settingKey = keys[1],
+                    section = settings[sectionKey];
+
+                if (section) {
+                    section[settingKey] = value;
+                    settingsChanged = true;
+                }
+            }
+        };
+
+        /**
+         * Update the current settings (multiple)
+         *
+         * @param {object} settings - object with the updated settings
+         *
+         * @example settings.update({server: {url: 'http://eden.example.com'}});
+         */
+        Settings.prototype.update = function(settings) {
+
+            var sectionName,
+                section,
+                update,
+                key,
+                currentValue,
+                newValue;
+
+            for (sectionName in settings) {
+
+                update = settings[sectionName];
+
+                section = currentSettings[sectionName];
+                if (section !== undefined) {
+
+                    for (key in update) {
+                        if (!section.hasOwnProperty(key)) {
+                            continue;
+                        }
+                        currentValue = section[key];
+                        newValue = update[key];
+                        if (currentValue !== newValue) {
+                            settingsChanged = true;
+                            section[key] = newValue;
+                        }
+                    }
+                }
+            }
+        };
+
+        /**
+         * Save the current settings in the database
+         *
+         * @param {function} callback - callback function to invoke after successfully
+         *                              storing the current settings in the database,
+         *                              takes no parameters
+         */
+        Settings.prototype.save = function(callback) {
+
+            var data = {},
+                sectionName,
+                section,
+                values,
+                empty,
+                key,
+                value;
+
+            for (sectionName in currentSettings) {
+
+                section = currentSettings[sectionName];
+
+                values = {};
+                empty = true;
+
+                for (key in section) {
+                    value = section[key];
+                    if (value !== undefined) {
+                        values[key] = value;
+                        empty = false;
+                    }
+                }
+                if (!empty) {
+                    data[sectionName] = values;
+                }
+            }
+
+            settingsChanged = false;
+            if (!empty) {
+                emDB.table('em_config').then(function(table) {
+                    if (settingsID) {
+                        table.update({settings: data}, 'id=' + settingsID, function() {
+                            if (callback) {
+                                callback();
+                            }
+                        });
+                    } else {
+                        table.insert({settings: data}, function(insertID) {
+                            settingsID = insertID;
+                            if (callback) {
+                                callback();
+                            }
+                        });
+                    }
+                });
+            }
+        };
+
+        var api = {
+
+            /**
+             * Wrapper for Settings
+             *
+             * @param {function} callback - callback function to apply the settings,
+             *                              function(settings), where settings is an
+             *                              instance of the Settings API
+             *
+             * @example emConfig.apply(function(settings) { ... });
+             *
+             */
+            apply: function(callback) {
+
+                settingsLoaded.then(function() {
+
+                    var settingsAPI = new Settings();
+                    if (callback) {
+                        callback(settingsAPI);
+                    }
+
+                    if (settingsChanged) {
+                        SettingsAPI.save();
+                    }
+                });
+            }
+
+        };
+        return api;
+    }
+]);

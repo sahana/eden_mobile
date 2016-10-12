@@ -25,90 +25,126 @@
 
 "use strict";
 
-EdenMobile.factory('emDialogs', ['$ionicPopup', '$timeout', function ($ionicPopup, $timeout) {
+EdenMobile.factory('emDialogs', [
+    '$ionicPopup', '$timeout',
+    function ($ionicPopup, $timeout) {
 
-    // @status: work in progress
+        var dialogs = {
 
-    var dialogs = {
+            /**
+             * Show a confirmation popup
+             *
+             * @param {string} msg - the message to show
+             * @param {function} callback - callback function to execute
+             *                              after closing the popup
+             */
+            confirmation: function(msg, callback) {
 
-        /**
-         * Show a confirmation popup
-         *
-         * @param {string} msg - the message to show
-         * @param {function} callback - callback function to execute
-         *                              after closing the popup
-         */
-        confirmation: function(msg, callback) {
+                var confirmationPopup = $ionicPopup.show({
+                    title: msg
+                });
 
-            var confirmationPopup = $ionicPopup.show({
-                title: msg
-            });
+                // auto-hide after 800ms
+                $timeout(function() {
+                    confirmationPopup.close();
+                    if (callback) {
+                        callback();
+                    }
+                }, 800);
+            },
 
-            // auto-hide after 800ms
-            $timeout(function() {
-                confirmationPopup.close();
-                if (callback) {
-                    callback();
-                }
-            }, 800);
-        },
+            /**
+             * Show an error popup with user confirmation
+             *
+             * @param {string} msg - the message to show
+             * @param {function} callback - callback function to execute
+             *                              after closing the popup
+             */
+            error: function(msg, callback) {
 
-        /**
-         * Show an error popup with user confirmation
-         *
-         * @param {string} msg - the message to show
-         * @param {function} callback - callback function to execute
-         *                              after closing the popup
-         */
-        error: function(msg, callback) {
-
-            var errorPopup = $ionicPopup.show({
-                title: msg,
-                buttons: [
-                    {
-                        text: '<b>Close</b>',
-                        type: 'button-positive',
-                        onTap: function(e) {
-                            if (callback) {
-                                callback();
+                var errorPopup = $ionicPopup.show({
+                    title: msg,
+                    buttons: [
+                        {
+                            text: '<b>Close</b>',
+                            type: 'button-positive',
+                            onTap: function(e) {
+                                if (callback) {
+                                    callback();
+                                }
                             }
                         }
-                    }
-                ]
-            });
-        },
+                    ]
+                });
+            },
 
-        /**
-         * Show a popup asking for user confirmation
-         *
-         * @param {string} title - title describing the action to confirm
-         * @param {string} question - the question to ask
-         * @param {function} actionCallback - callback function to execute
-         *                                    if the user confirms the action
-         * @param {function} cancelCallback - callback function to execute
-         *                                    if the user cancels the action
-         */
-        confirmAction: function(title, question, actionCallback, cancelCallback) {
+            /**
+             * Show a popup asking for user confirmation
+             *
+             * @param {string} title - title describing the action to confirm
+             * @param {string} question - the question to ask
+             * @param {function} actionCallback - callback function to execute
+             *                                    if the user confirms the action
+             * @param {function} cancelCallback - callback function to execute
+             *                                    if the user cancels the action
+             */
+            confirmAction: function(title, question, actionCallback, cancelCallback) {
 
-            var confirmPopup = $ionicPopup.confirm({
-                title: title,
-                template: question
-            });
+                var confirmPopup = $ionicPopup.confirm({
+                    title: title,
+                    template: question
+                });
 
-            confirmPopup.then(function(response) {
-                if (response) {
-                    // User confirmed action
-                    if (actionCallback) {
-                        actionCallback();
+                confirmPopup.then(function(response) {
+                    if (response) {
+                        // User confirmed action
+                        if (actionCallback) {
+                            actionCallback();
+                        }
+                    } else {
+                        // User cancelled action
+                        if (cancelCallback) {
+                            cancelCallback();
+                        }
                     }
-                } else {
-                    // User cancelled action
-                    if (cancelCallback) {
-                        cancelCallback();
+                });
+            },
+
+            /**
+             * Show a popup prompting for a single string input
+             *
+             * @param {string} title - title describing the action to confirm
+             * @param {string} question - the question to ask
+             * @param {string} type - the input type (e.g. 'text', 'password')
+             * @param {function} actionCallback - callback function to execute
+             *                                    if the user submits the input,
+             *                                    function(inputValue)
+             * @param {function} cancelCallback - callback function to execute
+             *                                    if the user cancels the dialog,
+             *                                    takes no parameters
+             */
+            stringInput: function(title, question, type, defaultText, actionCallback, cancelCallback) {
+
+                var stringInput = $ionicPopup.prompt({
+                    title: title,
+                    template: question,
+                    inputType: type,
+                    defaultText: defaultText
+                });
+
+                stringInput.then(function(inputValue) {
+                    if (inputValue === undefined) {
+                        if (cancelCallback) {
+                            cancelCallback();
+                        }
+                    } else {
+                        if (actionCallback) {
+                            actionCallback(inputValue);
+                        }
                     }
-                }
-            });
-        }
-    };
-    return dialogs;
-}]);
+                });
+            }
+        };
+        return dialogs;
+    }
+]);

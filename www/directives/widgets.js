@@ -147,7 +147,7 @@
                 // Input attributes
                 copyAttr(attr, input, [
                     'ngModel',
-                    'disabled',
+                    'disabled'
                 ]);
 
                 // Build the widget
@@ -198,12 +198,185 @@
                 // Input attributes
                 copyAttr(attr, widget, [
                     'ngModel',
-                    'disabled',
+                    'disabled'
                 ]);
 
                 // Compile the widget against the scope, then
                 // render it in place of the directive
                 var compiled = $compile(widget)($scope);
+                elem.replaceWith(compiled);
+            };
+
+            return {
+                link: renderWidget
+            };
+        }
+    ]);
+
+    /**
+    * Directive for config form section
+    */
+    EdenMobile.directive('emConfigSection', [
+        '$compile', 'emSettings',
+        function($compile, emSettings) {
+
+            /**
+            * Form renderer
+            *
+            * @param {object} $scope - reference to the current scope
+            * @param {DOMNode} elem - the angular-enhanced DOM node for
+            *                         the element applying the directive
+            * @param {object} attr - object containing the attributes of
+            *                        the element
+            */
+            var renderForm = function($scope, elem, attr) {
+
+                var sectionName = attr.sectionName,
+                    section = emSettings[sectionName],
+                    empty = true;
+
+                if (section === undefined) {
+                    return;
+                }
+
+                // Generate the section header
+                var sectionHeader = angular.element('<h3 class="item item-divider">'),
+                    sectionTitle = section._title;
+                if (!sectionTitle) {
+                    // Fall back to section name
+                    sectionTitle = sectionName;
+                }
+                sectionHeader.html(sectionTitle);
+
+                // Generate the section subform
+                var form = angular.element('<section>')
+                                  .append(sectionHeader);
+
+                // Generate a config widget for each entry in the section
+                for (var key in section) {
+                    if (key[0] == '_') {
+                        continue;
+                    }
+                    var setting = section[key];
+                    var widget = angular.element('<em-config-widget>')
+                                        .attr('section-name', sectionName)
+                                        .attr('setting-name', key);
+                    form.append(widget);
+                }
+
+                // Compile the subform HTML against the scope,
+                // then render it in place of the directive
+                var compiled = $compile(form)($scope);
+                elem.replaceWith(compiled);
+
+            };
+
+            return {
+                link: renderForm
+            };
+        }
+    ]);
+
+    /**
+     * Filter to represent a scope value in config widgets
+     *
+     * @example {{scopeName | emConfigRepresent}}
+     *
+     * @returns the represented value, or '' if empty
+     */
+    EdenMobile.filter('emConfigRepresent', function() {
+        return function(value) {
+            if (value === undefined || value === null || value === '') {
+                return ' ';
+            } else {
+                return value;
+            }
+        };
+    });
+
+    /**
+     * Directive em-config-widget: a read-only representation of a configuration
+     * setting with a popup-dialog to change the setting
+     *
+     * @example <em-config-widget>
+     *
+     * @returns nothing (read-only)
+     */
+    EdenMobile.directive('emConfigWidget', [
+        '$compile', 'emDialogs', 'emSettings',
+        function($compile, emDialogs, emSettings) {
+
+            var renderWidget = function(scope, elem, attr) {
+
+                var sectionName = attr.sectionName,
+                    settingName = attr.settingName;
+                if (!sectionName || !settingName) {
+                    return;
+                }
+
+                // Get the spec for the setting
+                var section = emSettings[sectionName];
+                if (!section.hasOwnProperty(settingName)) {
+                    return;
+                }
+
+                var setting = section[settingName];
+                if (setting === undefined) {
+                    return;
+                }
+
+                var dataType = setting.type,
+                    scopeName = 'settings.' + sectionName + '.' + settingName,
+                    label = setting.label,
+                    question = setting.help;
+
+                // Fallback
+                if (!dataType) {
+                    dataType = 'text';
+                }
+
+
+                // Construct label and input
+                // @todo: differentiate by data type
+                var widgetLabel = angular.element('<h3>')
+                                         .attr('translate', label),
+                    widgetValue = angular.element('<p>')
+                                         .text('{{' + scopeName + ' | emConfigRepresent }}');
+
+                // Construct the widget
+                var widget = angular.element('<div class="item">')
+                                    .append(widgetLabel)
+                                    .append(widgetValue);
+
+                // Attach popup
+                // @todo: differentiate by data type
+                widget.on('click', function(event) {
+
+                    var sectionData = scope.settings[sectionName],
+                        value;
+                    if (sectionData) {
+                        value = sectionData[settingName];
+                    }
+
+                    emDialogs.stringInput(
+                        label,
+                        question,
+                        'text',
+                        value,
+                        function(inputValue) {
+                            sectionData[settingName] = inputValue;
+                            var update = scope.update;
+                            if (update !== undefined) {
+                                update();
+                            }
+                        }
+                    );
+
+                });
+
+                // Compile the widget against the scope, then
+                // render it in place of the directive
+                var compiled = $compile(widget)(scope);
                 elem.replaceWith(compiled);
             };
 

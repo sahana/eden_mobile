@@ -25,7 +25,8 @@
 
 "use strict";
 
-EdenMobile.factory('emSQL', [function () {
+EdenMobile.factory('emSQL', [
+    function () {
 
         /**
         * Helper function to quote identifiers

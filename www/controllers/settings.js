@@ -25,18 +25,38 @@
 
 "use strict";
 
-EdenMobile
-.controller("EMSettings", [
-    '$scope', 'emConfig', function($scope, emConfig) {
+/**
+ * Controller for configuration settings form
+ */
+EdenMobile.controller("EMSettings", [
+    '$scope', 'emConfig', 'emDialogs',
+    function($scope, emConfig, emDialogs) {
 
         emConfig.apply(function(settings) {
 
+            // Copy the current settings into scope
+            $scope.settings = settings.copy();
+
+            // Provide an update method
+            $scope.update = function() {
+                settings.update($scope.settings);
+                settings.save();
+            };
         });
-    }
-])
-.controller("EMAbout", [
-    '$scope', function($scope, $cordovaAppVersion) {
-        $scope.version = window.cordova.plugins.version.getAppVersion();
     }
 ]);
 
+/**
+ * Controller to display the "About" section in settings
+ */
+EdenMobile.controller("EMAbout", [
+    '$scope',
+    function($scope) {
+
+        var about = {
+            version: window.cordova.plugins.version.getAppVersion(),
+            vendor: "Sahana Software Foundation"
+        };
+        $scope.about = about;
+    }
+]);

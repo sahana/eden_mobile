@@ -25,151 +25,54 @@
 
 "use strict";
 
-EdenMobile.factory('emForms', [function () {
-
-    /**
-     * Build a form widget, applying em-*-widget directives
-     *
-     * @param {object} field - the field parameters (from schema)
-     * @param {object} attr - attributes for the widget
-     */
-    var createWidget = function(field, attr) {
-
-        var fieldType = field.type,
-            writable = field.writable,
-            widgetType;
-
-        // @todo: ability to override the widget
-
-        if (writable || typeof writable == 'undefined') {
-            switch(fieldType) {
-                case 'boolean':
-                    widgetType = '<em-boolean-widget>';
-                    break;
-                case 'date':
-                    widgetType = '<em-date-widget>';
-                    break;
-                case 'password':
-                    widgetType = '<em-text-widget type="password">';
-                    break;
-                default:
-                    widgetType = '<em-text-widget>';
-                    break;
-            }
-        } else {
-            widgetType = '<em-text-widget>';
-            attr.disabled = 'disabled';
-        }
-
-        var widget = angular.element(widgetType);
-
-        // Apply widget attributes
-        if (attr) {
-            for (var a in attr) {
-                widget.attr(a, attr[a]);
-            }
-        }
-
-        return widget;
-    };
-
-
-    /**
-     * Form API
-     *
-     * @param {object} schema - the table schema for the form
-     * @param {Array} fields - list of field names to render in
-     *                         the form (in order of appearance)
-     */
-    function Form(schema, fields) {
-
-        var self = this;
-        self.schema = schema;
-
-        if (fields) {
-            // Use field list as specified
-            self.fields = fields;
-        } else {
-            // Use _form attribute in schema
-            self.fields = schema._form;
-        }
+EdenMobile.factory('emForms', [
+    function () {
 
         /**
-         * Render the form
+         * Build a form widget, applying em-*-widget directives
          *
-         * @param {string} scopeName - name of the scope object
-         *                             holding the form data (default: 'form')
-         * @returns {DOMNode} - the angular-enhanced DOM node for the form
+         * @param {object} field - the field parameters (from schema)
+         * @param {object} attr - attributes for the widget
          */
-        self.render = function(scopeName) {
+        var createWidget = function(field, attr) {
 
-            if (!scopeName) {
-                scopeName = 'form';
+            var fieldType = field.type,
+                writable = field.writable,
+                widgetType;
+
+            // @todo: ability to override the widget
+
+            if (writable || typeof writable == 'undefined') {
+                switch(fieldType) {
+                    case 'boolean':
+                        widgetType = '<em-boolean-widget>';
+                        break;
+                    case 'date':
+                        widgetType = '<em-date-widget>';
+                        break;
+                    case 'password':
+                        widgetType = '<em-text-widget type="password">';
+                        break;
+                    default:
+                        widgetType = '<em-text-widget>';
+                        break;
+                }
+            } else {
+                widgetType = '<em-text-widget>';
+                attr.disabled = 'disabled';
             }
 
-            var form = angular.element('<form>')
-                              .attr('name', 'data')
-                              .attr('novalidate', 'novalidate'),
-                formRows = angular.element('<div class="list">'),
-                fields = self.fields,
-                schema = self.schema,
-                widget,
-                fieldName,
-                fieldParameters,
-                fieldAttr,
-                placeholder;
+            var widget = angular.element(widgetType);
 
-
-            // Determine form fields
-            if (!fields) {
-
-                var field,
-                    readable,
-                    writable;
-
-                // Lookup readable/writable fields from schema
-                fields = [];
-                for (fieldName in schema) {
-                    if (fieldName[0] != '_') {
-                        field = schema[fieldName];
-                        readable = field.readable;
-                        writable = field.writable;
-                        if (readable !== false || writable) {
-                            fields.push(fieldName);
-                        }
-                    }
+            // Apply widget attributes
+            if (attr) {
+                for (var a in attr) {
+                    widget.attr(a, attr[a]);
                 }
             }
-
-            // Create widgets
-            for (var i=0, len=fields.length; i<len; i++) {
-
-                fieldName = fields[i];
-                fieldParameters = schema[fieldName];
-
-                if (fieldParameters) {
-                    placeholder = fieldParameters.placeholder;
-                    fieldAttr = {
-                        'label': fieldParameters.label,
-                        'ng-model': scopeName + '.' + fieldName
-                    };
-                    if (placeholder) {
-                        fieldAttr.placeholder = placeholder;
-                    }
-                    widget = createWidget(fieldParameters, fieldAttr);
-                    formRows.append(widget);
-                }
-            }
-
-            return form.append(formRows);
+            return widget;
         };
 
-    }
-
-    /**
-     * Expose API
-     */
-    var api = {
 
         /**
          * Form API
@@ -177,18 +80,116 @@ EdenMobile.factory('emForms', [function () {
          * @param {object} schema - the table schema for the form
          * @param {Array} fields - list of field names to render in
          *                         the form (in order of appearance)
-         * @returns {instance} - a Form instance
          */
-        form: function(schema, fields) {
-            return new Form(schema, fields);
-        },
+        function Form(schema, fields) {
 
-        widget: function(field, attr) {
-            return createWidget(field, attr);
+            var self = this;
+            self.schema = schema;
+
+            if (fields) {
+                // Use field list as specified
+                self.fields = fields;
+            } else {
+                // Use _form attribute in schema
+                self.fields = schema._form;
+            }
+
+            /**
+             * Render the form
+             *
+             * @param {string} scopeName - name of the scope object
+             *                             holding the form data (default: 'form')
+             * @returns {DOMNode} - the angular-enhanced DOM node for the form
+             */
+            self.render = function(scopeName) {
+
+                if (!scopeName) {
+                    scopeName = 'form';
+                }
+
+                var form = angular.element('<form>')
+                                .attr('name', 'data')
+                                .attr('novalidate', 'novalidate'),
+                    formRows = angular.element('<div class="list">'),
+                    fields = self.fields,
+                    schema = self.schema,
+                    widget,
+                    fieldName,
+                    fieldParameters,
+                    fieldAttr,
+                    placeholder;
+
+
+                // Determine form fields
+                if (!fields) {
+
+                    var field,
+                        readable,
+                        writable;
+
+                    // Lookup readable/writable fields from schema
+                    fields = [];
+                    for (fieldName in schema) {
+                        if (fieldName[0] != '_') {
+                            field = schema[fieldName];
+                            readable = field.readable;
+                            writable = field.writable;
+                            if (readable !== false || writable) {
+                                fields.push(fieldName);
+                            }
+                        }
+                    }
+                }
+
+                // Create widgets
+                for (var i=0, len=fields.length; i<len; i++) {
+
+                    fieldName = fields[i];
+                    fieldParameters = schema[fieldName];
+
+                    if (fieldParameters) {
+                        placeholder = fieldParameters.placeholder;
+                        fieldAttr = {
+                            'label': fieldParameters.label,
+                            'ng-model': scopeName + '.' + fieldName
+                        };
+                        if (placeholder) {
+                            fieldAttr.placeholder = placeholder;
+                        }
+                        widget = createWidget(fieldParameters, fieldAttr);
+                        formRows.append(widget);
+                    }
+                }
+                return form.append(formRows);
+            };
+
         }
 
-    };
-    return api;
+        /**
+         * Expose API
+         */
+        var api = {
 
-}]);
+            /**
+             * Form API
+             *
+             * @param {object} schema - the table schema for the form
+             * @param {Array} fields - list of field names to render in
+             *                         the form (in order of appearance)
+             * @returns {instance} - a Form instance
+             */
+            form: function(schema, fields) {
+                return new Form(schema, fields);
+            },
+
+            /**
+             * @todo: docstring
+             */
+            widget: function(field, attr) {
+                return createWidget(field, attr);
+            }
+        };
+        return api;
+    }
+]);
 

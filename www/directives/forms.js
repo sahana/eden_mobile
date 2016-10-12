@@ -67,8 +67,8 @@ EdenMobile.directive('emDataForm', [
  * Directive for config form
  */
 EdenMobile.directive('emConfigForm', [
-    '$compile', 'emConfig', 'emForms',
-    function($compile, emConfig, emForms) {
+    '$compile', 'emSettings', 'emConfig',
+    function($compile, emSettings, emConfig) {
 
         /**
          * Form renderer
@@ -83,89 +83,26 @@ EdenMobile.directive('emConfigForm', [
 
             emConfig.apply(function(settings) {
 
-                var sections = settings.sections(),
+                var sections = [],
                     sectionName,
                     form = angular.element('<div class="list">'),
                     section;
 
-                for (var i=0, len=sections.length; i<len; i++) {
-                    section = angular.element('<em-config-section>')
-                                     .attr('section-name', sections[i]);
-                    form.append(section);
+                for (sectionName in emSettings) {
+                    if (sectionName[0] != '_') {
+                        section = angular.element('<em-config-section>')
+                                        .attr('section-name', sectionName);
+                        form.append(section);
+                    }
                 }
-
                 form.append(elem.contents());
 
                 // Compile the form HTML against the scope,
                 // then render it in place of the directive
                 var compiled = $compile(form)($scope);
                 elem.replaceWith(compiled);
-
             });
-        };
 
-        return {
-            link: renderForm
-        };
-    }
-]);
-
-/**
- * Directive for config form section
- */
-EdenMobile.directive('emConfigSection', [
-    '$compile', 'emConfig', 'emForms',
-    function($compile, emConfig, emForms) {
-
-        /**
-         * Form renderer
-         *
-         * @param {object} $scope - reference to the current scope
-         * @param {DOMNode} elem - the angular-enhanced DOM node for
-         *                         the element applying the directive
-         * @param {object} attr - object containing the attributes of
-         *                        the element
-         */
-        var renderForm = function($scope, elem, attr) {
-
-            emConfig.apply(function(settings) {
-
-                var sectionName = attr.sectionName,
-                    section = settings.section(sectionName);
-                if (!section) {
-                    return;
-                }
-
-                var sectionTitle = section._title;
-                if (!sectionTitle) {
-                    sectionTitle = sectionName;
-                }
-
-                var title = angular.element('<h3 class="item item-divider">')
-                                   .html(sectionTitle);
-                var form = angular.element('<section>')
-                                  .append(title);
-
-                // Render a widget for each setting in this section
-                var settingName,
-                    setting,
-                    widget;
-                for (settingName in section) {
-                    if (settingName[0] == '_') {
-                        continue;
-                    }
-                    setting = section[settingName];
-                    widget = emForms.widget(setting, {
-                        label: setting.label,
-                    });
-                    form.append(widget);
-                }
-
-                // Compile the form HTML against the scope,
-                // then render it in place of the directive
-                var compiled = $compile(form)($scope);
-                elem.replaceWith(compiled);
-            });
         };
 
         return {
