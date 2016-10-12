@@ -25,6 +25,7 @@
 
 "use strict";
 
+// @todo: rename as emDialogs
 EdenMobile.factory('$emDialog', ['$ionicPopup', '$timeout', function ($ionicPopup, $timeout) {
 
     // @status: work in progress

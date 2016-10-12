@@ -25,7 +25,7 @@
 
 "use strict";
 
-EdenMobile.factory('$emForm', [function () {
+EdenMobile.factory('emForms', [function () {
 
     /**
      * Build a form widget, applying em-*-widget directives
@@ -107,7 +107,10 @@ EdenMobile.factory('$emForm', [function () {
                 scopeName = 'form';
             }
 
-            var form = angular.element('<div class="list">'),
+            var form = angular.element('<form>')
+                              .attr('name', 'data')
+                              .attr('novalidate', 'novalidate'),
+                formRows = angular.element('<div class="list">'),
                 fields = self.fields,
                 schema = self.schema,
                 widget,
@@ -154,11 +157,11 @@ EdenMobile.factory('$emForm', [function () {
                         fieldAttr.placeholder = placeholder;
                     }
                     widget = createWidget(fieldParameters, fieldAttr);
-                    form.append(widget);
+                    formRows.append(widget);
                 }
             }
 
-            return form;
+            return form.append(formRows);
         };
 
     }
@@ -189,40 +192,3 @@ EdenMobile.factory('$emForm', [function () {
 
 }]);
 
-/**
- * Directive for data form
- */
-EdenMobile.directive('emDataForm', [
-    '$compile', '$emdb', '$emForm',
-    function($compile, $emdb, $emForm) {
-
-        /**
-         * Form renderer
-         *
-         * @param {object} $scope - reference to the current scope
-         * @param {DOMNode} elem - the angular-enhanced DOM node for
-         *                         the element applying the directive
-         * @param {object} attr - object containing the attributes of
-         *                        the element
-         */
-        var renderForm = function($scope, elem, attr) {
-
-            var formName = attr.formName;
-
-            $emdb.table(formName).then(function(table) {
-
-                var schema = table.schema,
-                    form = $emForm.form(schema);
-
-                // Compile the form HTML against the scope,
-                // then render it in place of the directive
-                var compiled = $compile(form.render('form'))($scope);
-                elem.replaceWith(compiled);
-            });
-        };
-
-        return {
-            link: renderForm
-        };
-    }
-]);

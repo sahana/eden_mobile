@@ -74,9 +74,6 @@ EdenMobile.controller('EdenMobileDataCreate', [
                     }
                 }
             }
-
-            // Update scope
-            $scope.$apply();
         });
 
         // Confirmation message for successful create

@@ -25,6 +25,7 @@
 
 "use strict";
 
+// @todo: convert into a service
 var emSQL = (function() {
 
     /**

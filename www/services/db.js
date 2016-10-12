@@ -25,6 +25,7 @@
 
 "use strict";
 
+// @todo: rename as emdb
 EdenMobile.factory('$emdb', ['$q', function ($q) {
 
     // @status: work in progress
