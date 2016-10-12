@@ -29,8 +29,8 @@
  * Create-Form Controller
  */
 EdenMobile.controller('EdenMobileDataCreate', [
-    '$scope', '$state', '$stateParams', '$emdb', '$emDialog',
-    function($scope, $state, $stateParams, $emdb, $emDialog) {
+    '$scope', '$state', '$stateParams', 'emDB', 'emDialogs',
+    function($scope, $state, $stateParams, emDB, emDialogs) {
 
         var formName = $stateParams.formName;
 
@@ -40,7 +40,7 @@ EdenMobile.controller('EdenMobileDataCreate', [
         $scope.master = {};
 
         // Read default values from schema
-        $emdb.table(formName).then(function(table) {
+        emDB.table(formName).then(function(table) {
 
             var schema = table.schema,
                 master = $scope.master,
@@ -79,7 +79,7 @@ EdenMobile.controller('EdenMobileDataCreate', [
         // Confirmation message for successful create
         var confirmCreate = function(recordID) {
             // Show confirmation popup and go back to list
-            $emDialog.confirmation('Record created', function() {
+            emDialogs.confirmation('Record created', function() {
                 $state.go('data.list',
                     {formName: $scope.formName},
                     {location: 'replace'}
@@ -90,7 +90,7 @@ EdenMobile.controller('EdenMobileDataCreate', [
         // Submit-function
         $scope.submit = function(form) {
 
-            $emdb.table('person').then(function(table) {
+            emDB.table('person').then(function(table) {
 
                 // @todo: validate
                 var empty = true;

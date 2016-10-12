@@ -25,8 +25,7 @@
 
 "use strict";
 
-// @todo: rename as emdb
-EdenMobile.factory('$emdb', ['$q', function ($q) {
+EdenMobile.factory('emDB', ['$q', 'emSQL', function ($q, emSQL) {
 
     // @status: work in progress
 
@@ -445,7 +444,7 @@ EdenMobile.factory('$emdb', ['$q', function ($q) {
     }
 
     /**
-     * The $emdb API
+     * The emDB API
      */
     var api = {
 

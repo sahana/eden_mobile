@@ -28,9 +28,9 @@
 /**
  * Update-form
  */
-EdenMobile.controller("EdenMobileDataUpdate", [
-    '$scope', '$state', '$stateParams', '$emdb', '$emDialog',
-    function($scope, $state, $stateParams, $emdb, $emDialog) {
+EdenMobile.controller("EMDataUpdate", [
+    '$scope', '$state', '$stateParams', 'emDB', 'emDialogs',
+    function($scope, $state, $stateParams, emDB, emDialogs) {
 
         var formName = $stateParams.formName,
             recordID = $stateParams.recordID,
@@ -43,7 +43,7 @@ EdenMobile.controller("EdenMobileDataUpdate", [
         $scope.master = {};
 
         // Read default values from schema
-        $emdb.table(formName).then(function(table) {
+        emDB.table(formName).then(function(table) {
 
             // Get form fields from schema
             var schema = table.schema,
@@ -89,7 +89,7 @@ EdenMobile.controller("EdenMobileDataUpdate", [
                 } else {
 
                     // Show error popup, then go back to list
-                    $emDialog.error('Record not found', function() {
+                    emDialogs.error('Record not found', function() {
                         $state.go('data.list',
                             {formName: $scope.formName},
                             {location: 'replace'}
@@ -103,7 +103,7 @@ EdenMobile.controller("EdenMobileDataUpdate", [
         // Confirmation message for successful update
         var confirmUpdate = function(recordID) {
             // Show confirmation popup and go back to list
-            $emDialog.confirmation('Record updated', function() {
+            emDialogs.confirmation('Record updated', function() {
                 $state.go('data.list',
                     {formName: $scope.formName},
                     {location: 'replace'}
@@ -114,7 +114,7 @@ EdenMobile.controller("EdenMobileDataUpdate", [
         // Submit function
         $scope.submit = function(form) {
 
-            $emdb.table(formName).then(function(table) {
+            emDB.table(formName).then(function(table) {
 
                 // @todo: validate
                 var empty = true;
@@ -138,7 +138,7 @@ EdenMobile.controller("EdenMobileDataUpdate", [
         var confirmDelete = function(rowsAffected) {
             // Show confirmation popup and go back to list
             // @todo: should this actually check that rowsAffected is 1?
-            $emDialog.confirmation('Record deleted', function() {
+            emDialogs.confirmation('Record deleted', function() {
                 $state.go('data.list',
                     {formName: $scope.formName},
                     {location: 'replace'}
@@ -149,11 +149,11 @@ EdenMobile.controller("EdenMobileDataUpdate", [
         // Delete-action
         $scope.deleteRecord = function() {
 
-            $emDialog.confirmAction(
+            emDialogs.confirmAction(
                 'Delete Record',
                 'Are you sure you want to delete this record?',
                 function() {
-                    $emdb.table(formName).then(function(table) {
+                    emDB.table(formName).then(function(table) {
                         table.deleteRecords(query, confirmDelete);
                     });
                 }

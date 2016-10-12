@@ -29,8 +29,8 @@
  * Directive for data form
  */
 EdenMobile.directive('emDataForm', [
-    '$compile', '$emdb', 'emForms',
-    function($compile, $emdb, emForms) {
+    '$compile', 'emDB', 'emForms',
+    function($compile, emDB, emForms) {
 
         /**
          * Form renderer
@@ -45,7 +45,7 @@ EdenMobile.directive('emDataForm', [
 
             var formName = attr.formName;
 
-            $emdb.table(formName).then(function(table) {
+            emDB.table(formName).then(function(table) {
 
                 var schema = table.schema,
                     form = emForms.form(schema);
@@ -67,8 +67,8 @@ EdenMobile.directive('emDataForm', [
  * Directive for config form
  */
 EdenMobile.directive('emConfigForm', [
-    '$compile', '$emConfig', 'emForms',
-    function($compile, $emConfig, emForms) {
+    '$compile', 'emConfig', 'emForms',
+    function($compile, emConfig, emForms) {
 
         /**
          * Form renderer
@@ -81,7 +81,7 @@ EdenMobile.directive('emConfigForm', [
          */
         var renderForm = function($scope, elem, attr) {
 
-            $emConfig.apply(function(settings) {
+            emConfig.apply(function(settings) {
 
                 var sections = settings.sections(),
                     sectionName,
@@ -114,8 +114,8 @@ EdenMobile.directive('emConfigForm', [
  * Directive for config form section
  */
 EdenMobile.directive('emConfigSection', [
-    '$compile', '$emConfig', 'emForms',
-    function($compile, $emConfig, emForms) {
+    '$compile', 'emConfig', 'emForms',
+    function($compile, emConfig, emForms) {
 
         /**
          * Form renderer
@@ -128,7 +128,7 @@ EdenMobile.directive('emConfigSection', [
          */
         var renderForm = function($scope, elem, attr) {
 
-            $emConfig.apply(function(settings) {
+            emConfig.apply(function(settings) {
 
                 var sectionName = attr.sectionName,
                     section = settings.section(sectionName);

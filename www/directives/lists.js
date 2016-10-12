@@ -29,14 +29,14 @@
  * Directive for cards in data list
  */
 EdenMobile.directive("emDataCard", [
-    '$compile', '$emdb',
-    function($compile, $emdb) {
+    '$compile', 'emDB',
+    function($compile, emDB) {
 
         var renderCard = function($scope, elem, attr) {
 
             var formName = $scope.formName;
 
-            $emdb.table(formName).then(function(table) {
+            emDB.table(formName).then(function(table) {
                 var cardConfig = table.schema._card,
                     titleTemplate,
                     cardTemplate,
@@ -73,8 +73,8 @@ EdenMobile.directive("emDataCard", [
  * Directive for cards in form list
  */
 EdenMobile.directive("emFormCard", [
-    '$compile', '$emdb',
-    function($compile, $emdb) {
+    '$compile', 'emDB',
+    function($compile, emDB) {
 
         var renderCard = function($scope, elem, attr) {
 
@@ -82,7 +82,7 @@ EdenMobile.directive("emFormCard", [
                 formName = form.formName,
                 numRows = form.numRows;
 
-            $emdb.table(formName).then(function(table) {
+            emDB.table(formName).then(function(table) {
 
                 var strings = table.schema._strings,
                     cardLabel = formName,

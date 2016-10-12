@@ -25,8 +25,7 @@
 
 "use strict";
 
-// @todo: rename as emConfig
-EdenMobile.factory('$emConfig', ['$q', '$emdb', function ($q, $emdb) {
+EdenMobile.factory('emConfig', ['$q', 'emDB', function ($q, emDB) {
 
     var settings = angular.copy(emSettings),
         settingsStatus = $q.defer(),
@@ -76,7 +75,7 @@ EdenMobile.factory('$emConfig', ['$q', '$emdb', function ($q, $emdb) {
 
     // Initial loading of the current configuration
     // values from the database:
-    $emdb.table('em_config').then(function(table) {
+    emDB.table('em_config').then(function(table) {
         table.select(['id', 'settings'], loadSettings);
     });
 
@@ -212,7 +211,7 @@ EdenMobile.factory('$emConfig', ['$q', '$emdb', function ($q, $emdb) {
 
         // Store in DB (need to know whether there are any DB settings)
         if (!empty) {
-            $emdb.table('em_config').then(function(table) {
+            emDB.table('em_config').then(function(table) {
 
                 var data = {settings: currentSettings};
 
@@ -243,7 +242,7 @@ EdenMobile.factory('$emConfig', ['$q', '$emdb', function ($q, $emdb) {
          *                              function(settings), where settings is an
          *                              instance of the Settings API
          *
-         * @example $emConfig.apply(function(settings) { ... });
+         * @example emConfig.apply(function(settings) { ... });
          *
          */
         apply: function(callback) {

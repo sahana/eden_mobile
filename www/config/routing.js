@@ -33,7 +33,7 @@ EdenMobile.config(['$stateProvider', '$urlRouterProvider',
             .state('index', {
                 url: '/',
                 templateUrl: 'views/home.html',
-                controller: "EdenMobileDefault"
+//                 controller: "EMDefault"
             })
             .state('data', {
                 'abstract': true,
@@ -43,38 +43,38 @@ EdenMobile.config(['$stateProvider', '$urlRouterProvider',
             .state('data.forms', {
                 url: '/forms',
                 templateUrl: 'views/data/formlist.html',
-                controller: "EdenMobileFormList"
+                controller: "EMFormList"
             })
             .state('data.list', {
                 url: '/{formName}',
                 templateUrl: 'views/data/datalist.html',
-                controller: "EdenMobileDataList"
+                controller: "EMDataList"
             })
             .state('data.create', {
                 url: '/{formName}/create',
                 templateUrl: 'views/data/create.html',
-                controller: "EdenMobileDataCreate"
+                controller: "EMDataCreate"
             })
             .state('data.update', {
                 url: '/{formName}/{recordID:int}',
                 templateUrl: 'views/data/update.html',
-                controller: "EdenMobileDataUpdate"
+                controller: "EMDataUpdate"
             })
             .state('sync', {
                 url: '/sync',
                 templateUrl: 'views/sync/index.html',
-                controller: "EdenMobileDefault"
+                controller: "EMDefault"
             })
             .state('settings', {
                 url: '/settings',
                 views: {
                     '': {
                         templateUrl: 'views/settings/index.html',
-                        controller: "EdenMobileSettings"
+                        controller: "EMSettings"
                     },
                     'about@settings': {
                         templateUrl: 'views/settings/about.html',
-                        controller: "EdenMobileAbout"
+                        controller: "EMAbout"
                     }
                 }
             });

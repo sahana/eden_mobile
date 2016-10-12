@@ -26,15 +26,15 @@
 "use strict";
 
 EdenMobile
-.controller("EdenMobileSettings", [
-    '$scope', '$emConfig', function($scope, $emConfig) {
+.controller("EMSettings", [
+    '$scope', 'emConfig', function($scope, emConfig) {
 
-        $emConfig.apply(function(settings) {
+        emConfig.apply(function(settings) {
 
         });
     }
 ])
-.controller("EdenMobileAbout", [
+.controller("EMAbout", [
     '$scope', function($scope, $cordovaAppVersion) {
         $scope.version = window.cordova.plugins.version.getAppVersion();
     }

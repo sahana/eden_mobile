@@ -28,11 +28,11 @@
 /**
  * List of forms
  */
-EdenMobile.controller("EdenMobileFormList", [
-    '$scope', '$stateParams', '$emdb',
-    function($scope, $stateParams, $emdb) {
+EdenMobile.controller("EMFormList", [
+    '$scope', '$stateParams', 'emDB',
+    function($scope, $stateParams, emDB) {
 
-        $emdb.tables().then(function(tableNames) {
+        emDB.tables().then(function(tableNames) {
 
             var forms = [],
                 tableName;
@@ -40,7 +40,7 @@ EdenMobile.controller("EdenMobileFormList", [
             for (var i=0, len=tableNames.length; i<len; i++) {
 
                 tableName = tableNames[i];
-                $emdb.table(tableName).then(function(table) {
+                emDB.table(tableName).then(function(table) {
                     // Count records in table, then update scope
                     table.count(function(number) {
                         forms.push({

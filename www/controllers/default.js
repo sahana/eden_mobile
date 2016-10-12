@@ -25,7 +25,7 @@
 
 "use strict";
 
-EdenMobile.controller("EdenMobileDefault", [
+EdenMobile.controller("EMDefault", [
     '$scope', function($scope) {
         $scope.appname = "Sahana Eden Mobile";
         $scope.vendor = "Sahana Software Foundation";

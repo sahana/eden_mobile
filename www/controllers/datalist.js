@@ -28,13 +28,13 @@
 /**
  * Data List Controller
  */
-EdenMobile.controller("EdenMobileDataList", [
-    '$scope', '$stateParams', '$emdb',
-    function($scope, $stateParams, $emdb) {
+EdenMobile.controller("EMDataList", [
+    '$scope', '$stateParams', 'emDB',
+    function($scope, $stateParams, emDB) {
 
         var formName = $stateParams.formName;
 
-        $emdb.table(formName).then(function(table) {
+        emDB.table(formName).then(function(table) {
 
             // @todo: check that we have a schema for table,
             // otherwise raise error and return to form list
