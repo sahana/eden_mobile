@@ -193,6 +193,7 @@
                 // Build the widget
                 var widget = angular.element('<ion-toggle>')
                                     .addClass('item item-toggle')
+                                    .attr('toggle-class', 'toggle-positive')
                                     .html(attr.label || '');
 
                 // Input attributes
@@ -432,8 +433,9 @@
                         popup = true;
                         break;
                     case 'boolean':
-                        widget = angular.element('<ion-checkbox>')
-                                        .addClass('item item-checkbox-right')
+                        widget = angular.element('<ion-toggle>')
+                                        .addClass('item item-toggle')
+                                        .attr('toggle-class', 'toggle-positive')
                                         .append(label)
                                         .attr('ng-model', scopeName);
                         if (!writable) {
