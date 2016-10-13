@@ -325,58 +325,82 @@
                     return;
                 }
 
-                var dataType = setting.type,
-                    scopeName = 'settings.' + sectionName + '.' + settingName,
-                    label = setting.label,
-                    question = setting.help;
+                var scopeName = 'settings.' + sectionName + '.' + settingName,
+                    labelText = setting.label || '',
+                    inputType = 'text',
+                    label = null,
+                    widget = null;
 
-                // Fallback
-                if (!dataType) {
-                    dataType = 'text';
+                // Construct label and input
+                var dataType = setting.type || 'text';
+                switch(dataType) {
+                    case 'text':
+                    case 'url':
+                    case 'string':
+                    case 'password':
+                        if (dataType == 'password') {
+                            inputType = 'password';
+                        }
+                        if (labelText) {
+                            label = angular.element('<h3>')
+                                           .attr('translate', labelText);
+                        }
+                        widget = angular.element('<input>')
+                                        .attr('type', inputType)
+                                        .attr('disabled', 'disabled')
+                                        .attr('ng-model', scopeName);
+                        break;
+                    case 'boolean':
+                        widget = angular.element('<ion-checkbox>')
+                                        .addClass('item item-checkbox-right')
+                                        .html(labelText)
+                                        .attr('ng-model', scopeName);
+                        break;
+                    default:
+                        break;
                 }
 
 
-                // Construct label and input
-                // @todo: differentiate by data type
-                var widgetLabel = angular.element('<h3>')
-                                         .attr('translate', label),
-                    widgetValue = angular.element('<p>')
-                                         .text('{{' + scopeName + ' | emConfigRepresent }}');
-
-                // Construct the widget
-                var widget = angular.element('<div class="item">')
-                                    .append(widgetLabel)
-                                    .append(widgetValue);
+                // Construct the list item
+                var listItem = angular.element('<div class="item">');
+                if (label) {
+                    listItem.append(label);
+                }
+                if (widget) {
+                    listItem.append(widget);
+                }
 
                 // Attach popup
-                // @todo: differentiate by data type
-                widget.on('click', function(event) {
+                if (dataType != 'boolean') {
 
-                    var sectionData = scope.settings[sectionName],
-                        value;
-                    if (sectionData) {
-                        value = sectionData[settingName];
-                    }
+                    listItem.on('click', function(event) {
 
-                    emDialogs.stringInput(
-                        label,
-                        question,
-                        'text',
-                        value,
-                        function(inputValue) {
-                            sectionData[settingName] = inputValue;
-                            var update = scope.update;
-                            if (update !== undefined) {
-                                update();
-                            }
+                        var sectionData = scope.settings[sectionName],
+                            value;
+                        if (sectionData) {
+                            value = sectionData[settingName];
                         }
-                    );
 
-                });
+                        emDialogs.stringInput(
+                            label,
+                            setting.help,
+                            inputType,
+                            value,
+                            function(inputValue) {
+                                sectionData[settingName] = inputValue;
+                                var update = scope.update;
+                                if (update !== undefined) {
+                                    update();
+                                }
+                            }
+                        );
+
+                    });
+                }
 
                 // Compile the widget against the scope, then
                 // render it in place of the directive
-                var compiled = $compile(widget)(scope);
+                var compiled = $compile(listItem)(scope);
                 elem.replaceWith(compiled);
             };
 
