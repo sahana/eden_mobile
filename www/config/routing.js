@@ -62,7 +62,7 @@ EdenMobile.config(['$stateProvider', '$urlRouterProvider',
             .state('sync', {
                 url: '/sync',
                 templateUrl: 'views/sync/index.html',
-                controller: "EMDefault"
+                controller: "EMSync"
             })
             .state('settings', {
                 url: '/settings',
