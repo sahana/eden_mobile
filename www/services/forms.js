@@ -50,6 +50,10 @@ EdenMobile.factory('emForms', [
                     case 'date':
                         widgetType = '<em-date-widget>';
                         break;
+                    case 'integer':
+                        // @ToDo: We definitely need to be able to configure this!
+                        widgetType = '<em-options-widget>';
+                        break;
                     case 'password':
                         widgetType = '<em-text-widget type="password">';
                         break;
@@ -108,8 +112,8 @@ EdenMobile.factory('emForms', [
                 }
 
                 var form = angular.element('<form>')
-                                .attr('name', 'data')
-                                .attr('novalidate', 'novalidate'),
+                                  .attr('name', 'data')
+                                  .attr('novalidate', 'novalidate'),
                     formRows = angular.element('<div class="list">'),
                     fields = self.fields,
                     schema = self.schema,
@@ -117,6 +121,7 @@ EdenMobile.factory('emForms', [
                     fieldName,
                     fieldParameters,
                     fieldAttr,
+                    options,
                     placeholder;
 
 
@@ -132,9 +137,7 @@ EdenMobile.factory('emForms', [
                     for (fieldName in schema) {
                         if (fieldName[0] != '_') {
                             field = schema[fieldName];
-                            readable = field.readable;
-                            writable = field.writable;
-                            if (readable !== false || writable) {
+                            if (field.readable !== false || field.writable) {
                                 fields.push(fieldName);
                             }
                         }
@@ -148,11 +151,15 @@ EdenMobile.factory('emForms', [
                     fieldParameters = schema[fieldName];
 
                     if (fieldParameters) {
-                        placeholder = fieldParameters.placeholder;
                         fieldAttr = {
                             'label': fieldParameters.label,
                             'ng-model': scopeName + '.' + fieldName
                         };
+                        options = fieldParameters.options;
+                        if (options) {
+                            fieldAttr.options = JSON.stringify(options);
+                        }
+                        placeholder = fieldParameters.placeholder;
                         if (placeholder) {
                             fieldAttr.placeholder = placeholder;
                         }

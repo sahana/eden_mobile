@@ -86,9 +86,24 @@ var emDefaultSchema = {
             type: 'date',
             label: 'Date of Birth'
         },
+        'missing': {
+            type: 'boolean',
+            label: 'Missing'
+        },
+        'gender': {
+            type: 'integer',
+            label: 'Gender',
+            options: {//1: '',
+                      2: 'female',
+                      3: 'male'
+                      //4: 'other',
+                      }
+        },
         _form: [
             'first_name',
             'last_name',
+            'gender',
+            'missing',
             'date_of_birth'
         ],
         _card: {

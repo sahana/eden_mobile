@@ -190,9 +190,9 @@
             */
             var renderWidget = function($scope, elem, attr) {
 
-                // Create the input
-                var widget = angular.element('<ion-checkbox>')
-                                    .addClass('item item-checkbox-right')
+                // Build the widget
+                var widget = angular.element('<ion-toggle>')
+                                    .addClass('item item-toggle')
                                     .html(attr.label || '');
 
                 // Input attributes
@@ -200,6 +200,72 @@
                     'ngModel',
                     'disabled'
                 ]);
+
+                // Compile the widget against the scope, then
+                // render it in place of the directive
+                var compiled = $compile(widget)($scope);
+                elem.replaceWith(compiled);
+            };
+
+            return {
+                link: renderWidget
+            };
+        }
+    ]);
+
+    /**
+     * Directive em-options-widget: a SELECT widget
+     *
+     * @example <em-options-widget>
+     *
+     * @returns {integer} - the selected option
+     */
+    EdenMobile.directive('emOptionsWidget', [
+        '$compile',
+        function($compile) {
+
+            /**
+            * Widget renderer
+            *
+            * @param {object} $scope - reference to the current scope
+            * @param {DOMNode} elem - the angular-enhanced DOM node for
+            *                         the element applying the directive
+            * @param {object} attr - object containing the attributes of
+            *                        the element
+            */
+            var renderWidget = function($scope, elem, attr) {
+
+                // Create the label
+                var label = angular.element('<span>')
+                                   .addClass('input-label')
+                                   .html(attr.label || '');
+
+                // Build the base widget
+                var widget = angular.element('<label>')
+                                    .addClass('item item-input item-stacked-label')
+                                    .append(label);
+
+                // Add the options
+                var opts = JSON.parse(attr.options),
+                    opt,
+                    input;
+
+                for (opt in opts) {
+
+                    // Create the input
+                    input = angular.element('<ion-radio>')
+                                   .attr('value', opt)
+                                   .html(opts[opt] || '');
+
+                    // Input attributes
+                    copyAttr(attr, input, [
+                        'ngModel',
+                        'disabled'
+                    ]);
+
+                    widget.append(input);
+
+                }
 
                 // Compile the widget against the scope, then
                 // render it in place of the directive
