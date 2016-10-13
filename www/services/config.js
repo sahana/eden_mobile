@@ -39,7 +39,8 @@ EdenMobile.factory('emConfig', [
             settingsID = null;
 
         /**
-         * Load the default values for all settings
+         * Load the default values for all settings, called during
+         * initialization
          */
         var loadDefaults = function() {
 
@@ -69,8 +70,7 @@ EdenMobile.factory('emConfig', [
 
         /**
          * Read the current values of configuration settings from
-         * the database, automatically called during initialization
-         * of this service
+         * the database, called during initialization
          *
          * @param {Array} records - the records in the em_config table
          *
@@ -136,6 +136,7 @@ EdenMobile.factory('emConfig', [
          * @returns {object} - an object with a deep copy of currentSettings
          */
         Settings.prototype.copy = function() {
+
             return angular.copy(currentSettings);
         };
 
@@ -196,35 +197,34 @@ EdenMobile.factory('emConfig', [
         /**
          * Update the current settings (multiple)
          *
-         * @param {object} settings - object with the updated settings
+         * @param {object} updates - object with updated settings
          *
          * @example settings.update({server: {url: 'http://eden.example.com'}});
          */
-        Settings.prototype.update = function(settings) {
+        Settings.prototype.update = function(updates) {
 
             var sectionName,
-                section,
-                update,
-                key,
+                currentValues,
+                newValues,
                 currentValue,
-                newValue;
+                newValue,
+                key;
 
-            for (sectionName in settings) {
+            for (sectionName in updates) {
 
-                update = settings[sectionName];
+                currentValues = currentSettings[sectionName];
+                if (currentValues !== undefined) {
 
-                section = currentSettings[sectionName];
-                if (section !== undefined) {
-
-                    for (key in update) {
-                        if (!section.hasOwnProperty(key)) {
+                    newValues = updates[sectionName];
+                    for (key in newValues) {
+                        if (!currentValues.hasOwnProperty(key)) {
                             continue;
                         }
-                        currentValue = section[key];
-                        newValue = update[key];
+                        currentValue = currentValues[key];
+                        newValue = newValues[key];
                         if (currentValue !== newValue) {
+                            currentValues[key] = newValue;
                             settingsChanged = true;
-                            section[key] = newValue;
                         }
                     }
                 }
@@ -244,26 +244,27 @@ EdenMobile.factory('emConfig', [
                 sectionName,
                 section,
                 values,
-                empty,
                 key,
-                value;
+                value,
+                empty = true,
+                emptySection;
 
             for (sectionName in currentSettings) {
 
                 section = currentSettings[sectionName];
-
                 values = {};
-                empty = true;
+                emptySection = true;
 
                 for (key in section) {
                     value = section[key];
                     if (value !== undefined) {
                         values[key] = value;
-                        empty = false;
+                        emptySection = false;
                     }
                 }
-                if (!empty) {
+                if (!emptySection) {
                     data[sectionName] = values;
+                    empty = false;
                 }
             }
 
