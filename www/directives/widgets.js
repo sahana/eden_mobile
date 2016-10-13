@@ -386,16 +386,25 @@
                     return;
                 }
 
-                var setting = section[settingName];
-                if (setting === undefined) {
+                var setting = section[settingName],
+                    writable = true;
+                if (setting === undefined || setting.readable === false) {
                     return;
+                }
+                if (setting.writable === false) {
+                    writable = false;
                 }
 
                 var scopeName = 'settings.' + sectionName + '.' + settingName,
-                    labelText = setting.label || '',
+                    labelText = setting.label || settingName,
+                    label = angular.element('<h3>')
+                                   .attr('translate', labelText),
+                    placeholder = setting.placeholder,
+                    empty = setting.empty || 'not configured',
                     inputType = 'text',
-                    label = null,
-                    widget = null;
+                    widget = null,
+                    listItem,
+                    popup = false;
 
                 // Construct label and input
                 var dataType = setting.type || 'text';
@@ -407,38 +416,41 @@
                         if (dataType == 'password') {
                             inputType = 'password';
                         }
-                        if (labelText) {
-                            label = angular.element('<h3>')
-                                           .attr('translate', labelText);
-                        }
                         widget = angular.element('<input>')
                                         .attr('type', inputType)
                                         .attr('disabled', 'disabled')
                                         .attr('ng-model', scopeName);
+                        if (empty) {
+                            widget.attr('placeholder', empty);
+                        }
+                        if (!writable) {
+                            widget.addClass('readonly');
+                        }
+                        listItem = angular.element('<div class="item">')
+                                          .append(label)
+                                          .append(widget);
+                        popup = true;
                         break;
                     case 'boolean':
                         widget = angular.element('<ion-checkbox>')
                                         .addClass('item item-checkbox-right')
-                                        .html(labelText)
+                                        .append(label)
                                         .attr('ng-model', scopeName);
+                        if (!writable) {
+                            widget.attr('ng-disabled', 'true');
+                        }
+                        if (scope.update !== undefined) {
+                            widget.attr('ng-change', 'update()');
+                        }
+                        listItem = widget;
                         break;
                     default:
                         break;
                 }
 
 
-                // Construct the list item
-                var listItem = angular.element('<div class="item">');
-                if (label) {
-                    listItem.append(label);
-                }
-                if (widget) {
-                    listItem.append(widget);
-                }
-
                 // Attach popup
-                if (dataType != 'boolean') {
-
+                if (popup && writable) {
                     listItem.on('click', function(event) {
 
                         var sectionData = scope.settings[sectionName],
@@ -447,11 +459,15 @@
                             value = sectionData[settingName];
                         }
 
+                        var dialogOptions = {
+                            'inputType': inputType,
+                            'defaultText': value,
+                            'inputPlaceholder': placeholder
+                        };
                         emDialogs.stringInput(
-                            label,
+                            labelText,
                             setting.help,
-                            inputType,
-                            value,
+                            dialogOptions,
                             function(inputValue) {
                                 sectionData[settingName] = inputValue;
                                 var update = scope.update;
@@ -460,7 +476,6 @@
                                 }
                             }
                         );
-
                     });
                 }
 
