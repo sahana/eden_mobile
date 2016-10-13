@@ -28,24 +28,27 @@ EdenMobile.value('emSettings', {
     'server': {
 
         _title: 'Sahana Server Settings',
-        _help: 'Server information for data uploads',
+        //_help: 'Server information for data uploads',
 
         'url': {
             type: 'url',
+            //defaultValue: 'http://ims.example.com/eden',
+            //writable: false,
             label: 'Sahana Server URL',
-            help: 'The URL of the Sahana Server to upload data to',
-            placeholder: 'http://sahana.example.com/eden'
+            help: 'e.g. http://sahana.example.com/eden',
+            placeholder: 'Enter the server URL'
         },
         'username': {
             type: 'string',
             label: 'Username for Sahana Server',
-            help: 'The username to use for data uploads',
-            placeholder: 'admin@example.com'
+            help: 'e.g. admin@example.com',
+            placeholder: 'Enter your username'
         },
         'password': {
             type: 'password',
             label: 'Password for Sahana Server',
-            help: 'The password to use for data uploads'
+            empty: 'not specified',
+            placeholder: 'Enter your password'
         }
     }
 });

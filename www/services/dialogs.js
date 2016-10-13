@@ -115,7 +115,10 @@ EdenMobile.factory('emDialogs', [
              *
              * @param {string} title - title describing the action to confirm
              * @param {string} question - the question to ask
-             * @param {string} type - the input type (e.g. 'text', 'password')
+             * @param {object} options - options for the input:
+             *                           - inputType: 'text', 'password', ...
+             *                           - inputPlaceholder: placeholder text
+             *                           - defaultText: default value
              * @param {function} actionCallback - callback function to execute
              *                                    if the user submits the input,
              *                                    function(inputValue)
@@ -123,13 +126,18 @@ EdenMobile.factory('emDialogs', [
              *                                    if the user cancels the dialog,
              *                                    takes no parameters
              */
-            stringInput: function(title, question, type, defaultText, actionCallback, cancelCallback) {
+            stringInput: function(title, question, options, actionCallback, cancelCallback) {
+
+                if (options === undefined) {
+                    options = {};
+                }
 
                 var stringInput = $ionicPopup.prompt({
                     title: title,
-                    template: question,
-                    inputType: type,
-                    defaultText: defaultText
+                    subTitle: question,
+                    inputType: options.inputType || 'text',
+                    inputPlaceholder: options.inputPlaceholder,
+                    defaultText: options.defaultText
                 });
 
                 stringInput.then(function(inputValue) {
