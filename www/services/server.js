@@ -154,45 +154,62 @@
                  *                                 instance
                  * @returns {promise} - a promise that resolves into the $http
                  *                      response (or rejection, respectively)
-                 *
-                 * @todo: add Auth header if credentials configured
                  */
                 http: function(requestConfig) {
 
-                    var requestURL = requestConfig.url;
-                    if (requestURL instanceof sahanaURL) {
 
-                        // sahanaURL => resolve against server.url config, then
-                        //              pass on to $http
-                        var deferred = $q.defer();
-                        emConfig.apply(function(settings) {
+                    var deferred = $q.defer();
+                    emConfig.apply(function(settings) {
 
-                            var serverURL = settings.get('server.url'),
-                                url = requestURL.extend(serverURL);
+                        var config = {},
+                            url,
+                            requestURL = requestConfig.url;
 
+                        // If the URL in the request config is a sahanaURL,
+                        // then resolve it against the server URL from settings
+                        if (requestURL instanceof sahanaURL) {
+                            var serverURL = settings.get('server.url');
+                            url = requestURL.extend(serverURL);
                             if (url === null) {
                                 deferred.reject('Invalid Server URL');
-                            } else {
-                                var config = angular.extend(requestConfig, {url: url});
-                                $http(config).then(
-                                    function(response) {
-                                        deferred.resolve(response);
-                                    },
-                                    function(response) {
-                                        deferred.reject(response);
-                                    }
-                                );
+                                return;
                             }
+                        } else {
+                            url = requestURL;
+                        }
+                        config.url = url;
 
-                        });
+                        // If we have username and password in settings,
+                        // then add an Auth header to the request config
+                        var authHeader,
+                            requestHeaders = requestConfig.headers;
+                        if (requestHeaders) {
+                            authHeader = requestHeaders['Authorization'];
+                        } else {
+                            requestHeaders = {};
+                        }
+                        if (!authHeader) {
+                            var username = settings.get('server.username'),
+                                password = settings.get('server.password');
+                            if (username && password) {
+                                authHeader = 'Basic ' + btoa(username + ":" + password);
+                                requestHeaders['Authorization'] = authHeader;
+                                config.headers = requestHeaders;
+                            }
+                        }
 
-                        return deferred.promise;
-
-                    } else {
-                        // String URL => forward directly to $http
-                        return $http(requestConfig);
-                    }
-
+                        // Send the request via $http
+                        config = angular.extend(requestConfig, config);
+                        $http(config).then(
+                            function(response) {
+                                deferred.resolve(response);
+                            },
+                            function(rejection) {
+                                deferred.reject(rejection);
+                            }
+                        );
+                    });
+                    return deferred.promise;
                 }
             };
             return api;
