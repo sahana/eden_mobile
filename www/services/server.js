@@ -210,6 +210,9 @@
                                 return;
                             }
                         } else {
+                            // @todo: using config values here again is slightly confusing,
+                            //        better retrieve the previously entered credentials
+                            //        from existing authHeader
                             var emDialogs = $injector.get('emDialogs');
                             emDialogs.authPrompt(
                                 serverURL,
