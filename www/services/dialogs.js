@@ -26,8 +26,8 @@
 "use strict";
 
 EdenMobile.factory('emDialogs', [
-    '$ionicPopup', '$timeout',
-    function ($ionicPopup, $timeout) {
+    '$ionicPopup', '$rootScope', '$timeout',
+    function ($ionicPopup, $rootScope, $timeout) {
 
         var dialogs = {
 
@@ -151,6 +151,60 @@ EdenMobile.factory('emDialogs', [
                         }
                     }
                 });
+            },
+
+            /**
+             * Show a popup to enter username and password
+             *
+             * @param {string} name - the server name or URL to indicate to the user
+             * @param {string} msg - reason for the input request
+             * @param {object} credentials - the previous credentials
+             * @param {string} credentials.username - the previous username
+             * @param {string} credentials.password - the previous password
+             * @param {function} actionCallback - callback function to invoke when
+             *                                    new credentials have been entered,
+             *                                    function(username, password)
+             * @param {function} cancelCallback - callback function to invoke when
+             *                                    the user cancels the input
+             */
+            authPrompt: function(name, msg, credentials, actionCallback, cancelCallback) {
+
+                // Use a separate scope for the dialog
+                var scope = $rootScope.$new();
+                scope.login = credentials || {};
+
+                var authPrompt = $ionicPopup.show({
+
+                    templateUrl: 'views/authform.html',
+                    title: msg || 'Authentication required',
+                    subTitle: name,
+                    scope: scope,
+                    buttons: [
+                        {
+                            text: 'Cancel',
+                            onTap: function(e) {
+                                if (cancelCallback) {
+                                    cancelCallback();
+                                }
+                            }
+                        },
+                        {
+                            text: '<b>Send</b>',
+                            type: 'button-positive',
+                            onTap: function(e) {
+                                var login = scope.login;
+                                if (!login.username || !login.password) {
+                                    e.preventDefault();
+                                } else {
+                                    if (actionCallback) {
+                                        actionCallback(login.username, login.password);
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                });
+                return authPrompt;
             }
         };
         return dialogs;

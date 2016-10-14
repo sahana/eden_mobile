@@ -107,7 +107,176 @@
         return url;
     };
 
-    // @todo: interceptor to respond to 401 challenge
+    /**
+     * RegExp to parse URLs
+     */
+    var urlPattern = /((\w+):\/\/)?([\w.:]+)(\/(\S*))?/;
+
+    /**
+     * Helper function to check whether two URLs address the same host
+     */
+    var sameHost = function(reqURL, srvURL) {
+
+        if (reqURL && srvURL) {
+
+            var parsedReqURL = reqURL.match(urlPattern),
+                parsedSrvURL = srvURL.match(urlPattern);
+            if (parsedReqURL === null || parsedSrvURL === null) {
+                return false;
+            }
+
+            var reqHost = parsedReqURL[3],
+                srvHost = parsedSrvURL[3];
+            if (reqHost && srvHost && reqHost == srvHost) {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    };
+
+    /**
+     * HTTP 401 Recovery Service
+     *
+     * Strategy:
+     *   1 if no previous authentication attempt has been made (no Auth header
+     *     in the response config) and Sahana server credentials are configured,
+     *     we add an Auth header to the request config
+     *   2 if a previous authentication attempt has failed (=second round 401),
+     *     then we prompt the user to re-enter the server credentials
+     *   3 if no server credentials are available, and the user cancels
+     *     the prompt, then recovery fails
+     *
+     * @returns {promise} - a promise that resolves into the updated config,
+     *                      or is rejected with an error message
+     */
+    EdenMobile.factory('emServer401Recoverer', [
+        '$q', '$injector', 'emConfig',
+        function($q, $injector, emConfig) {
+
+            var recovery = function(config) {
+
+                var deferred = $q.defer();
+
+                emConfig.apply(function(settings) {
+
+                    var requestURL = config.url,
+                        serverURL = settings.get('server.url');
+                    if (!serverURL) {
+                        deferred.reject('No Sahana server configured');
+                        return;
+                    }
+
+                    if (sameHost(requestURL, serverURL)) {
+
+                        // Add auth header and resend the request
+                        var authHeader,
+                            requestHeaders = config.headers;
+                        if (requestHeaders) {
+                            authHeader = requestHeaders['Authorization'];
+                        } else {
+                            requestHeaders = {};
+                        }
+
+                        var login = function(username, password) {
+                            authHeader = 'Basic ' + btoa(username + ":" + password);
+                            requestHeaders['Authorization'] = authHeader;
+                            config.headers = requestHeaders;
+                            deferred.resolve(config);
+                        };
+
+                        var username = settings.get('server.username'),
+                            password = settings.get('server.password'),
+                            credentials = {
+                                username: username,
+                                password: password
+                            },
+                            emDialogs = $injector.get('emDialogs');
+                        if (!authHeader) {
+                            if (username && password) {
+                                login(username, password);
+                            } else {
+                                emDialogs.authPrompt(
+                                    serverURL,
+                                    'Authentication Required',
+                                    credentials,
+                                    login,
+                                    function() {
+                                        deferred.reject('Request cancelled');
+                                    }
+                                );
+                                return;
+                            }
+                        } else {
+                            var emDialogs = $injector.get('emDialogs');
+                            emDialogs.authPrompt(
+                                serverURL,
+                                'Invalid username/password',
+                                credentials,
+                                login,
+                                function() {
+                                    deferred.reject('Invalid username/password');
+                                }
+                            );
+                        }
+                    } else {
+                        // Nothing we can do
+                        deferred.reject('Request to different server');
+                        return;
+                    }
+
+
+                });
+                return deferred.promise;
+            }
+            return recovery;
+        }
+    ]);
+
+    /**
+     * Interceptor to handle 401 challenge
+     */
+    EdenMobile.factory('emServer401Interceptor', [
+        '$q', '$injector', 'emServer401Recoverer',
+        function($q, $injector, emServer401Recoverer) {
+
+            var handler = {
+
+                responseError: function(response) {
+
+                    if (response.status == 401) {
+
+                        var $http = $injector.get('$http'),
+                            deferred = $q.defer();
+
+                        // Try recovery
+                        emServer401Recoverer(response.config).then(
+                            deferred.resolve,
+                            deferred.reject
+                        );
+
+                        // Chain promises to re-send the request immediately
+                        // when recovery attempt succeeds
+                        return deferred.promise.then(function() {
+                            return $http(response.config);
+                        });
+                    }
+                    // otherwise reject as it was
+                    return $q.reject(response);
+                }
+            };
+            return handler;
+        }
+    ]);
+
+    // Add the 401 interceptor to the $http provider config
+    EdenMobile.config(['$httpProvider',
+        function($httpProvider) {
+            $httpProvider.interceptors.push('emServer401Interceptor');
+        }
+    ]);
 
     /**
      * emServer - provides an API to access the Sahana server
@@ -146,8 +315,8 @@
                 },
 
                 /**
-                 * Wrapper for $http that resolves a sahanaURL against the current
-                 * server.url setting before sending the request
+                 * Wrapper for $http that resolves a sahanaURL against the
+                 * current server.url setting before sending the request.
                  *
                  * @param {object} requestConfig - same as request config for $http,
                  *                                 except that 'url' can be a sahanaURL
@@ -157,59 +326,45 @@
                  */
                 http: function(requestConfig) {
 
+                    var requestURL = requestConfig.url
+                    if (requestURL instanceof sahanaURL) {
 
-                    var deferred = $q.defer();
-                    emConfig.apply(function(settings) {
+                        // sahanaURL => resolve against configured server URL
 
-                        var config = {},
-                            url,
-                            requestURL = requestConfig.url;
+                        var deferred = $q.defer();
+                        emConfig.apply(function(settings) {
 
-                        // If the URL in the request config is a sahanaURL,
-                        // then resolve it against the server URL from settings
-                        if (requestURL instanceof sahanaURL) {
                             var serverURL = settings.get('server.url');
-                            url = requestURL.extend(serverURL);
+                            if (!serverURL) {
+                                deferred.reject('No Sahana server configured');
+                                return;
+                            }
+
+                            var url = requestURL.extend(serverURL);
                             if (url === null) {
                                 deferred.reject('Invalid Server URL');
                                 return;
                             }
-                        } else {
-                            url = requestURL;
-                        }
-                        config.url = url;
 
-                        // If we have username and password in settings,
-                        // then add an Auth header to the request config
-                        var authHeader,
-                            requestHeaders = requestConfig.headers;
-                        if (requestHeaders) {
-                            authHeader = requestHeaders['Authorization'];
-                        } else {
-                            requestHeaders = {};
-                        }
-                        if (!authHeader) {
-                            var username = settings.get('server.username'),
-                                password = settings.get('server.password');
-                            if (username && password) {
-                                authHeader = 'Basic ' + btoa(username + ":" + password);
-                                requestHeaders['Authorization'] = authHeader;
-                                config.headers = requestHeaders;
-                            }
-                        }
+                            // Send the request via $http
+                            var config = {
+                                // Accept and send the session cookie:
+                                withCredentials: true,
+                                url: url
+                            };
+                            config = angular.extend(requestConfig, config);
+                            $http(config).then(
+                                deferred.resolve,
+                                deferred.reject
+                            );
+                        });
+                        return deferred.promise;
 
-                        // Send the request via $http
-                        config = angular.extend(requestConfig, config);
-                        $http(config).then(
-                            function(response) {
-                                deferred.resolve(response);
-                            },
-                            function(rejection) {
-                                deferred.reject(rejection);
-                            }
-                        );
-                    });
-                    return deferred.promise;
+                    } else {
+
+                        // String URL => send via $http
+                        return $http(requestConfig);
+                    }
                 }
             };
             return api;
