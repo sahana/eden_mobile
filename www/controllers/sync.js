@@ -28,9 +28,9 @@
 /**
  * Controller for synchronisation page
  */
-EdenMobile.controller("EMSync", [
-    '$scope', '$http', 'emServer',
-    function($scope, $http, emServer) {
+EdenMobile.controller('EMSync', [
+    '$scope', 'emServer',
+    function($scope, emServer) {
 
     }
 ]);

@@ -213,7 +213,6 @@
                             // @todo: using config values here again is slightly confusing,
                             //        better retrieve the previously entered credentials
                             //        from existing authHeader
-                            var emDialogs = $injector.get('emDialogs');
                             emDialogs.authPrompt(
                                 serverURL,
                                 'Invalid username/password',
@@ -233,7 +232,7 @@
 
                 });
                 return deferred.promise;
-            }
+            };
             return recovery;
         }
     ]);
@@ -305,70 +304,128 @@
      * );
      */
     EdenMobile.factory('emServer', [
-        '$http', '$q', 'emConfig',
-        function ($http, $q, emConfig) {
+        '$http', '$q', 'emConfig', 'emDialogs',
+        function ($http, $q, emConfig, emDialogs) {
 
+            /**
+             * Wrapper for $http that resolves a sahanaURL against the
+             * current server.url setting before sending the request.
+             *
+             * @param {object} requestConfig - same as request config for $http,
+             *                                 except that 'url' can be a sahanaURL
+             *                                 instance
+             * @returns {promise} - a promise that resolves into the $http
+             *                      response (or rejection, respectively)
+             */
+            var http = function(requestConfig) {
+
+                var requestURL = requestConfig.url;
+                if (requestURL instanceof sahanaURL) {
+
+                    // sahanaURL => resolve against configured server URL
+
+                    var deferred = $q.defer();
+                    emConfig.apply(function(settings) {
+
+                        var serverURL = settings.get('server.url');
+                        if (!serverURL) {
+                            deferred.reject('No Sahana server configured');
+                            return;
+                        }
+
+                        var url = requestURL.extend(serverURL);
+                        if (url === null) {
+                            deferred.reject('Invalid Server URL');
+                            return;
+                        }
+
+                        // Send the request via $http
+                        var config = {
+                            // Accept and send the session cookie:
+                            withCredentials: true,
+                            url: url
+                        };
+                        config = angular.extend(requestConfig, config);
+                        $http(config).then(
+                            deferred.resolve,
+                            deferred.reject
+                        );
+                    });
+                    return deferred.promise;
+
+                } else {
+
+                    // String URL => send via $http
+                    return $http(requestConfig);
+                }
+            };
+
+            /**
+             * Generic error dialog for Sahana server requests, shows
+             * error message and explanation in a popup (modal)
+             *
+             * @param {object} response - the response object returned from http
+             */
+            var httpError = function(response) {
+
+                var status = response.status,
+                    message,
+                    explanation;
+
+                if (status === 0 || status == -1) {
+                    // This occurs when the network is down, or the server
+                    // could not be found or does not respond
+                    message = 'Server unreachable';
+                    explanation = 'No network available or server not found';
+                } else {
+                    var statusText = response.statusText,
+                        web2pyError = response.headers('web2py_error'),
+                        contentType = response.headers('Content-Type'),
+                        data = response.data;
+
+                    if (contentType == 'application/json' && data.hasOwnProperty('message')) {
+                        // Is a JSON message
+                        explanation = data.message;
+                    }
+                    if (!explanation) {
+                        // Fall back to response headers
+                        explanation = web2pyError || statusText || 'Unknown error';
+                    }
+                    switch(status) {
+                        case 502:
+                        case 504:
+                            // Gateway error (e.g. HTTP proxy)- gives a status
+                            // code even when the actual server is unreachable,
+                            // typically a 504 GATEWAY TIMEOUT
+                            message = 'Server unreachable';
+                            break;
+                        case 403:
+                            // Authorization succeeded, but the user does not have
+                            // permission for the requested resource/operation
+                            message = 'Server request not permitted';
+                            break;
+                        default:
+                            // Other reason for failure
+                            message = 'Server request failed';
+                            break;
+                    }
+                }
+                emDialogs.error(message, explanation);
+            };
+
+            /**
+             * The emServer API
+             */
             var api = {
 
-                /**
-                 * Wrapper for sahanaURL
-                 */
+                // Wrapper for sahanaURL
                 URL: function(options) {
                     return new sahanaURL(options);
                 },
 
-                /**
-                 * Wrapper for $http that resolves a sahanaURL against the
-                 * current server.url setting before sending the request.
-                 *
-                 * @param {object} requestConfig - same as request config for $http,
-                 *                                 except that 'url' can be a sahanaURL
-                 *                                 instance
-                 * @returns {promise} - a promise that resolves into the $http
-                 *                      response (or rejection, respectively)
-                 */
-                http: function(requestConfig) {
-
-                    var requestURL = requestConfig.url
-                    if (requestURL instanceof sahanaURL) {
-
-                        // sahanaURL => resolve against configured server URL
-
-                        var deferred = $q.defer();
-                        emConfig.apply(function(settings) {
-
-                            var serverURL = settings.get('server.url');
-                            if (!serverURL) {
-                                deferred.reject('No Sahana server configured');
-                                return;
-                            }
-
-                            var url = requestURL.extend(serverURL);
-                            if (url === null) {
-                                deferred.reject('Invalid Server URL');
-                                return;
-                            }
-
-                            // Send the request via $http
-                            var config = {
-                                // Accept and send the session cookie:
-                                withCredentials: true,
-                                url: url
-                            };
-                            config = angular.extend(requestConfig, config);
-                            $http(config).then(
-                                deferred.resolve,
-                                deferred.reject
-                            );
-                        });
-                        return deferred.promise;
-
-                    } else {
-
-                        // String URL => send via $http
-                        return $http(requestConfig);
-                    }
-                }
+                // Generic HTTP methods
+                http: http,
+                httpError: httpError
             };
             return api;
         }

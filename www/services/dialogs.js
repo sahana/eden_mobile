@@ -56,14 +56,16 @@ EdenMobile.factory('emDialogs', [
             /**
              * Show an error popup with user confirmation
              *
-             * @param {string} msg - the message to show
+             * @param {string} message - the error message to show
+             * @param {string} explanation - an explanation to show
              * @param {function} callback - callback function to execute
              *                              after closing the popup
              */
-            error: function(msg, callback) {
+            error: function(message, explanation, callback) {
 
                 var errorPopup = $ionicPopup.show({
-                    title: msg,
+                    title: message,
+                    subTitle: explanation,
                     buttons: [
                         {
                             text: '<b>Close</b>',

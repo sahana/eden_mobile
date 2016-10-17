@@ -89,7 +89,7 @@ EdenMobile.controller("EMDataUpdate", [
                 } else {
 
                     // Show error popup, then go back to list
-                    emDialogs.error('Record not found', function() {
+                    emDialogs.error('Record not found', null, function() {
                         $state.go('data.list',
                             {formName: $scope.formName},
                             {location: 'replace'}
