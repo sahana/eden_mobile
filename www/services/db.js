@@ -444,6 +444,44 @@ EdenMobile.factory('emDB', [
         }
 
         /**
+         * UUID class representing an RFC 4122 v4 compliant unique identifier
+         *
+         * Inspired by Briguy37's proposal in:
+         * http://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
+         */
+        function UUID() {
+
+            var template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx',
+                time = new Date().getTime();
+
+            if (window.performance && typeof window.performance.now === "function") {
+                time += performance.now();
+            }
+            this.uuid = template.replace(/[xy]/g, function(c) {
+                var result = (time + Math.random() * 16) % 16 | 0;
+                time = Math.floor(time / 16);
+                if (c != 'x') {
+                    result = result & 0x3 | 0x8;
+                }
+                return result.toString(16);
+            });
+        }
+
+        /**
+         * String representation of a UUID
+         */
+        UUID.prototype.toString = function() {
+            return this.uuid;
+        };
+
+        /**
+         * URN representation of a UUID
+         */
+        UUID.prototype.urn = function() {
+            return 'urn:uuid:' + this.uuid;
+        };
+
+        /**
          * The emDB API
          */
         var api = {
@@ -478,6 +516,15 @@ EdenMobile.factory('emDB', [
                 return dbReady.then(function() {
                     return new Table(tableName);
                 }, apiNotReady);
+            },
+
+            /**
+             * Generate a UUID
+             *
+             * @returns {UUID} a UUID instance
+             */
+            uuid: function() {
+                return new UUID();
             }
         };
         return api;
