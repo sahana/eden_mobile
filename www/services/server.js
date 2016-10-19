@@ -37,6 +37,9 @@
      * @param {Array} options.args - array of URL arguments
      * @param {object} options.vars - object with GET vars {key: value}
      * @param {string} options.extension - file format extension (if not 'html')
+     *
+     * @example
+     * var url = emServer.URL({c: 'mobile', f: 'forms', extension: 'json'});
      */
     function sahanaURL(options) {
         this.options = options;
@@ -85,12 +88,9 @@
         }
 
         // Append file extension
-        var extension = options.extension;
-        if (extension) {
-            extension = extension.toLowerCase();
-            if (extension != 'html') {
-                url += '.' + extension;
-            }
+        var extension = this.getFormat();
+        if (extension != 'html') {
+            url += '.' + extension;
         }
 
         // Append vars
@@ -105,6 +105,22 @@
             }
         }
         return url;
+    };
+
+    /**
+     * Get the request format extension
+     *
+     * @returns {string} - the format extension
+     */
+    sahanaURL.prototype.getFormat = function() {
+
+        var extension = this.options.extension;
+        if (extension) {
+            extension = extension.toLowerCase();
+        } else {
+            extension = 'html';
+        }
+        return extension;
     };
 
     /**
@@ -414,18 +430,83 @@
             };
 
             /**
+             * HTTP GET to the configured Sahana server
+             *
+             * @param {sahanaURL|string} - the URL to query
+             * @param {string} format - the expected data format, 'text'|'json',
+             *                          auto-detected from sahanaURL 'extension'
+             *                          option if present
+             * @param {function} successCallback - callback function to invoke
+             *                                     when the request was successful,
+             *                                     function(data)
+             * @param {function} errorCallback - callback function to invoke when
+             *                                   the request was unsuccessful,
+             *                                   function(response), defaults to
+             *                                   standard httpError handler
+             */
+            var get = function(url, format, successCallback, errorCallback) {
+
+                // Shift arguments if format was omitted
+                if (typeof format == 'function') {
+                    errorCallback = successCallback;
+                    successCallback = format;
+                    format = null;
+                }
+
+                // The request config
+                var config = {
+                    method: 'GET',
+                    url: url
+                };
+
+                // If no format was specified, try to look it up from sahanaURL
+                if (!format && url instanceof sahanaURL) {
+                    format = url.getFormat();
+                }
+
+                // Configure the response type according to the format extension
+                if (format == 'json') {
+                    config.responseType = 'json';
+                } else {
+                    // default
+                    config.responseType = 'text';
+                }
+
+                // Default to generic httpError handler
+                if (!errorCallback) {
+                    errorCallback = httpError;
+                }
+
+                // Execute the request
+                http(config).then(
+                    function(response) {
+                        if (successCallback) {
+                            successCallback(response.data);
+                        }
+                    },
+                    function(response) {
+                        if (errorCallback) {
+                            errorCallback(response);
+                        }
+                    }
+                );
+            };
+
+            /**
              * The emServer API
              */
             var api = {
 
-                // Wrapper for sahanaURL
+                // URL construction
                 URL: function(options) {
                     return new sahanaURL(options);
                 },
 
                 // Generic HTTP methods
                 http: http,
-                httpError: httpError
+                httpError: httpError,
+
+                get: get
             };
             return api;
         }
