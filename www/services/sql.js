@@ -25,6 +25,12 @@
 
 "use strict";
 
+/**
+ * emSQL - Service to generate SQL queries
+ *
+ * @class emSQL
+ * @memberof EdenMobile
+ */
 EdenMobile.factory('emSQL', [
     function () {
 

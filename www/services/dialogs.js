@@ -25,6 +25,12 @@
 
 "use strict";
 
+/**
+ * emDialogs - Service providing popup dialogs
+ *
+ * @class emDialogs
+ * @memberof EdenMobile
+ */
 EdenMobile.factory('emDialogs', [
     '$ionicPopup', '$rootScope', '$timeout',
     function ($ionicPopup, $rootScope, $timeout) {

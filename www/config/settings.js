@@ -23,6 +23,12 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/**
+ * emSettings - Definition of user-configurable settings
+ *
+ * @class emSettings
+ * @memberof EdenMobile
+ */
 EdenMobile.value('emSettings', {
 
     'server': {

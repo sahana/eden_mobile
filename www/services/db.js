@@ -25,6 +25,12 @@
 
 "use strict";
 
+/**
+ * emDB - Service providing access to the local database
+ *
+ * @class emDB
+ * @memberof EdenMobile.Services
+ */
 EdenMobile.factory('emDB', [
     '$q', 'emSQL',
     function ($q, emSQL) {

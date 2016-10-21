@@ -297,7 +297,10 @@
     ]);
 
     /**
-     * emServer - provides an API to access the Sahana server
+     * emServer - Service providing access to the Sahana server
+     *
+     * @class emServer
+     * @memberof EdenMobile
      *
      * @example
      * var url = emServer.URL({

@@ -56,13 +56,16 @@
     }
 
     /**
-     * Directive em-text-widget: a text input widget
+     * Text input widget (directive)
+     *
+     * @class emTextWidget
+     * @memberof EdenMobile
      *
      * @param {string} type - the input type ('text'|'password'), default 'text'
      *
-     * @example <em-text-widget type='password'>
-     *
      * @returns {string} - the text entered (or null if empty)
+     *
+     * @example <em-text-widget type='password'>
      */
     EdenMobile.directive('emTextWidget', [
         '$compile',
@@ -114,11 +117,14 @@
     ]);
 
     /**
-     * Directive em-date-widget: a widget with date picker (calendar)
+     * Date picker widget (directive)
      *
-     * @example <em-date-widget>
+     * @class emDateWidget
+     * @memberof EdenMobile
      *
      * @returns {Date} - the selected date
+     *
+     * @example <em-date-widget>
      */
     EdenMobile.directive('emDateWidget', [
         '$compile',
@@ -169,11 +175,14 @@
     ]);
 
     /**
-     * Directive em-boolean-widget: a checkbox widget
+     * Checkbox (=toggle) widget (directive)
      *
-     * @example <em-boolean-widget>
+     * @class emBooleanWidget
+     * @memberof EdenMobile
      *
      * @returns {boolean} - true|false
+     *
+     * @example <em-boolean-widget>
      */
     EdenMobile.directive('emBooleanWidget', [
         '$compile',
@@ -215,11 +224,16 @@
     ]);
 
     /**
-     * Directive em-options-widget: a SELECT widget
+     * Single-SELECT options widget (directive)
      *
-     * @example <em-options-widget>
+     * @class emOptionsWidget
+     * @memberof EdenMobile
+     *
+     * @param options - a JSON dict of options
      *
      * @returns {integer} - the selected option
+     *
+     * @example <em-options-widget options='{1: "first", 2: "second"}'>
      */
     EdenMobile.directive('emOptionsWidget', [
         '$compile',
@@ -281,8 +295,15 @@
     ]);
 
     /**
-    * Directive for config form section
-    */
+     * Config form section (directive)
+     *
+     * @class emConfigSection
+     * @memberof EdenMobile
+     *
+     * @param {string} section-name - the section name
+     *
+     * @example <em-config-section section-name='server'>
+     */
     EdenMobile.directive('emConfigSection', [
         '$compile', 'emSettings',
         function($compile, emSettings) {
@@ -345,29 +366,17 @@
     ]);
 
     /**
-     * Filter to represent a scope value in config widgets
+     * A widget for a configuration setting (directive). Boolean settings
+     * have toggles to change them, while string-type settings provide
+     * popup dialogs.
      *
-     * @example {{scopeName | emConfigRepresent}}
+     * @class emConfigWidget
+     * @memberof EdenMobile
      *
-     * @returns the represented value, or '' if empty
-     */
-    EdenMobile.filter('emConfigRepresent', function() {
-        return function(value) {
-            if (value === undefined || value === null || value === '') {
-                return ' ';
-            } else {
-                return value;
-            }
-        };
-    });
-
-    /**
-     * Directive em-config-widget: a read-only representation of a configuration
-     * setting with a popup-dialog to change the setting
+     * @param {string} section-name - the section name
+     * @param {string} setting-name - the setting name (key)
      *
-     * @example <em-config-widget>
-     *
-     * @returns nothing (read-only)
+     * @example <em-config-widget section-name='server' setting-name='url'>
      */
     EdenMobile.directive('emConfigWidget', [
         '$compile', 'emDialogs', 'emSettings',

@@ -25,6 +25,12 @@
 
 "use strict";
 
+/**
+ * emForms - Service to generate forms from schemas
+ *
+ * @class emForms
+ * @memberof EdenMobile
+ */
 EdenMobile.factory('emForms', [
     function () {
 

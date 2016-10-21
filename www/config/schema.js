@@ -23,8 +23,14 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/**
+ * The version number for the default schema
+ */
 var emSchemaVersion = '1';
 
+/**
+ * The default schema for the local database
+ */
 var emDefaultSchema = {
 
     /**

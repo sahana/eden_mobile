@@ -25,6 +25,12 @@
 
 "use strict";
 
+/**
+ * emConfig - Service providing access to user settings
+ *
+ * @class emConfig
+ * @memberof EdenMobile
+ */
 EdenMobile.factory('emConfig', [
     '$q', 'emDB', 'emSettings',
     function ($q, emDB, emSettings) {

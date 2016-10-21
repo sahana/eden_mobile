@@ -27,11 +27,15 @@
 
 /**
  * EdenMobile Module
+ *
+ * @namespace EdenMobile
  */
 var EdenMobile = angular.module('EdenMobile', ['ionic', 'pascalprecht.translate']);
 
 /**
  * Cordova App
+ *
+ * @ignore
  */
 var CordovaApp = {
 
