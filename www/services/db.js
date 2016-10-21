@@ -32,8 +32,8 @@
  * @memberof EdenMobile.Services
  */
 EdenMobile.factory('emDB', [
-    '$q', 'emSQL',
-    function ($q, emSQL) {
+    '$q', 'emDefaultSchema', 'emSQL',
+    function ($q, emDefaultSchema, emSQL) {
 
         /**
          * The table definitions
@@ -46,6 +46,18 @@ EdenMobile.factory('emDB', [
          */
         var dbStatus = $q.defer(),
             dbReady = dbStatus.promise;
+
+        /**
+         * Default meta fields
+         */
+        var metaFields = emDefaultSchema._meta_fields;
+        if (metaFields) {
+            for (var fieldName in metaFields) {
+                // Set _meta flag to prevent meta field descriptions
+                // from being written to the em_schema table
+                metaFields[fieldName]._meta = true;
+            }
+        }
 
         /**
          * Generic error callback for database transactions
@@ -75,12 +87,16 @@ EdenMobile.factory('emDB', [
 
             var table = emSQL.Table('em_schema', tables.em_schema),
                 tableSpec = tables[tableName],
-                schema = {};
+                schema = {},
+                description;
 
-            // Serialize the schema (skip prepop records)
-            for (var prop in tableSpec) {
-                if (prop != '_records') {
-                    schema[prop] = tableSpec[prop];
+            // Serialize the schema (skip prepop records and meta fields)
+            for (var key in tableSpec) {
+                if (key != '_records') {
+                    description = tableSpec[key];
+                    if (!description._meta) {
+                        schema[key] = description;
+                    }
                 }
             }
 
@@ -156,6 +172,32 @@ EdenMobile.factory('emDB', [
         };
 
         /**
+         * Add 'id' field and default meta fields to a table schema
+         *
+         * @param {string} tableName - the table name
+         * @param {object} schema - the schema
+         */
+        var addMetaFields = function(tableName, schema) {
+
+            // Add 'id' field to all tables except em_version
+            if (tableName != 'em_version' && !schema.hasOwnProperty('id')) {
+                schema.id = {
+                    type: 'id',
+                    _meta: true
+                };
+            }
+
+            // Add default meta fields to all non-em* tables
+            if (metaFields && tableName.slice(0, 3) != 'em_') {
+                for (var fieldName in metaFields) {
+                    if (!schema.hasOwnProperty(fieldName)) {
+                        schema[fieldName] = metaFields[fieldName];
+                    }
+                }
+            }
+        };
+
+        /**
          * Create and populate all tables from default schema
          *
          * @param {object} db - the database handle
@@ -195,12 +237,14 @@ EdenMobile.factory('emDB', [
                 }
             };
 
+            // Add schemas to tables-object
+            var defaultSchema;
             for (tableName in pendingTables) {
-                defineTable(db,
-                            tableName,
-                            emDefaultSchema[tableName],
-                            whenTableDefined);
+                defaultSchema = emDefaultSchema[tableName];
+                addMetaFields(tableName, defaultSchema);
+                defineTable(db, tableName, defaultSchema, whenTableDefined);
             }
+
             return tablesDefined.promise;
         };
 
@@ -222,14 +266,20 @@ EdenMobile.factory('emDB', [
 
             db.executeSql(sql, [], function(result) {
                 var rows = result.rows,
-                    row;
+                    row,
+                    tableName,
+                    schema;
                 for (var i=0, len=rows.length; i<len; i++) {
                     row = rows.item(i);
+                    tableName = row.name;
                     try {
-                        tables[row.name] = JSON.parse(row.schema);
+                        schema = JSON.parse(row.schema);
                     } catch(e) {
-                        alert('Error parsing schema for table ' + row.name);
+                        alert('Error parsing schema for table ' + tableName);
+                        continue;
                     }
+                    addMetaFields(tableName, schema);
+                    tables[tableName] = schema;
                 }
                 schemaLoaded.resolve(true);
             }, errorCallback);

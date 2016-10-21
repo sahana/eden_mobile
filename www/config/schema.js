@@ -31,95 +31,133 @@ var emSchemaVersion = '1';
 /**
  * The default schema for the local database
  */
-var emDefaultSchema = {
+EdenMobile.factory('emDefaultSchema', ['$injector', function ($injector) {
 
-    /**
-     * Table to store the current schema version
-     */
-    'em_version': {
-        'version': {
-            type: 'string',
-            label: 'Version',
-            notnull: true
-        },
-        _records: [
-            {'version': emSchemaVersion}
-        ]
-    },
+    return {
 
-    /**
-     * Table to store table schemas
-     */
-    'em_schema': {
-        'name': {
-            type: 'string',
-            label: 'Name',
-            notnull: true
+        /**
+        * Table to store the current schema version
+        */
+        'em_version': {
+            'version': {
+                type: 'string',
+                label: 'Version',
+                notnull: true
+            },
+            _records: [
+                {'version': emSchemaVersion}
+            ]
         },
-        'schema': {
-            type: 'json',
-            label: 'Schema',
-            notnull: true
+
+        /**
+        * Table to store table schemas
+        */
+        'em_schema': {
+            'name': {
+                type: 'string',
+                label: 'Name',
+                notnull: true
+            },
+            'schema': {
+                type: 'json',
+                label: 'Schema',
+                notnull: true
+            }
+        },
+
+        /**
+        * Table to store settings
+        */
+        'em_config': {
+            'settings': {
+                type: 'json',
+                label: 'Settings'
+            }
+        },
+
+        /**
+        * Meta fields for user tables
+        */
+        '_meta_fields': {
+            'uuid': {
+                type: 'string',
+                readable: false,
+                writable: false,
+                defaultValue: function() {
+                    var emDB = $injector.get('emDB'),
+                        uuid = emDB.uuid();
+                    return uuid.urn();
+                }
+            },
+            'created_on': {
+                type: 'datetime',
+                readable: false,
+                writable: false,
+                defaultValue: function() {
+                    return new Date();
+                }
+            },
+            'modified_on': {
+                type: 'datetime',
+                readable: false,
+                writable: false,
+                defaultValue: function() {
+                    return new Date();
+                },
+                updateValue: function() {
+                    return new Date();
+                }
+            }
+        },
+
+        /**
+        * Default schema for person records (for testing)
+        */
+        'person': {
+            'first_name': {
+                type: 'string',
+                label: 'First Name',
+                placeholder: 'Jane',
+                notnull: true
+            },
+            'last_name': {
+                type: 'string',
+                label: 'Last Name',
+                placeholder: 'Doe'
+            },
+            'date_of_birth': {
+                type: 'date',
+                label: 'Date of Birth'
+            },
+            'missing': {
+                type: 'boolean',
+                label: 'Missing'
+            },
+            'gender': {
+                type: 'integer',
+                label: 'Gender',
+                options: {//1: '',
+                        2: 'female',
+                        3: 'male'
+                        //4: 'other',
+                        }
+            },
+            _form: [
+                'first_name',
+                'last_name',
+                'gender',
+                'missing',
+                'date_of_birth'
+            ],
+            _card: {
+                fields: ['first_name', 'last_name'],
+                title: '{{record.first_name}} {{record.last_name}}'
+            },
+            _strings: {
+                name: 'Person',
+                namePlural: 'Persons',
+                icon: 'ion-person-stalker'
+            }
         }
-    },
-
-    /**
-     * Table to store settings
-     */
-    'em_config': {
-        'settings': {
-            type: 'json',
-            label: 'Settings'
-        }
-    },
-
-    /**
-     * Default schema for person records (for testing)
-     */
-    'person': {
-        'first_name': {
-            type: 'string',
-            label: 'First Name',
-            placeholder: 'Jane',
-            notnull: true
-        },
-        'last_name': {
-            type: 'string',
-            label: 'Last Name',
-            placeholder: 'Doe'
-        },
-        'date_of_birth': {
-            type: 'date',
-            label: 'Date of Birth'
-        },
-        'missing': {
-            type: 'boolean',
-            label: 'Missing'
-        },
-        'gender': {
-            type: 'integer',
-            label: 'Gender',
-            options: {//1: '',
-                      2: 'female',
-                      3: 'male'
-                      //4: 'other',
-                      }
-        },
-        _form: [
-            'first_name',
-            'last_name',
-            'gender',
-            'missing',
-            'date_of_birth'
-        ],
-        _card: {
-            fields: ['first_name', 'last_name'],
-            title: '{{record.first_name}} {{record.last_name}}'
-        },
-        _strings: {
-            name: 'Person',
-            namePlural: 'Persons',
-            icon: 'ion-person-stalker'
-        }
-    }
-};
+    };
+}]);
