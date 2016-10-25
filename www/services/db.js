@@ -345,10 +345,60 @@ EdenMobile.factory('emDB', [
          */
         function Table(tableName) {
 
-            var self = this;
+            var self = this,
+                schema = tables[tableName];
+
+            var fields = Object.keys(schema).filter(function(fn) {
+                return (fn[0] != '_');
+            });
 
             self.tableName = tableName;
-            self.schema = tables[tableName];
+            self.schema = schema;
+            self.fields = fields;
+
+            /**
+             * Add field defaults to a record
+             *
+             * @param {object} data - the record data
+             * @param {boolean} visible - include only visible defaults
+             *                            (i.e. fields with readable=true)
+             * @param {boolean} update - use updateValue rather than defaultValue
+             *
+             * @returns {object} - a new object combining current record data
+             *                     and default values
+             */
+            self.addDefaults = function(data, visible, update) {
+
+                var fields = self.fields,
+                    schema = self.schema,
+                    attr = 'defaultValue',
+                    record = {},
+                    fieldName,
+                    description,
+                    defaultValue;
+
+                if (update) {
+                    attr = 'updateValue';
+                }
+                for (var i=0, len=fields.length; i < len; i++) {
+
+                    fieldName = fields[i];
+                    if (!data.hasOwnProperty(fieldName)) {
+                        description = schema[fieldName];
+                        defaultValue = description[attr];
+                        if (visible && description.readable === false) {
+                            continue;
+                        }
+                        if (typeof defaultValue == 'function') {
+                            defaultValue = defaultValue();
+                        }
+                        if (defaultValue !== undefined) {
+                            record[fieldName] = defaultValue;
+                        }
+                    }
+                }
+                return angular.extend(record, data);
+            };
 
             /**
              * Insert new records into this table
@@ -359,8 +409,11 @@ EdenMobile.factory('emDB', [
              *                              the result: function(recordID)
              */
             self.insert = function(data, callback) {
-                var table = emSQL.Table(self.tableName, self.schema),
-                    sql = table.insert(data);
+
+                var record = self.addDefaults(data, false, false),
+                    table = emSQL.Table(self.tableName, self.schema),
+                    sql = table.insert(record);
+
                 db.executeSql(sql[0], sql[1], function(result) {
                     if (callback) {
                         callback(result.insertId);
@@ -379,16 +432,17 @@ EdenMobile.factory('emDB', [
              */
             self.update = function(data, query, callback) {
 
-                var table = emSQL.Table(self.tableName, self.schema),
+                var record = self.addDefaults(data, false, true),
+                    table = emSQL.Table(self.tableName, self.schema),
                     sql = null;
 
                 switch(arguments.length) {
                     case 2:
                         callback = query;
-                        sql = table.update(data);
+                        sql = table.update(record);
                         break;
                     default:
-                        sql = table.update(data, query);
+                        sql = table.update(record, query);
                         break;
                 }
 

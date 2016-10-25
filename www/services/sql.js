@@ -140,7 +140,7 @@ EdenMobile.factory('emSQL', [
             self.sqlValue = function(value) {
 
                 var params = self.params,
-                    sqlValue;
+                    sqlValue = value;
 
                 switch(params.type) {
                     // @todo: elaborate (e.g. date, time, datetime)
@@ -151,11 +151,17 @@ EdenMobile.factory('emSQL', [
                             sqlValue = 1;
                         }
                         break;
+                    case 'date':
+                    case 'datetime':
+                        if (value) {
+                            value.setMilliseconds(0);
+                            sqlValue = value.toISOString();
+                        }
+                        break;
                     case 'json':
                         sqlValue = JSON.stringify(value);
                         break;
                     default:
-                        sqlValue = value;
                         break;
                 }
                 return sqlValue;
@@ -183,6 +189,7 @@ EdenMobile.factory('emSQL', [
                             }
                             break;
                         case 'date':
+                        case 'datetime':
                             formValue = new Date(value);
                             break;
                         case 'json':

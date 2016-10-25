@@ -44,33 +44,28 @@ EdenMobile.controller('EMDataCreate', [
 
             var schema = table.schema,
                 master = $scope.master,
-                form = $scope.form,
-                defaultValue,
-                currentValue;
+                form = $scope.form;
 
             // Set the form title
-            var strings = table.schema._strings,
+            var strings = schema._strings,
                 formTitle = formName;
             if (strings) {
                 formTitle = strings.name || listTitle;
             }
             $scope.formTitle = formTitle;
 
-            // Apply defaults
-            for (var fieldName in schema) {
-                if (fieldName[0] == '_') {
-                    continue;
-                }
-                defaultValue = schema[fieldName].defaultValue;
-                if (defaultValue !== undefined) {
-                    // Store in master
+            // Set default values in form
+            var data = table.addDefaults({}, true, false),
+                fieldName,
+                value;
+            for (fieldName in data) {
+                value = data[fieldName];
+                if (value !== undefined) {
                     if (master[fieldName] === undefined) {
-                        master[fieldName] = defaultValue;
+                        master[fieldName] = value;
                     }
-                    // Copy into form
-                    currentValue = form[fieldName];
-                    if (currentValue === undefined) {
-                        form[fieldName] = defaultValue;
+                    if (form[fieldName] === undefined) {
+                        form[fieldName] = value;
                     }
                 }
             }

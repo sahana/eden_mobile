@@ -42,52 +42,42 @@ EdenMobile.controller("EMDataUpdate", [
         // Start with empty master (populated asynchronously)
         $scope.master = {};
 
-        // Read default values from schema
+        // Read current values from database
         emDB.table(formName).then(function(table) {
 
-            // Get form fields from schema
             var schema = table.schema,
-                fields = [];
-
-            for (var fieldName in schema) {
-                if (fieldName[0] != '_') {
-                    fields.push(fieldName);
-                }
-            }
+                master = $scope.master,
+                form = $scope.form;
 
             // Set the form title
-            var strings = table.schema._strings,
+            var strings = schema._strings,
                 formTitle = formName;
             if (strings) {
                 formTitle = strings.name || listTitle;
             }
             $scope.formTitle = formTitle;
-            //$scope.$apply();
 
             // Extract current record
+            var fields = table.fields;
             table.select(fields, query, function(records, result) {
-
-                var form = $scope.form,
-                    master = $scope.master;
-
                 if (records.length == 1) {
-
-                    // Write data into both master and form
+                    // Write current data into both master and form
                     var row = records[0];
                     for (var i=0, len=fields.length; i<len; i++) {
-                        var field = fields[i],
-                            value = row[field];
+                        var fieldName = fields[i],
+                            description = schema[fieldName];
+                        if (description.readable === false) {
+                            continue;
+                        }
+                        var value = row[fieldName];
                         if (value !== undefined) {
-                            master[field] = value;
-                            form[field] = value;
+                            master[fieldName] = value;
+                            form[fieldName] = value;
                         }
                     }
-
                     // Update scope
                     $scope.$apply();
-
                 } else {
-
                     // Show error popup, then go back to list
                     emDialogs.error('Record not found', null, function() {
                         $state.go('data.list',
@@ -97,7 +87,6 @@ EdenMobile.controller("EMDataUpdate", [
                     });
                 }
             });
-
         });
 
         // Confirmation message for successful update

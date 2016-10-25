@@ -140,7 +140,8 @@ EdenMobile.factory('emDefaultSchema', ['$injector', function ($injector) {
                         2: 'female',
                         3: 'male'
                         //4: 'other',
-                        }
+                        },
+                defaultValue: 2
             },
             _form: [
                 'first_name',
