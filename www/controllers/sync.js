@@ -29,8 +29,70 @@
  * Controller for synchronisation page
  */
 EdenMobile.controller('EMSync', [
-    '$scope', 'emServer',
-    function($scope, emServer) {
+    '$rootScope', '$scope', '$timeout', 'emServer',
+    function($rootScope, $scope, $timeout, emServer) {
 
+        var syncJobs = $rootScope.syncJobs;
+        if (!syncJobs) {
+            syncJobs = [];
+            $rootScope.syncJobs = syncJobs;
+        }
+
+        var statusUpdate = false;
+        var updateSyncStatus = function() {
+
+            if (!statusUpdate) {
+                statusUpdate = true;
+                var openJobs = $rootScope.syncJobs.filter(function(job) {
+                    return (job.status == 'pending' || job.status == 'active');
+                });
+                $rootScope.syncJobs = openJobs;
+                if (openJobs.length > 0) {
+                    $rootScope.syncInProgress = true;
+                } else {
+                    $rootScope.syncInProgress = false;
+                }
+                statusUpdate = false;
+            }
+        }
+
+        $scope.synchronize = function() {
+
+            $rootScope.syncInProgress = true;
+
+            var syncJobs = $rootScope.syncJobs;
+            if (!syncJobs.length) {
+
+                // Get form list from server
+                var url = emServer.URL({
+                    c: 'mobile',
+                    f: 'forms',
+                    extension: 'json'
+                });
+                emServer.get(url,
+                    function(data) {
+                        // Success
+
+                        // => populate form list
+                        // => create sync jobs from form list
+                        // => execute the sync jobs
+
+                        // Placeholder (@todo: remove)
+                        $rootScope.syncInProgress = false;
+                        alert(JSON.stringify(data));
+                    },
+                    function(response) {
+                        // Error
+                        $rootScope.syncInProgress = false;
+                        emServer.httpError(response);
+                    });
+            } else {
+                // => execute the sync jobs
+
+                // Placeholder (@todo: remove)
+                $rootScope.syncInProgress = false;
+            }
+        };
     }
+
 ]);

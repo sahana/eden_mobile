@@ -387,46 +387,57 @@
              */
             var httpError = function(response) {
 
-                var status = response.status,
-                    message,
+                var message,
                     explanation;
 
-                if (status === 0 || status == -1) {
-                    // This occurs when the network is down, or the server
-                    // could not be found or does not respond
-                    message = 'Server unreachable';
-                    explanation = 'No network available or server not found';
-                } else {
-                    var statusText = response.statusText,
-                        web2pyError = response.headers('web2py_error'),
-                        contentType = response.headers('Content-Type'),
-                        data = response.data;
+                if (typeof response == 'string') {
+                    // Configuration error
+                    message = 'Server not available';
+                    explanation = response;
 
-                    if (contentType == 'application/json' && data.hasOwnProperty('message')) {
-                        // Is a JSON message
-                        explanation = data.message;
-                    }
-                    if (!explanation) {
-                        // Fall back to response headers
-                        explanation = web2pyError || statusText || 'Unknown error';
-                    }
-                    switch(status) {
-                        case 502:
-                        case 504:
-                            // Gateway error (e.g. HTTP proxy)- gives a status
-                            // code even when the actual server is unreachable,
-                            // typically a 504 GATEWAY TIMEOUT
-                            message = 'Server unreachable';
-                            break;
-                        case 403:
-                            // Authorization succeeded, but the user does not have
-                            // permission for the requested resource/operation
-                            message = 'Server request not permitted';
-                            break;
-                        default:
-                            // Other reason for failure
-                            message = 'Server request failed';
-                            break;
+                } else {
+
+                    var status = response.status;
+
+                    if (status === 0 || status == -1) {
+                        // This occurs when the network is down, or the server
+                        // could not be found or does not respond
+                        message = 'Server unreachable';
+                        explanation = 'No network available or server not found';
+
+                    } else {
+                        // HTTP response from server (or gateway)
+                        var statusText = response.statusText,
+                            web2pyError = response.headers('web2py_error'),
+                            contentType = response.headers('Content-Type'),
+                            data = response.data;
+
+                        if (contentType == 'application/json' && data.hasOwnProperty('message')) {
+                            // Is a JSON message
+                            explanation = data.message;
+                        }
+                        if (!explanation) {
+                            // Fall back to response headers
+                            explanation = web2pyError || statusText || 'Unknown error';
+                        }
+                        switch(status) {
+                            case 502:
+                            case 504:
+                                // Gateway error (e.g. HTTP proxy)- gives a status
+                                // code even when the actual server is unreachable,
+                                // typically a 504 GATEWAY TIMEOUT
+                                message = 'Server unreachable';
+                                break;
+                            case 403:
+                                // Authorization succeeded, but the user does not have
+                                // permission for the requested resource/operation
+                                message = 'Server request not permitted';
+                                break;
+                            default:
+                                // Other reason for failure
+                                message = 'Server request failed';
+                                break;
+                        }
                     }
                 }
                 emDialogs.error(message, explanation);
