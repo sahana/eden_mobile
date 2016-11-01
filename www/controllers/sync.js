@@ -34,6 +34,27 @@ EdenMobile.controller('EMSync', [
 
         $scope.formList = [];
 
+        var countSelected = function() {
+
+            var formList = $scope.formList,
+                available = 0,
+                selected = 0;
+            if (!formList.length) {
+                $scope.selectedForms = 'select automatically';
+            } else {
+                formList.forEach(function(form) {
+                    available++;
+                    if (form.download) {
+                        selected++;
+                    }
+                });
+                $scope.selectedForms = selected + '/' + available + ' selected';
+            }
+        };
+
+        $scope.countSelected = countSelected;
+        countSelected();
+
         /**
          * Modal to select forms for download
          */
@@ -49,6 +70,7 @@ EdenMobile.controller('EMSync', [
                     $scope.formListLoading = false;
                     emDB.tables().then(function(tableNames) {
                         $scope.formList = emSync.updateFormList($scope.formList, tableNames, data);
+                        countSelected();
                         $ionicModal.fromTemplateUrl('views/sync/formlist.html', {
                             scope: $scope
                         }).then(function(modal) {

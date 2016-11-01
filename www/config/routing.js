@@ -71,7 +71,7 @@ EdenMobile.config(['$stateProvider', '$urlRouterProvider',
                         templateUrl: 'views/settings/index.html',
                         controller: "EMSettings"
                     },
-                    'about@settings': {
+                    'about': {
                         templateUrl: 'views/settings/about.html',
                         controller: "EMAbout"
                     }

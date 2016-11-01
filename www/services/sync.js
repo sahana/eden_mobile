@@ -132,7 +132,7 @@ EdenMobile.factory('emSync', [
                 }
 
                 // @todo: check autoInstall/autoUpdate option for default
-                download = false;
+                download = true;
 
                 // Retain previous download status
                 item = items[tableName];
