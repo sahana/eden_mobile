@@ -41,7 +41,7 @@
      * @example
      * var url = emServer.URL({c: 'mobile', f: 'forms', extension: 'json'});
      */
-    function sahanaURL(options) {
+    function SahanaURL(options) {
         this.options = options;
     }
 
@@ -52,7 +52,7 @@
      *
      * @returns {string} - the extended baseURL
      */
-    sahanaURL.prototype.extend = function(baseURL) {
+    SahanaURL.prototype.extend = function(baseURL) {
 
         var url = '';
 
@@ -112,7 +112,7 @@
      *
      * @returns {string} - the format extension
      */
-    sahanaURL.prototype.getFormat = function() {
+    SahanaURL.prototype.getFormat = function() {
 
         var extension = this.options.extension;
         if (extension) {
@@ -327,11 +327,11 @@
         function ($http, $q, emConfig, emDialogs) {
 
             /**
-             * Wrapper for $http that resolves a sahanaURL against the
+             * Wrapper for $http that resolves a SahanaURL against the
              * current server.url setting before sending the request.
              *
              * @param {object} requestConfig - same as request config for $http,
-             *                                 except that 'url' can be a sahanaURL
+             *                                 except that 'url' can be a SahanaURL
              *                                 instance
              * @returns {promise} - a promise that resolves into the $http
              *                      response (or rejection, respectively)
@@ -339,9 +339,9 @@
             var http = function(requestConfig) {
 
                 var requestURL = requestConfig.url;
-                if (requestURL instanceof sahanaURL) {
+                if (requestURL instanceof SahanaURL) {
 
-                    // sahanaURL => resolve against configured server URL
+                    // SahanaURL => resolve against configured server URL
 
                     var deferred = $q.defer();
                     emConfig.apply(function(settings) {
@@ -446,9 +446,9 @@
             /**
              * HTTP GET to the configured Sahana server
              *
-             * @param {sahanaURL|string} - the URL to query
+             * @param {SahanaURL|string} - the URL to query
              * @param {string} format - the expected data format, 'text'|'json',
-             *                          auto-detected from sahanaURL 'extension'
+             *                          auto-detected from SahanaURL 'extension'
              *                          option if present
              * @param {function} successCallback - callback function to invoke
              *                                     when the request was successful,
@@ -473,8 +473,8 @@
                     url: url
                 };
 
-                // If no format was specified, try to look it up from sahanaURL
-                if (!format && url instanceof sahanaURL) {
+                // If no format was specified, try to look it up from SahanaURL
+                if (!format && url instanceof SahanaURL) {
                     format = url.getFormat();
                 }
 
@@ -513,14 +513,33 @@
 
                 // URL construction
                 URL: function(options) {
-                    return new sahanaURL(options);
+                    return new SahanaURL(options);
                 },
 
                 // Generic HTTP methods
                 http: http,
                 httpError: httpError,
 
-                get: get
+                // HTTP commands
+                get: get,
+                //post: post, // @todo
+
+                /**
+                 * Download the list of available forms from the Sahana server
+                 *
+                 * @param {function} successCallback: success callback, function(data)
+                 * @param {function} errorCallback: error callback, function(response)
+                 *
+                 */
+                formList: function(successCallback, errorCallback) {
+
+                    var url = new SahanaURL({
+                        c: 'mobile',
+                        f: 'forms',
+                        extension: 'json'
+                    });
+                    get(url, 'json', successCallback, errorCallback);
+                }
             };
             return api;
         }

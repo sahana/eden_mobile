@@ -29,68 +29,50 @@
  * Controller for synchronisation page
  */
 EdenMobile.controller('EMSync', [
-    '$rootScope', '$scope', '$timeout', 'emServer',
-    function($rootScope, $scope, $timeout, emServer) {
+    '$ionicModal', '$rootScope', '$scope', 'emDB', 'emServer', 'emSync',
+    function($ionicModal, $rootScope, $scope, emDB, emServer, emSync) {
 
-        var syncJobs = $rootScope.syncJobs;
-        if (!syncJobs) {
-            syncJobs = [];
-            $rootScope.syncJobs = syncJobs;
-        }
+        $scope.formList = [];
 
-        var statusUpdate = false;
-        var updateSyncStatus = function() {
+        /**
+         * Modal to select forms for download
+         */
+        $scope.selectForms = function() {
 
-            if (!statusUpdate) {
-                statusUpdate = true;
-                var openJobs = $rootScope.syncJobs.filter(function(job) {
-                    return (job.status == 'pending' || job.status == 'active');
-                });
-                $rootScope.syncJobs = openJobs;
-                if (openJobs.length > 0) {
-                    $rootScope.syncInProgress = true;
-                } else {
-                    $rootScope.syncInProgress = false;
-                }
-                statusUpdate = false;
+            if ($scope.formListLoading) {
+                return;
             }
-        }
+            $scope.formListLoading = true;
 
+            emServer.formList(
+                function(data) {
+                    $scope.formListLoading = false;
+                    emDB.tables().then(function(tableNames) {
+                        $scope.formList = emSync.updateFormList($scope.formList, tableNames, data);
+                        $ionicModal.fromTemplateUrl('views/sync/formlist.html', {
+                            scope: $scope
+                        }).then(function(modal) {
+                            $scope.modal = modal;
+                            modal.show();
+                        });
+                    });
+                },
+                function(response) {
+                    $scope.formListLoading = false;
+                    emServer.httpError(response);
+                }
+            );
+        };
+
+        /**
+         * Start synchronisation
+         */
         $scope.synchronize = function() {
 
-            $rootScope.syncInProgress = true;
-
-            var syncJobs = $rootScope.syncJobs;
-            if (!syncJobs.length) {
-
-                // Get form list from server
-                var url = emServer.URL({
-                    c: 'mobile',
-                    f: 'forms',
-                    extension: 'json'
-                });
-                emServer.get(url,
-                    function(data) {
-                        // Success
-
-                        // => populate form list
-                        // => create sync jobs from form list
-                        // => execute the sync jobs
-
-                        // Placeholder (@todo: remove)
-                        $rootScope.syncInProgress = false;
-                        alert(JSON.stringify(data));
-                    },
-                    function(response) {
-                        // Error
-                        $rootScope.syncInProgress = false;
-                        emServer.httpError(response);
-                    });
+            if ($rootScope.syncInProgress) {
+                return;
             } else {
-                // => execute the sync jobs
-
-                // Placeholder (@todo: remove)
-                $rootScope.syncInProgress = false;
+                emSync.synchronize($scope.formList);
             }
         };
     }

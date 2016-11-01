@@ -112,3 +112,38 @@ EdenMobile.directive("emFormCard", [
         };
     }
 ]);
+
+/**
+ * Directive for cards in sync form selection
+ */
+EdenMobile.directive("emSyncFormCard", [
+    '$compile',
+    function($compile) {
+
+        var renderCard = function($scope, elem, attr) {
+
+            var form = $scope.form,
+                name = form.name;
+
+            // @todo: clean this up (readability)
+            var ngClass="{'dark': !form.download," +
+                        "'balanced': form.download," +
+                        "'ion-android-checkbox-outline': form.installed && !form.download || !form.installed && form.download," +
+                        "'ion-android-sync': form.installed && form.download," +
+                        "'ion-android-checkbox-outline-blank': !form.installed && !form.download, "+
+                        "'icon': true}"
+
+            var cardTemplate = '<a class="item item-icon-right" ng-click="form.download=!form.download">' +
+                               '<i ng-class="' + ngClass + '"></i>' +
+                               name +
+                               '</a>';
+
+            var compiled = $compile(cardTemplate)($scope);
+            elem.replaceWith(compiled);
+        };
+
+        return {
+            link: renderCard
+        };
+    }
+]);
