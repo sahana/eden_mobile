@@ -32,27 +32,25 @@ EdenMobile.controller("EMFormList", [
     '$scope', '$stateParams', 'emDB',
     function($scope, $stateParams, emDB) {
 
-        emDB.tables().then(function(tableNames) {
+        $scope.forms = [];
 
-            var forms = [],
-                tableName;
-
-            for (var i=0, len=tableNames.length; i<len; i++) {
-
-                tableName = tableNames[i];
-                emDB.table(tableName).then(function(table) {
-                    // Count records in table, then update scope
-                    table.count(function(tableName, number) {
-                        forms.push({
-                            formName: tableName,
-                            numRows: number
-                        });
-                        $scope.$apply();
+        var addFormData = function(tableName) {
+            emDB.table(tableName).then(function(table) {
+                // Count records in table, then update scope
+                table.count(function(tableName, number) {
+                    $scope.forms.push({
+                        formName: tableName,
+                        numRows: number
                     });
+                    $scope.$apply();
                 });
-            }
-            $scope.forms = forms;
+            });
+        };
+
+        emDB.tables().then(function(tableNames) {
+            tableNames.forEach(function(tableName) {
+                addFormData(tableName);
+            });
         });
     }
 ]);
-

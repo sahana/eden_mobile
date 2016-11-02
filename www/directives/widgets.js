@@ -261,9 +261,15 @@
                                     .append(label);
 
                 // Add the options
-                var opts = JSON.parse(attr.options),
+                var opts = attr.options,
                     opt,
                     input;
+
+                if (opts) {
+                    opts = JSON.parse(opts);
+                } else {
+                    opts = {};
+                }
 
                 for (opt in opts) {
 
