@@ -67,16 +67,17 @@ EdenMobile.factory('emSync', [
          * @param {string} type - Job type: 'form'|'data'
          * @param {string} mode - Synchronization mode: 'pull'|'push'|'both'
          * @param {string} tableName - the table name
-         * @param {SahanaURL} url - the URL to access the form or data on the server
-         *
+         * @param {object} ref - reference details to construct the server URL
+         *                       to access the form or data, object
+         *                       {c:controller, f:function, vars:vars}
          */
-        function SyncJob(type, mode, tableName, url) {
+        function SyncJob(type, mode, tableName, ref) {
 
             this.type = type;
             this.mode = mode;
 
             this.tableName = tableName;
-            this.url = url;
+            this.ref = ref;
 
             this.status = 'pending';
         }
@@ -94,17 +95,28 @@ EdenMobile.factory('emSync', [
             }
             self.status = 'active';
 
-            // Dummy, @todo
-            $timeout(function() {
-                self.status = 'success';
-                updateSyncStatus();
-            }, 3000);
+            emServer.getForm(self.tableName, self.ref,
+                function(data) {
+                    // Success
+                    // @todo: validate+install schema
+                    self.status = 'success';
+                    updateSyncStatus();
+                },
+                function(response) {
+                    // Error
+                    // @todo: store error in log, make log accessible in Sync controller
+                    self.status = 'error';
+                    updateSyncStatus();
+                }
+            );
         };
 
         /**
          * Update the list of available/selected forms
          *
-         * @todo: complete docstring
+         * @param {Array} currentList - the current list of available/selected forms
+         * @param {Array} tables - the list of names of existing tables in the local DB
+         * @param {Array} data - the list of available forms from the server
          */
         var updateFormList = function(currentList, tables, data) {
 
@@ -143,7 +155,7 @@ EdenMobile.factory('emSync', [
                 var entry = {
                     'name': formData.n,
                     'tableName': tableName,
-                    'url': formData.r,
+                    'ref': formData.r,
                     'installed': installed,
                     'download': download
                 };
@@ -153,16 +165,22 @@ EdenMobile.factory('emSync', [
         };
 
         /**
-         * @todo: docstring
+         * Get a list of forms that are to be installed, fetch a fresh list
+         * from server if no list is loaded and select automatically
+         *
+         * @param {Array} formList - the current list of available/selected forms
+         *
+         * @returns {promise} - a promise that resolves into the form list
          */
         var getFormList = function(formList) {
 
             var deferred = $q.defer();
 
-            if (formList.length) {
+            if (formList && formList.length) {
+                // Use this list
                 deferred.resolve(formList);
             } else {
-                // Reload form list from server
+                // Fetch new form list from server and select automatically
                 emServer.formList(
                     function(data) {
                         emDB.tables().then(function(tableNames) {
@@ -192,8 +210,7 @@ EdenMobile.factory('emSync', [
             var jobsScheduled = 0;
             formList.forEach(function(form) {
                 if (form.download) {
-                    var url = emServer.URL(form.url),
-                        job = new SyncJob('form', 'pull', form.tableName, url);
+                    var job = new SyncJob('form', 'pull', form.tableName, form.ref);
                     syncJobs.push(job);
                     jobsScheduled++;
                 }
@@ -202,24 +219,24 @@ EdenMobile.factory('emSync', [
         };
 
         /**
-         * Run all pending synchronization jobs
+         * Run synchronization jobs
          *
-         * @todo: complete docstring
+         * @param {Array} forms - the current list of available/selected forms for
+         *                        synchronization (to create sync jobs as needed)
          */
         var synchronize = function(forms) {
 
             $rootScope.syncInProgress = true;
 
             if (syncJobs.length) {
-
+                // Run all pending jobs
                 syncJobs.forEach(function(job) {
                     if (job.status == 'pending') {
                         job.run();
                     }
                 });
-
             } else {
-
+                // Generate jobs for forms
                 getFormList(forms).then(function(formList) {
                     var jobsScheduled = generateSyncJobs(formList);
                     if (jobsScheduled) {
@@ -229,7 +246,7 @@ EdenMobile.factory('emSync', [
                     }
                 });
             }
-        }
+        };
 
         // API
         var api = {

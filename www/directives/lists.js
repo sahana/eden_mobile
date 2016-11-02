@@ -130,8 +130,8 @@ EdenMobile.directive("emSyncFormCard", [
                         "'balanced': form.download," +
                         "'ion-android-checkbox-outline': form.installed && !form.download || !form.installed && form.download," +
                         "'ion-android-sync': form.installed && form.download," +
-                        "'ion-android-checkbox-outline-blank': !form.installed && !form.download, "+
-                        "'icon': true}"
+                        "'ion-android-checkbox-outline-blank': !form.installed && !form.download, " +
+                        "'icon': true}";
 
             var cardTemplate = '<a class="item item-icon-right" ng-click="form.download=!form.download; countSelected();">' +
                                '<i ng-class="' + ngClass + '"></i>' +

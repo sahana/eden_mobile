@@ -525,17 +525,36 @@
                 //post: post, // @todo
 
                 /**
-                 * Download the list of available forms from the Sahana server
+                 * Download a list of available mobile forms
                  *
                  * @param {function} successCallback: success callback, function(data)
                  * @param {function} errorCallback: error callback, function(response)
-                 *
                  */
                 formList: function(successCallback, errorCallback) {
 
                     var url = new SahanaURL({
                         c: 'mobile',
                         f: 'forms',
+                        extension: 'json'
+                    });
+                    get(url, 'json', successCallback, errorCallback);
+                },
+
+                /**
+                 * Download a mobile form
+                 *
+                 * @param {string} ref - reference details to construct the download URL,
+                 *                       object {c:controller, f:function, vars:vars}
+                 * @param {function} successCallback: success callback, function(data)
+                 * @param {function} errorCallback: error callback, function(response)
+                 */
+                getForm: function(ref, successCallback, errorCallback) {
+
+                    var url = new SahanaURL({
+                        c: ref.c,
+                        f: ref.f,
+                        args: ['mform'],
+                        vars: ref.v,
                         extension: 'json'
                     });
                     get(url, 'json', successCallback, errorCallback);
