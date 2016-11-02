@@ -42,7 +42,7 @@ EdenMobile.controller("EMFormList", [
                 tableName = tableNames[i];
                 emDB.table(tableName).then(function(table) {
                     // Count records in table, then update scope
-                    table.count(function(number) {
+                    table.count(function(tableName, number) {
                         forms.push({
                             formName: tableName,
                             numRows: number

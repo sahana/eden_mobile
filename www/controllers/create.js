@@ -85,7 +85,7 @@ EdenMobile.controller('EMDataCreate', [
         // Submit-function
         $scope.submit = function(form) {
 
-            emDB.table('person').then(function(table) {
+            emDB.table(formName).then(function(table) {
 
                 // @todo: validate
                 var empty = true;

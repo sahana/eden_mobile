@@ -288,6 +288,24 @@ EdenMobile.factory('emDB', [
         };
 
         /**
+         * Validate (and complement) a schema definition
+         *
+         * @param {string} tableName - the table name
+         * @param {object} schemaData - the schema definition
+         *
+         * @returns {object} - the updated schema definition, or null on error
+         */
+        var validateSchema = function(tableName, schemaData) {
+
+            // @todo: check all fields
+            var schema = schemaData;
+
+            addMetaFields(tableName, schema);
+            return schema;
+
+        };
+
+        /**
          * Populate the database if first run, otherwise just load
          * the schema. Resolves the dbReady promise when complete.
          *
@@ -547,7 +565,7 @@ EdenMobile.factory('emDB', [
                 db.executeSql(sql, [], function(result) {
                     var number = result.rows.item(0).number;
                     if (callback) {
-                        callback(number);
+                        callback(self.tableName, number);
                     }
                 }, errorCallback);
             };
@@ -626,6 +644,34 @@ EdenMobile.factory('emDB', [
                 return dbReady.then(function() {
                     return new Table(tableName);
                 }, apiNotReady);
+            },
+
+            /**
+             * Add or update a schema
+             *
+             * @param {string} tableName - the table name
+             * @param {object} schemaData - the schema definition
+             * @param {function} successCallback - success callback, function(tableName)
+             * @param {function} errorCallback - error callback, function(errorMessage)
+             */
+            installSchema: function(tableName, schemaData, successCallback, errorCallback) {
+                return dbReady.then(function() {
+                    var schema = validateSchema(schemaData),
+                        error = null;
+                    if (schema === null) {
+                        error = 'Invalid schema';
+                    }
+                    if (!tables.hasOwnProperty(tableName)) {
+                        // New schema
+                        addMetaFields(tableName, schema);
+                        defineTable(db, tableName, schema, successCallback);
+                    } else {
+                        error = 'Schema update not implemented yet';
+                    }
+                    if (error !== null && errorCallback) {
+                        errorCallback(error);
+                    }
+                });
             },
 
             /**

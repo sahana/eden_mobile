@@ -80,6 +80,7 @@ EdenMobile.factory('emSync', [
             this.ref = ref;
 
             this.status = 'pending';
+            this.error = null;
         }
 
         /**
@@ -87,7 +88,8 @@ EdenMobile.factory('emSync', [
          */
         SyncJob.prototype.run = function() {
 
-            var self = this;
+            var self = this,
+                tableName = self.tableName;
 
             if (self.status != 'pending') {
                 // Do not re-run
@@ -95,12 +97,31 @@ EdenMobile.factory('emSync', [
             }
             self.status = 'active';
 
-            emServer.getForm(self.tableName, self.ref,
+            emServer.getForm(self.ref,
                 function(data) {
-                    // Success
-                    // @todo: validate+install schema
-                    self.status = 'success';
-                    updateSyncStatus();
+                    // Successfully downloaded form description
+
+                    var schemaData = data[tableName];
+                    if (schemaData === undefined) {
+                        self.status = 'error';
+                        self.error = 'No schema definition received for ' + tableName;
+                        updateSyncStatus();
+                        return;
+                    }
+
+                    emDB.installSchema(tableName, schemaData,
+                        function(tableName) {
+                            // Success
+                            self.status = 'success';
+                            updateSyncStatus();
+                        },
+                        function(error) {
+                            // Error
+                            self.status = 'error';
+                            self.error = error;
+                            updateSyncStatus();
+                        }
+                    );
                 },
                 function(response) {
                     // Error

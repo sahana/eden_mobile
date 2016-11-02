@@ -196,7 +196,10 @@ EdenMobile.factory('emForms', [
             },
 
             /**
-             * @todo: docstring
+             * Create a widget for a field
+             *
+             * @param {object} field - the field definition
+             * @param {object} attr - the widget attributes
              */
             widget: function(field, attr) {
                 return createWidget(field, attr);
