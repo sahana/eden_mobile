@@ -1,5 +1,5 @@
 /**
- * Sahana Eden Mobile - Data Forms Controllers
+ * Sahana Eden Mobile - Resource List Controller
  *
  * Copyright (c) 2016: Sahana Software Foundation
  *
@@ -25,32 +25,37 @@
 
 "use strict";
 
+// ============================================================================
 /**
- * List of forms
+ * EMResourceList - Resource List Controller
+ *
+ * @class EMResourceList
+ * @memberof EdenMobile
  */
-EdenMobile.controller("EMFormList", [
-    '$scope', '$stateParams', 'emDB',
-    function($scope, $stateParams, emDB) {
+EdenMobile.controller("EMResourceList", [
+    '$scope', '$stateParams', 'emResources',
+    function($scope, $stateParams, emResources) {
 
-        $scope.forms = [];
+        $scope.resources = [];
 
-        var addFormData = function(tableName) {
-            emDB.table(tableName).then(function(table) {
-                // Count records in table, then update scope
-                table.count(function(tableName, number) {
-                    $scope.forms.push({
-                        formName: tableName,
-                        numRows: number
+        var addResourceData = function(resourceName) {
+            emResources.open(resourceName).then(function(resource) {
+                resource.count(function(name, numRows) {
+                    $scope.resources.push({
+                        name: name,
+                        numRows: numRows
                     });
                     $scope.$apply();
                 });
             });
         };
 
-        emDB.tables().then(function(tableNames) {
-            tableNames.forEach(function(tableName) {
-                addFormData(tableName);
+        emResources.names().then(function(resourceNames) {
+            resourceNames.forEach(function(resourceName) {
+                addResourceData(resourceName);
             });
         });
     }
 ]);
+
+// END ========================================================================

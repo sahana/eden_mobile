@@ -25,6 +25,7 @@
 
 "use strict";
 
+// ============================================================================
 /**
  * emForms - Service to generate forms from schemas
  *
@@ -34,6 +35,7 @@
 EdenMobile.factory('emForms', [
     function () {
 
+        // ====================================================================
         /**
          * Build a form widget, applying em-*-widget directives
          *
@@ -84,103 +86,98 @@ EdenMobile.factory('emForms', [
         };
 
 
+        // ====================================================================
         /**
-         * Form API
+         * Form constructor - class to generate form HTML
          *
-         * @param {object} schema - the table schema for the form
-         * @param {Array} fields - list of field names to render in
-         *                         the form (in order of appearance)
+         * @param {Resource} resource - the resource the form is for
+         * @param {Array} fieldNames - list of field names to render in
+         *                             the form (in order of appearance)
          */
-        function Form(schema, fields) {
+        function Form(resource, fieldNames) {
 
-            var self = this;
-            self.schema = schema;
+            this.resource = resource;
 
-            if (fields) {
-                // Use field list as specified
-                self.fields = fields;
+            if (fieldNames) {
+                this.fieldNames = fieldNames;
             } else {
-                // Use _form attribute in schema
-                self.fields = schema._form;
+                this.fieldNames = resource.form;
             }
-
-            /**
-             * Render the form
-             *
-             * @param {string} scopeName - name of the scope object
-             *                             holding the form data (default: 'form')
-             * @returns {DOMNode} - the angular-enhanced DOM node for the form
-             */
-            self.render = function(scopeName) {
-
-                if (!scopeName) {
-                    scopeName = 'form';
-                }
-
-                var form = angular.element('<form>')
-                                  .attr('name', 'data')
-                                  .attr('novalidate', 'novalidate'),
-                    formRows = angular.element('<div class="list">'),
-                    fields = self.fields,
-                    schema = self.schema,
-                    widget,
-                    fieldName,
-                    fieldParameters,
-                    fieldAttr,
-                    options,
-                    placeholder;
-
-
-                // Determine form fields
-                if (!fields) {
-
-                    var field,
-                        readable,
-                        writable;
-
-                    // Lookup readable/writable fields from schema
-                    fields = [];
-                    for (fieldName in schema) {
-                        if (fieldName[0] != '_') {
-                            field = schema[fieldName];
-                            if (field.readable !== false || field.writable) {
-                                fields.push(fieldName);
-                            }
-                        }
-                    }
-                }
-
-                // Create widgets
-                for (var i=0, len=fields.length; i<len; i++) {
-
-                    fieldName = fields[i];
-                    fieldParameters = schema[fieldName];
-
-                    if (fieldParameters) {
-                        fieldAttr = {
-                            'label': fieldParameters.label,
-                            'ng-model': scopeName + '.' + fieldName
-                        };
-                        options = fieldParameters.options;
-                        if (options) {
-                            fieldAttr.options = JSON.stringify(options);
-                        }
-                        placeholder = fieldParameters.placeholder;
-                        if (placeholder) {
-                            fieldAttr.placeholder = placeholder;
-                        }
-                        widget = createWidget(fieldParameters, fieldAttr);
-                        formRows.append(widget);
-                    }
-                }
-                return form.append(formRows);
-            };
-
         }
 
+        // --------------------------------------------------------------------
         /**
-         * Expose API
+         * Render the form
+         *
+         * @param {string} scopeName - name of the scope object
+         *                             holding the form data (default: 'form')
+         * @returns {DOMNode} - the angular-enhanced DOM node for the form
          */
+        Form.prototype.render = function(scopeName) {
+
+            if (!scopeName) {
+                scopeName = 'form';
+            }
+
+            var resource = this.resource,
+                fieldNames = this.fieldNames,
+                form = angular.element('<form>')
+                              .attr('name', 'data')
+                              .attr('novalidate', 'novalidate'),
+                formRows = angular.element('<div class="list">');
+
+
+            // Determine form fields
+            var fieldName,
+                field;
+            if (!fieldNames) {
+                fieldNames = [];
+                for (fieldName in resource.fields) {
+                    field = resource.fields[fieldName];
+                    if (field.readable || field.writable) {
+                        fieldNames.push(fieldName)
+                    }
+                }
+            }
+
+            var description,
+                attributes,
+                options,
+                placeholder,
+                widget;
+            fieldNames.forEach(function(fieldName) {
+                field = resource.fields[fieldName];
+                if (field) {
+                    description = field._description;
+
+                    // Label and model-link
+                    attributes = {
+                        'label': description.label || fieldName,
+                        'ng-model': scopeName + '.' + fieldName
+                    };
+
+                    // Options (for options widget)
+                    options = description.options;
+                    if (options) {
+                        attributes.options = JSON.stringify(options);
+                    }
+
+                    // Placeholder (for text input)
+                    placeholder = description.placeholder;
+                    if (placeholder) {
+                        attributes.placeholder = placeholder;
+                    }
+
+                    // Instantiate the widget and append it to form rows
+                    widget = createWidget(field, attributes);
+                    formRows.append(widget);
+                }
+            });
+
+            return form.append(formRows);
+        };
+
+        // ====================================================================
         var api = {
 
             /**
@@ -209,3 +206,4 @@ EdenMobile.factory('emForms', [
     }
 ]);
 
+// END ========================================================================

@@ -1,10 +1,8 @@
-<ion-view view-title="DataForms">
+<ion-view view-title="Resources">
     <ion-content class="has-header has-footer">
         <h2 class="padding" translate="Data"></h2>
         <div class="list">
-            <div ng-repeat="form in forms">
-                <em-form-card form="{{form}}"/>
-            </div>
+            <em-resource ng-repeat="resource in resources"/>
         </div>
     </ion-content>
 </ion-view>

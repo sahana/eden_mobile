@@ -50,18 +50,54 @@ EdenMobile.factory('emDefaultSchema', ['$injector', function ($injector) {
         },
 
         /**
-        * Table to store table schemas
-        */
+         * Table to store entity definitions
+         */
         'em_schema': {
             'name': {
                 type: 'string',
                 label: 'Name',
                 notnull: true
             },
-            'schema': {
+            'fields': {
                 type: 'json',
-                label: 'Schema',
+                label: 'Fields',
                 notnull: true
+            },
+            'settings': {
+                type: 'json',
+                label: 'Settings',
+            }
+        },
+
+        /**
+         * Table to store resource definitions
+         */
+        'em_resource': {
+            'name': {
+                type: 'string',
+                label: 'Resource Name',
+                notnull: true
+            },
+            'tablename': {
+                type: 'string',
+                label: 'Table Name',
+                notnull: true
+            },
+            'controller': {
+                type: 'string',
+                label: 'Controller'
+            },
+            'function': {
+                type: 'string',
+                label: 'Function'
+            },
+            'fields': {
+                type: 'json',
+                label: 'Fields'
+            },
+            'settings': {
+                type: 'json',
+                label: 'Settings'
             }
         },
 

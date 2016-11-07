@@ -25,37 +25,40 @@
 
 "use strict";
 
+// ============================================================================
 /**
  * Create-Form Controller
+ *
+ * @class EMDataCreate
+ * @memberof EdenMobile
  */
 EdenMobile.controller('EMDataCreate', [
-    '$scope', '$state', '$stateParams', 'emDB', 'emDialogs',
-    function($scope, $state, $stateParams, emDB, emDialogs) {
+    '$scope', '$state', '$stateParams', 'emDialogs', 'emResources',
+    function($scope, $state, $stateParams, emDialogs, emResources) {
 
-        var formName = $stateParams.formName;
+        var resourceName = $stateParams.resourceName;
 
-        $scope.formName = formName;
+        $scope.resourceName = resourceName;
 
         // Start with empty master (populated asynchronously)
         $scope.master = {};
 
         // Read default values from schema
-        emDB.table(formName).then(function(table) {
+        emResources.open(resourceName).then(function(resource) {
 
-            var schema = table.schema,
-                master = $scope.master,
+            var master = $scope.master,
                 form = $scope.form;
 
             // Set the form title
-            var strings = schema._strings,
-                formTitle = formName;
+            var strings = resource.strings,
+                formTitle = resourceName;
             if (strings) {
-                formTitle = strings.name || listTitle;
+                formTitle = strings.name || formTitle;
             }
             $scope.formTitle = formTitle;
 
             // Set default values in form
-            var data = table.addDefaults({}, true, false),
+            var data = resource.addDefaults({}, true, false),
                 fieldName,
                 value;
             for (fieldName in data) {
@@ -76,7 +79,7 @@ EdenMobile.controller('EMDataCreate', [
             // Show confirmation popup and go back to list
             emDialogs.confirmation('Record created', function() {
                 $state.go('data.list',
-                    {formName: $scope.formName},
+                    {resourceName: $scope.resourceName},
                     {location: 'replace'}
                 );
             });
@@ -85,7 +88,7 @@ EdenMobile.controller('EMDataCreate', [
         // Submit-function
         $scope.submit = function(form) {
 
-            emDB.table(formName).then(function(table) {
+            emResources.open(resourceName).then(function(resource) {
 
                 // @todo: validate
                 var empty = true;
@@ -100,7 +103,7 @@ EdenMobile.controller('EMDataCreate', [
                     //$scope.master = angular.copy(form);
 
                     // Commit to database and confirm
-                    table.insert(form, confirmCreate);
+                    resource.insert(form, confirmCreate);
                 }
             });
         };
@@ -114,3 +117,5 @@ EdenMobile.controller('EMDataCreate', [
         $scope.reset();
     }
 ]);
+
+// END ========================================================================

@@ -25,6 +25,7 @@
 
 "use strict";
 
+// ============================================================================
 /**
  * Controller for configuration settings form
  */
@@ -46,6 +47,7 @@ EdenMobile.controller("EMSettings", [
     }
 ]);
 
+// ============================================================================
 /**
  * Controller to display the "About" section in settings
  */
@@ -60,3 +62,5 @@ EdenMobile.controller("EMAbout", [
         $scope.about = about;
     }
 ]);
+
+// END ========================================================================

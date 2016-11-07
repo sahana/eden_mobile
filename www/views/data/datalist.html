@@ -1,16 +1,16 @@
 <ion-view view-title="DataList">
     <div class="bar bar-stable bar-subheader">
-        <a href="#/data/forms" class="button icon-left ion-arrow-left-a"></a>
+        <a href="#/data/resources" class="button icon-left ion-arrow-left-a"></a>
         <h2 class="title">{{listTitle}}</h2>
         <div class="buttons">
-            <a href="#/data/{{formName}}/create" class="button button-positive icon-left ion-plus"></a>
+            <a href="#/data/{{resourceName}}/create" class="button button-positive icon-left ion-plus"></a>
         </div>
     </div>
     <ion-content class="padding has-header has-subheader has-footer">
         <p>{{records.length}} Records</p>
         <div class="list">
             <div class="card" ng-repeat="record in records">
-                <em-data-card form="{{formName}}"/>
+                <em-data-card resource="{{resourceName}}"/>
             </div>
         </div>
     </ion-content>

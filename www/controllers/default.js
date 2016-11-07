@@ -25,9 +25,18 @@
 
 "use strict";
 
+// ============================================================================
+/**
+ * EMDefault - Default Controller
+ *
+ * @class EMDefault
+ * @memberof EdenMobile
+ */
 EdenMobile.controller("EMDefault", [
     '$scope',
     function($scope) {
         $scope.appname = "Sahana EdenMobile";
     }
 ]);
+
+// END ========================================================================

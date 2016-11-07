@@ -25,22 +25,27 @@
 
 "use strict";
 
+// ============================================================================
 /**
- * Directive for cards in data list
+ * emDataCard - directive for cards in data list
+ *
+ * @class emDataCard
+ * @memberof EdenMobile
  */
 EdenMobile.directive("emDataCard", [
-    '$compile', 'emDB',
-    function($compile, emDB) {
+    '$compile', 'emResources',
+    function($compile, emResources) {
 
         var renderCard = function($scope, elem, attr) {
 
-            var formName = $scope.formName;
+            // @todo: attr.resource?
+            var resourceName = $scope.resourceName;
 
-            emDB.table(formName).then(function(table) {
-                var cardConfig = table.schema._card,
+            emResources.open(resourceName).then(function(resource) {
+                var cardConfig = resource.card,
                     titleTemplate,
                     cardTemplate,
-                    target = 'data.update({formName:&quot;{{formName}}&quot;,recordID:{{record.id}}})';
+                    target = 'data.update({resourceName:&quot;{{resourceName}}&quot;,recordID:{{record.id}}})';
 
                 // Read the card config
                 if (cardConfig) {
@@ -69,32 +74,36 @@ EdenMobile.directive("emDataCard", [
     }
 ]);
 
+// ============================================================================
 /**
- * Directive for cards in form list
+ * emResource - directive for cards in resource list
+ *
+ * @class emResource
+ * @memberof EdenMobile
  */
-EdenMobile.directive("emFormCard", [
-    '$compile', 'emDB',
-    function($compile, emDB) {
+EdenMobile.directive('emResource', [
+    '$compile', 'emResources',
+    function($compile, emResources) {
 
         var renderCard = function($scope, elem, attr) {
 
-            var form = $scope.form,
-                formName = form.formName,
-                numRows = form.numRows;
+            var resourceData = $scope.resource,
+                resourceName = resourceData.name,
+                numRows = resourceData.numRows;
 
-            emDB.table(formName).then(function(table) {
+            emResources.open(resourceName).then(function(resource) {
 
-                var strings = table.schema._strings,
-                    cardLabel = formName,
+                var strings = resource.strings,
+                    cardLabel = resource.name,
                     cardIcon = 'ion-folder';
+
                 if (strings) {
                     cardLabel = strings.namePlural || strings.name || cardLabel;
                     cardIcon = strings.icon || cardIcon;
                 }
 
                 // Construct the data card template
-                // @todo: add an add-button into the card?
-                var cardTemplate = '<a class="item item-icon-left" href="#/data/' + formName + '">' +
+                var cardTemplate = '<a class="item item-icon-left" href="#/data/' + resourceName + '">' +
                                    '<i class="icon ' + cardIcon + '"></i>' +
                                    cardLabel +
                                    '<span class="badge badge-assertive">' + numRows + '</span>' +
@@ -113,8 +122,12 @@ EdenMobile.directive("emFormCard", [
     }
 ]);
 
+// ============================================================================
 /**
- * Directive for cards in sync form selection
+ * emSyncFormCard - directive for cards in sync form selection
+ *
+ * @class emSyncFormCard
+ * @memberof EdenMobile
  */
 EdenMobile.directive("emSyncFormCard", [
     '$compile',
@@ -147,3 +160,5 @@ EdenMobile.directive("emSyncFormCard", [
         };
     }
 ]);
+
+// END ========================================================================

@@ -25,12 +25,16 @@
 
 "use strict";
 
+// ============================================================================
 /**
- * Directive for data form
+ * emDataForm - directive for create/update forms
+ *
+ * @class emDataForm
+ * @memberof EdenMobile
  */
 EdenMobile.directive('emDataForm', [
-    '$compile', 'emDB', 'emForms',
-    function($compile, emDB, emForms) {
+    '$compile', 'emForms', 'emResources',
+    function($compile, emForms, emResources) {
 
         /**
          * Form renderer
@@ -43,12 +47,11 @@ EdenMobile.directive('emDataForm', [
          */
         var renderForm = function($scope, elem, attr) {
 
-            var formName = attr.formName;
+            var resourceName = attr.resource;
 
-            emDB.table(formName).then(function(table) {
+            emResources.open(resourceName).then(function(resource) {
 
-                var schema = table.schema,
-                    form = emForms.form(schema);
+                var form = emForms.form(resource);
 
                 // Compile the form HTML against the scope,
                 // then render it in place of the directive
@@ -63,8 +66,12 @@ EdenMobile.directive('emDataForm', [
     }
 ]);
 
+// ============================================================================
 /**
- * Directive for config form
+ * emConfigForm - directive for form to edit config settings
+ *
+ * @class emConfigForm
+ * @memberof EdenMobile
  */
 EdenMobile.directive('emConfigForm', [
     '$compile', 'emSettings', 'emConfig',
@@ -111,3 +118,4 @@ EdenMobile.directive('emConfigForm', [
     }
 ]);
 
+// END ========================================================================

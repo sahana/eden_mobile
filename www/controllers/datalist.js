@@ -1,5 +1,5 @@
 /**
- * Sahana Eden Mobile - Data List Controller and Directives
+ * Sahana Eden Mobile - Data List Controller
  *
  * Copyright (c) 2016: Sahana Software Foundation
  *
@@ -25,33 +25,34 @@
 
 "use strict";
 
+// ============================================================================
 /**
- * Data List Controller
+ * EMDataList - Data List Controller
+ *
+ * @class EMDataList
+ * @memberof EdenMobile
  */
 EdenMobile.controller("EMDataList", [
-    '$scope', '$stateParams', 'emDB',
-    function($scope, $stateParams, emDB) {
+    '$scope', '$stateParams', 'emResources',
+    function($scope, $stateParams, emResources) {
 
-        var formName = $stateParams.formName;
+        var resourceName = $stateParams.resourceName;
 
-        emDB.table(formName).then(function(table) {
+        emResources.open(resourceName).then(function(resource) {
 
-            // @todo: check that we have a schema for table,
-            // otherwise raise error and return to form list
-
-            // Pass formName to scope
-            $scope.formName = formName;
+            // Pass resourceName to scope
+            $scope.resourceName = resourceName;
 
             // Get strings
-            var strings = table.schema._strings,
-                listTitle = formName;
+            var strings = resource.strings,
+                listTitle = resourceName;
             if (strings) {
                 listTitle = strings.namePlural || strings.name || listTitle;
             }
             $scope.listTitle = listTitle;
 
             // Read card config
-            var cardConfig = table.schema._card,
+            var cardConfig = resource.card,
                 fields;
             if (cardConfig) {
                 fields = cardConfig.fields;
@@ -61,10 +62,8 @@ EdenMobile.controller("EMDataList", [
             if (!fields) {
                 // Get all fields
                 fields = [];
-                for (var fieldName in table.schema) {
-                    if (fieldName[0] != '_') {
-                        fields.push(fieldName);
-                    }
+                for (var fieldName in resource.fields) {
+                    fields.push(fieldName);
                 }
             }
 
@@ -75,7 +74,7 @@ EdenMobile.controller("EMDataList", [
 
             // Select all existing records
             $scope.records = [];
-            table.select(fields, function(records, result) {
+            resource.select(fields, function(records, result) {
                 $scope.records = records;
                 $scope.$apply();
             });
@@ -83,3 +82,4 @@ EdenMobile.controller("EMDataList", [
     }
 ]);
 
+// END ========================================================================

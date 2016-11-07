@@ -39,23 +39,23 @@ EdenMobile.config(['$stateProvider', '$urlRouterProvider',
                 url: '/data',
                 template: '<ui-view/>'
             })
-            .state('data.forms', {
-                url: '/forms',
-                templateUrl: 'views/data/formlist.html',
-                controller: "EMFormList"
+            .state('data.resources', {
+                url: '/resources',
+                templateUrl: 'views/data/resources.html',
+                controller: "EMResourceList"
             })
             .state('data.list', {
-                url: '/{formName}',
+                url: '/{resourceName}',
                 templateUrl: 'views/data/datalist.html',
                 controller: "EMDataList"
             })
             .state('data.create', {
-                url: '/{formName}/create',
+                url: '/{resourceName}/create',
                 templateUrl: 'views/data/create.html',
                 controller: "EMDataCreate"
             })
             .state('data.update', {
-                url: '/{formName}/{recordID:int}',
+                url: '/{resourceName}/{recordID:int}',
                 templateUrl: 'views/data/update.html',
                 controller: "EMDataUpdate"
             })

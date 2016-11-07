@@ -25,51 +25,61 @@
 
 "use strict";
 
+// ============================================================================
 /**
- * Update-form
+ * Update-Form Controller
+ *
+ * @class EMDataUpdate
+ * @memberof EdenMobile
  */
 EdenMobile.controller("EMDataUpdate", [
-    '$scope', '$state', '$stateParams', 'emDB', 'emDialogs',
-    function($scope, $state, $stateParams, emDB, emDialogs) {
+    '$scope', '$state', '$stateParams', 'emDialogs', 'emResources',
+    function($scope, $state, $stateParams, emDialogs, emResources) {
 
-        var formName = $stateParams.formName,
-            recordID = $stateParams.recordID,
-            query = formName + '.id=' + recordID;
+        var resourceName = $stateParams.resourceName,
+            recordID = $stateParams.recordID;
 
-        $scope.formName = formName;
+        $scope.resourceName = resourceName;
         $scope.recordID = recordID;
 
         // Start with empty master (populated asynchronously)
         $scope.master = {};
 
         // Read current values from database
-        emDB.table(formName).then(function(table) {
+        emResources.open(resourceName).then(function(resource) {
 
-            var schema = table.schema,
-                master = $scope.master,
+            var tableName = resource.tableName,
+                query = tableName + '.id=' + recordID;
+
+            var master = $scope.master,
                 form = $scope.form;
 
             // Set the form title
-            var strings = schema._strings,
-                formTitle = formName;
+            var strings = resource.strings,
+                formTitle = resourceName;
             if (strings) {
                 formTitle = strings.name || listTitle;
             }
             $scope.formTitle = formTitle;
 
             // Extract current record
-            var fields = table.fields;
-            table.select(fields, query, function(records, result) {
+
+            var fields = resource.fields,
+                fieldNames = Object.keys(fields);
+
+            resource.select(fieldNames, query, function(records, result) {
                 if (records.length == 1) {
                     // Write current data into both master and form
-                    var row = records[0];
-                    for (var i=0, len=fields.length; i<len; i++) {
-                        var fieldName = fields[i],
-                            description = schema[fieldName];
-                        if (description.readable === false) {
+                    var row = records[0],
+                        field,
+                        fieldName,
+                        value;
+                    for (fieldName in fields) {
+                        field = fields[fieldName]
+                        if (!field.readable) {
                             continue;
                         }
-                        var value = row[fieldName];
+                        value = row[fieldName];
                         if (value !== undefined) {
                             master[fieldName] = value;
                             form[fieldName] = value;
@@ -81,7 +91,7 @@ EdenMobile.controller("EMDataUpdate", [
                     // Show error popup, then go back to list
                     emDialogs.error('Record not found', null, function() {
                         $state.go('data.list',
-                            {formName: $scope.formName},
+                            {resourceName: $scope.resourceName},
                             {location: 'replace'}
                         );
                     });
@@ -94,7 +104,7 @@ EdenMobile.controller("EMDataUpdate", [
             // Show confirmation popup and go back to list
             emDialogs.confirmation('Record updated', function() {
                 $state.go('data.list',
-                    {formName: $scope.formName},
+                    {resourceName: $scope.resourceName},
                     {location: 'replace'}
                 );
             });
@@ -103,12 +113,14 @@ EdenMobile.controller("EMDataUpdate", [
         // Submit function
         $scope.submit = function(form) {
 
-            emDB.table(formName).then(function(table) {
+            emResources.open(resourceName).then(function(resource) {
+
+                var query = resource.tableName + '.id=' + recordID;
 
                 // @todo: validate
                 var empty = true;
-                for (var field in form) {
-                    if (form[field] !== undefined && form[field] !== null) {
+                for (var fieldName in form) {
+                    if (form[fieldName] !== undefined && form[fieldName] !== null) {
                         empty = false;
                         break;
                     }
@@ -118,7 +130,7 @@ EdenMobile.controller("EMDataUpdate", [
                     //$scope.master = angular.copy(form);
 
                     // Commit to database and confirm
-                    table.update(form, query, confirmUpdate);
+                    resource.update(form, query, confirmUpdate);
                 }
             });
         };
@@ -129,7 +141,7 @@ EdenMobile.controller("EMDataUpdate", [
             // @todo: should this actually check that rowsAffected is 1?
             emDialogs.confirmation('Record deleted', function() {
                 $state.go('data.list',
-                    {formName: $scope.formName},
+                    {resourceName: $scope.resourceName},
                     {location: 'replace'}
                 );
             });
@@ -142,8 +154,8 @@ EdenMobile.controller("EMDataUpdate", [
                 'Delete Record',
                 'Are you sure you want to delete this record?',
                 function() {
-                    emDB.table(formName).then(function(table) {
-                        table.deleteRecords(query, confirmDelete);
+                    emResource.open(resourceName).then(function(resource) {
+                        resource.deleteRecords(query, confirmDelete);
                     });
                 }
             );
@@ -158,3 +170,5 @@ EdenMobile.controller("EMDataUpdate", [
         $scope.reset();
     }
 ]);
+
+// END ========================================================================

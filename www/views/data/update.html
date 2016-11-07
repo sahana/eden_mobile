@@ -1,6 +1,6 @@
 <ion-view view-title="DataUpdate">
     <div class="bar bar-stable bar-subheader">
-        <a href="#/data/{{formName}}" class="button icon-left ion-arrow-left-a"></a>
+        <a href="#/data/{{resourceName}}" class="button icon-left ion-arrow-left-a"></a>
         <h2 class="title" translate="Edit+FORMTITLE" translate-value-formtitle="{{formTitle}}"></h2>
         <div class="buttons">
             <button class="button icon-left ion-trash-b button-assertive" style="margin-right:0.2rem;" ng-click="deleteRecord()"></button>
@@ -8,6 +8,6 @@
         </div>
     </div>
     <ion-content id="main" class="has-header has-subheader has-footer">
-        <em-data-form form-name="{{formName}}"></em-data-form>
+        <em-data-form resource="{{resourceName}}"></em-data-form>
     </ion-content>
 </ion-view>
