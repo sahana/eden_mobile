@@ -103,7 +103,7 @@ EdenMobile.factory('emDB', [
             this.readable = true;
             this.writable = true;
             if (description.readable === false) {
-                this.readable = false
+                this.readable = false;
             }
             if (description.writable === false) {
                 this.writable = false;
@@ -422,8 +422,8 @@ EdenMobile.factory('emDB', [
                         record[fieldName] = defaultValue;
                     }
                 }
-                return angular.extend(record, data);
             }
+            return angular.extend(record, data);
         };
 
         // --------------------------------------------------------------------

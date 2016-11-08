@@ -65,7 +65,7 @@ EdenMobile.factory('emDefaultSchema', ['$injector', function ($injector) {
             },
             'settings': {
                 type: 'json',
-                label: 'Settings',
+                label: 'Settings'
             }
         },
 
@@ -143,6 +143,11 @@ EdenMobile.factory('emDefaultSchema', ['$injector', function ($injector) {
                 updateValue: function() {
                     return new Date();
                 }
+            },
+            'synchronized_on': {
+                type: 'datetime',
+                readable: false,
+                writable: false
             }
         },
 
