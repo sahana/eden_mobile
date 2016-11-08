@@ -38,47 +38,54 @@ EdenMobile.controller("EMDataList", [
 
         var resourceName = $stateParams.resourceName;
 
-        emResources.open(resourceName).then(function(resource) {
+        $scope.resourceName = resourceName;
 
-            // Pass resourceName to scope
-            $scope.resourceName = resourceName;
+        var updateDataList = function() {
 
-            // Get strings
-            var strings = resource.strings,
-                listTitle = resourceName;
-            if (strings) {
-                listTitle = strings.namePlural || strings.name || listTitle;
-            }
-            $scope.listTitle = listTitle;
+            emResources.open(resourceName).then(function(resource) {
 
-            // Read card config
-            var cardConfig = resource.card,
-                fields;
-            if (cardConfig) {
-                fields = cardConfig.fields;
-            }
-
-            // Apply fallbacks
-            if (!fields) {
-                // Get all fields
-                fields = [];
-                for (var fieldName in resource.fields) {
-                    fields.push(fieldName);
+                if (!resource) {
+                    $scope.records = [];
                 }
-            }
 
-            // Make sure 'id' field is loaded (required by directive)
-            if (fields.indexOf('id') == -1) {
-                fields.push('id');
-            }
+                // Get strings
+                var strings = resource.strings,
+                    listTitle = resourceName;
+                if (strings) {
+                    listTitle = strings.namePlural || strings.name || listTitle;
+                }
+                $scope.listTitle = listTitle;
 
-            // Select all existing records
-            $scope.records = [];
-            resource.select(fields, function(records, result) {
-                $scope.records = records;
-                $scope.$apply();
+                // Read card config
+                var cardConfig = resource.card,
+                    fields;
+                if (cardConfig) {
+                    fields = cardConfig.fields;
+                }
+
+                // Apply fallbacks
+                if (!fields) {
+                    // Get all fields
+                    fields = [];
+                    for (var fieldName in resource.fields) {
+                        fields.push(fieldName);
+                    }
+                }
+
+                // Make sure 'id' field is loaded (required by directive)
+                if (fields.indexOf('id') == -1) {
+                    fields.push('id');
+                }
+
+                // Select all existing records
+                resource.select(fields, function(records, result) {
+                    $scope.records = records;
+                    $scope.$apply();
+                });
             });
-        });
+        };
+
+        $scope.$on('$ionicView.enter', updateDataList);
     }
 ]);
 

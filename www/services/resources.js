@@ -110,16 +110,6 @@
     };
 
     // ------------------------------------------------------------------------
-    Resource.prototype.saveSchema = function() {
-
-        // @todo: implement
-        // serialize fields which have overrides (omit standard fields)
-        // serialize settings which have overrides
-        // controller
-        // function
-    };
-
-    // ------------------------------------------------------------------------
     /**
      * Add field defaults to a record before write
      *
@@ -256,6 +246,51 @@
                 resourcesLoaded = status.promise;
 
             var resources = {};
+
+            // ------------------------------------------------------------------------
+            /**
+            * @todo: docstring
+            */
+            Resource.prototype.saveSchema = function() {
+
+                var name = this.name,
+                    fields = this.fields,
+                    fieldName,
+                    field,
+                    fieldDef = {};
+
+                for (fieldName in fields) {
+                    field = fields[fieldName];
+                    if (!field.meta) {
+                        fieldDef[fieldName] = field.description();
+                    }
+                }
+
+                var schema = {
+                    'name': name,
+                    'tablename': this.tableName,
+                    'controller': this.controller,
+                    'function': this.function,
+                    'fields': fieldDef,
+                    'settings': this.settings
+                };
+
+                // Check if this is an update
+
+                var name = this.name;
+                emDB.table('em_resource').then(function(table) {
+
+                    var query = 'em_resource.name="' + name + '"';
+
+                    table.select(['id'], query, function(records) {
+                        if (records.length === 0) {
+                            table.insert(schema);
+                        } else {
+                            table.update(schema, query);
+                        }
+                    })
+                });
+            };
 
             // ----------------------------------------------------------------
             // @todo: docstring

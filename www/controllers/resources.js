@@ -36,8 +36,6 @@ EdenMobile.controller("EMResourceList", [
     '$scope', '$stateParams', 'emResources',
     function($scope, $stateParams, emResources) {
 
-        $scope.resources = [];
-
         var addResourceData = function(resourceName) {
             emResources.open(resourceName).then(function(resource) {
                 resource.count(function(name, numRows) {
@@ -50,11 +48,16 @@ EdenMobile.controller("EMResourceList", [
             });
         };
 
-        emResources.names().then(function(resourceNames) {
-            resourceNames.forEach(function(resourceName) {
-                addResourceData(resourceName);
+        var updateResourceList = function() {
+            $scope.resources = [];
+            emResources.names().then(function(resourceNames) {
+                resourceNames.forEach(function(resourceName) {
+                    addResourceData(resourceName);
+                });
             });
-        });
+        };
+
+        $scope.$on('$ionicView.enter', updateResourceList);
     }
 ]);
 

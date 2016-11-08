@@ -37,27 +37,43 @@ EdenMobile.config(['$stateProvider', '$urlRouterProvider',
             .state('data', {
                 'abstract': true,
                 url: '/data',
-                template: '<ui-view/>'
+                template: '<ion-nav-view name="data"></ion-nav-view>'
             })
             .state('data.resources', {
                 url: '/resources',
-                templateUrl: 'views/data/resources.html',
-                controller: "EMResourceList"
+                views: {
+                    'data': {
+                        templateUrl: 'views/data/resources.html',
+                        controller: "EMResourceList"
+                    }
+                }
             })
             .state('data.list', {
                 url: '/{resourceName}',
-                templateUrl: 'views/data/datalist.html',
-                controller: "EMDataList"
+                views: {
+                    'data': {
+                        templateUrl: 'views/data/datalist.html',
+                        controller: "EMDataList"
+                    }
+                }
             })
             .state('data.create', {
                 url: '/{resourceName}/create',
-                templateUrl: 'views/data/create.html',
-                controller: "EMDataCreate"
+                views: {
+                    'data': {
+                        templateUrl: 'views/data/create.html',
+                        controller: "EMDataCreate"
+                    }
+                }
             })
             .state('data.update', {
                 url: '/{resourceName}/{recordID:int}',
-                templateUrl: 'views/data/update.html',
-                controller: "EMDataUpdate"
+                views: {
+                    'data': {
+                        templateUrl: 'views/data/update.html',
+                        controller: "EMDataUpdate"
+                    }
+                }
             })
             .state('sync', {
                 url: '/sync',

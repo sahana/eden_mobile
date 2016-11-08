@@ -40,81 +40,87 @@ EdenMobile.controller('EMDataCreate', [
 
         $scope.resourceName = resourceName;
 
-        // Start with empty master (populated asynchronously)
-        $scope.master = {};
+        var showCreateForm = function() {
 
-        // Read default values from schema
-        emResources.open(resourceName).then(function(resource) {
 
-            var master = $scope.master,
-                form = $scope.form;
+            // Start with empty master (populated asynchronously)
+            $scope.master = {};
 
-            // Set the form title
-            var strings = resource.strings,
-                formTitle = resourceName;
-            if (strings) {
-                formTitle = strings.name || formTitle;
-            }
-            $scope.formTitle = formTitle;
-
-            // Set default values in form
-            var data = resource.addDefaults({}, true, false),
-                fieldName,
-                value;
-            for (fieldName in data) {
-                value = data[fieldName];
-                if (value !== undefined) {
-                    if (master[fieldName] === undefined) {
-                        master[fieldName] = value;
-                    }
-                    if (form[fieldName] === undefined) {
-                        form[fieldName] = value;
-                    }
-                }
-            }
-        });
-
-        // Confirmation message for successful create
-        var confirmCreate = function(recordID) {
-            // Show confirmation popup and go back to list
-            emDialogs.confirmation('Record created', function() {
-                $state.go('data.list',
-                    {resourceName: $scope.resourceName},
-                    {location: 'replace'}
-                );
-            });
-        };
-
-        // Submit-function
-        $scope.submit = function(form) {
-
+            // Read default values from schema
             emResources.open(resourceName).then(function(resource) {
 
-                // @todo: validate
-                var empty = true;
-                for (var field in form) {
-                    if (form[field] !== undefined && form[field] !== null) {
-                        empty = false;
-                        break;
+                var master = $scope.master,
+                    form = $scope.form;
+
+                // Set the form title
+                var strings = resource.strings,
+                    formTitle = resourceName;
+                if (strings) {
+                    formTitle = strings.name || formTitle;
+                }
+                $scope.formTitle = formTitle;
+
+                // Set default values in form
+                var data = resource.addDefaults({}, true, false),
+                    fieldName,
+                    value;
+                for (fieldName in data) {
+                    value = data[fieldName];
+                    if (value !== undefined) {
+                        if (master[fieldName] === undefined) {
+                            master[fieldName] = value;
+                        }
+                        if (form[fieldName] === undefined) {
+                            form[fieldName] = value;
+                        }
                     }
                 }
-                if (!empty) {
-                    // Copy to master (only useful if not changing state)
-                    //$scope.master = angular.copy(form);
-
-                    // Commit to database and confirm
-                    resource.insert(form, confirmCreate);
-                }
             });
+
+            // Confirmation message for successful create
+            var confirmCreate = function(recordID) {
+                // Show confirmation popup and go back to list
+                emDialogs.confirmation('Record created', function() {
+                    $state.go('data.list',
+                        {resourceName: $scope.resourceName},
+                        {location: 'replace', reload: true}
+                    );
+                });
+            };
+
+            // Submit-function
+            $scope.submit = function(form) {
+
+                emResources.open(resourceName).then(function(resource) {
+
+                    // @todo: validate
+                    var empty = true;
+                    for (var field in form) {
+                        if (form[field] !== undefined && form[field] !== null) {
+                            empty = false;
+                            break;
+                        }
+                    }
+                    if (!empty) {
+                        // Copy to master (only useful if not changing state)
+                        //$scope.master = angular.copy(form);
+
+                        // Commit to database and confirm
+                        resource.insert(form, confirmCreate);
+                    }
+                });
+            };
+
+            // @todo: expose reset in UI
+            $scope.reset = function() {
+                $scope.form = angular.copy($scope.master);
+            };
+
+            // Initial reset
+            $scope.reset();
         };
 
-        // @todo: expose reset in UI
-        $scope.reset = function() {
-            $scope.form = angular.copy($scope.master);
-        };
-
-        // Initial reset
-        $scope.reset();
+        $scope.$on('$ionicView.enter', showCreateForm);
     }
 ]);
 
