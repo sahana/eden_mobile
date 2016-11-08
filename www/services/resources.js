@@ -30,6 +30,9 @@
     // ========================================================================
     /**
      * Resource constructor
+     *
+     * @param {Table} table - the database table for this resource
+     * @param {object} options - the options (@todo: rename as description)
      */
     function Resource(table, options) {
 
@@ -414,33 +417,82 @@
             // ----------------------------------------------------------------
             var api = {
 
-                // @todo: docstring
-                names: function(callback) {
+                /**
+                 * Get the names of all currently defined resources
+                 *
+                 * @returns {promise} - a promise that resolves into an Array
+                 *                      of resource names
+                 *
+                 * @example
+                 * emResource.names().then(function(names) {...});
+                 */
+                names: function() {
                     return resourcesLoaded.then(function() {
                         return Object.keys(resources);
                     });
                 },
 
-                // @todo: docstring
+                /**
+                 * Open a resource
+                 *
+                 * @param {string} resourceName - the resource name
+                 *
+                 * @returns {promise} - a promise that resolves into a
+                 *                      Resource instance, or undefined
+                 *                      if no resource with that name exists
+                 *
+                 * @example
+                 * emResources.open('my_resource').then(function(resource) {...});
+                 */
                 open: function(resourceName) {
+
                     return resourcesLoaded.then(function() {
                         return resources[resourceName];
                     });
                 },
 
-                // @todo: docstring
-                install: function(schema, resourceName) {
+                /**
+                 * Install a new resource
+                 *
+                 * @param {string} tableName - the table name
+                 * @param {object} schemaData - the schema data from the server
+                 */
+                install: function(tableName, schemaData) {
 
-                    // Install a new resource
+                    var resourceInstalled = $q.defer();
+
+                    var installResource = function(table) {
+                        var resource = new Resource(table, schemaData);
+                        resources[resource.name] = resource;
+                        resource.saveSchema();
+                        resourceInstalled.resolve(resource);
+                    };
+
+                    emDB.table(tableName).then(function(table) {
+                        if (!table) {
+                            var schema = emDB.parseSchema(schemaData);
+                            emDB.defineTable(
+                                tableName,
+                                schema.fields,
+                                schema.settings,
+                                schema.records
+                            ).then(installResource);
+                        } else {
+                            installResource(table);
+                        }
+                    });
+                    return resourceInstalled.promise;
                 },
 
-                // @todo: docstring
+                /**
+                 * @todo: implement this
+                 */
                 remove: function(resourceName) {
 
                     // Remove a resource
                 }
-
             };
+
             return api;
         }
     ]);

@@ -818,35 +818,32 @@ EdenMobile.factory('emDB', [
                 return db.ready.then(function() {
                     return db.tables[tableName];
                 }, apiNotReady);
-            }
+            },
 
-//             /**
-//              * Add or update a schema
-//              *
-//              * @param {string} tableName - the table name
-//              * @param {object} schemaData - the schema definition
-//              * @param {function} successCallback - success callback, function(tableName)
-//              * @param {function} errorCallback - error callback, function(errorMessage)
-//              */
-//             installSchema: function(tableName, schemaData, successCallback, errorCallback) {
-//                 return dbReady.then(function() {
-//                     var schema = validateSchema(schemaData),
-//                         error = null;
-//                     if (schema === null) {
-//                         error = 'Invalid schema';
-//                     }
-//                     if (!tables.hasOwnProperty(tableName)) {
-//                         // New schema
-//                         addMetaFields(tableName, schema);
-//                         defineTable(db, tableName, schema, successCallback);
-//                     } else {
-//                         error = 'Schema update not implemented yet';
-//                     }
-//                     if (error !== null && errorCallback) {
-//                         errorCallback(error);
-//                     }
-//                 });
-//             }
+            /**
+             * @todo: docstring
+             */
+            defineTable: function(tableName, fields, settings, records) {
+
+                var tableDefined = $q.defer();
+
+                db.ready.then(function() {
+
+                    var table = db.tables[tableName];
+                    if (table) {
+                        // @todo: migrate schema
+                        tableDefined.resolve(table);
+                    } else {
+                        table = new Table(db, tableName, fields, settings);
+                        table.addMetaFields();
+                        table.create(records, function() {
+                            tableDefined.resolve(table);
+                        });
+                    }
+                });
+
+                return tableDefined.promise;
+            }
         };
 
         return api;

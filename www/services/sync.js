@@ -25,6 +25,7 @@
 
 "use strict";
 
+// ============================================================================
 /**
  * emSync - Service for synchronization of data and forms
  *
@@ -32,8 +33,8 @@
  * @memberof EdenMobile.Services
  */
 EdenMobile.factory('emSync', [
-    '$q', '$rootScope', '$timeout', 'emDB', 'emServer',
-    function ($q, $rootScope, $timeout, emDB, emServer) {
+    '$q', '$rootScope', '$timeout', 'emResources', 'emServer',
+    function ($q, $rootScope, $timeout, emResources, emServer) {
 
         // Current job queue and flags
         var syncJobs = [],
@@ -61,6 +62,7 @@ EdenMobile.factory('emSync', [
             }
         };
 
+        // ====================================================================
         /**
          * Synchronization job prototype
          *
@@ -83,6 +85,7 @@ EdenMobile.factory('emSync', [
             this.error = null;
         }
 
+        // --------------------------------------------------------------------
         /**
          * Run synchronization job
          */
@@ -108,9 +111,8 @@ EdenMobile.factory('emSync', [
                         updateSyncStatus();
                         return;
                     }
-
-                    emDB.installSchema(tableName, schemaData,
-                        function(tableName) {
+                    emResources.install(tableName, schemaData).then(
+                        function(resource) {
                             // Success
                             self.status = 'success';
                             updateSyncStatus();
@@ -132,6 +134,7 @@ EdenMobile.factory('emSync', [
             );
         };
 
+        // ====================================================================
         /**
          * Update the list of available/selected forms
          *
@@ -185,6 +188,7 @@ EdenMobile.factory('emSync', [
             return formList;
         };
 
+        // ====================================================================
         /**
          * Get a list of forms that are to be installed, fetch a fresh list
          * from server if no list is loaded and select automatically
@@ -219,6 +223,7 @@ EdenMobile.factory('emSync', [
             return deferred.promise;
         };
 
+        // ====================================================================
         /**
          * Generate synchronization jobs
          *
@@ -239,6 +244,7 @@ EdenMobile.factory('emSync', [
             return jobsScheduled;
         };
 
+        // ====================================================================
         /**
          * Run synchronization jobs
          *
@@ -269,6 +275,7 @@ EdenMobile.factory('emSync', [
             }
         };
 
+        // ====================================================================
         // API
         var api = {
 
@@ -279,3 +286,5 @@ EdenMobile.factory('emSync', [
         return api;
     }
 ]);
+
+// END ========================================================================
