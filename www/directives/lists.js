@@ -136,7 +136,7 @@ EdenMobile.directive("emSyncFormCard", [
         var renderCard = function($scope, elem, attr) {
 
             var form = $scope.form,
-                name = form.name;
+                label = form.label;
 
             // @todo: clean this up (readability)
             var ngClass="{'dark': !form.download," +
@@ -148,7 +148,8 @@ EdenMobile.directive("emSyncFormCard", [
 
             var cardTemplate = '<a class="item item-icon-right" ng-click="form.download=!form.download; countSelected();">' +
                                '<i ng-class="' + ngClass + '"></i>' +
-                               name +
+                               '<h2>' + label + '</h2>' +
+                               '<p><small>' + form.resourceName + '</small></p>' +
                                '</a>';
 
             var compiled = $compile(cardTemplate)($scope);

@@ -27,6 +27,7 @@
 
 (function() {
 
+    // ========================================================================
     /**
      * Copy directive attributes to a generated element, using the
      * attribute map of the directive to map camelCase notation to
@@ -55,6 +56,7 @@
         }
     }
 
+    // ========================================================================
     /**
      * Text input widget (directive)
      *
@@ -116,6 +118,7 @@
         }
     ]);
 
+    // ========================================================================
     /**
      * Date picker widget (directive)
      *
@@ -174,6 +177,7 @@
         }
     ]);
 
+    // ========================================================================
     /**
      * Checkbox (=toggle) widget (directive)
      *
@@ -223,6 +227,7 @@
         }
     ]);
 
+    // ========================================================================
     /**
      * Single-SELECT options widget (directive)
      *
@@ -300,6 +305,7 @@
         }
     ]);
 
+    // ========================================================================
     /**
      * Config form section (directive)
      *
@@ -371,6 +377,7 @@
         }
     ]);
 
+    // ========================================================================
     /**
      * A widget for a configuration setting (directive). Boolean settings
      * have toggles to change them, while string-type settings provide
@@ -508,3 +515,5 @@
         }
     ]);
 }());
+
+// END ========================================================================

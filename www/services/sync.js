@@ -40,6 +40,7 @@ EdenMobile.factory('emSync', [
         var syncJobs = [],
             statusUpdate = false;
 
+        // ====================================================================
         /**
          * Check the job queue and update the global status
          */
@@ -73,11 +74,12 @@ EdenMobile.factory('emSync', [
          *                       to access the form or data, object
          *                       {c:controller, f:function, vars:vars}
          */
-        function SyncJob(type, mode, tableName, ref) {
+        function SyncJob(type, mode, resourceName, tableName, ref) {
 
             this.type = type;
             this.mode = mode;
 
+            this.resourceName = resourceName;
             this.tableName = tableName;
             this.ref = ref;
 
@@ -111,6 +113,9 @@ EdenMobile.factory('emSync', [
                         updateSyncStatus();
                         return;
                     }
+
+                    schemaData._name = self.resourceName;
+
                     emResources.install(tableName, schemaData).then(
                         function(resource) {
                             // Success
@@ -139,19 +144,19 @@ EdenMobile.factory('emSync', [
          * Update the list of available/selected forms
          *
          * @param {Array} currentList - the current list of available/selected forms
-         * @param {Array} tables - the list of names of existing tables in the local DB
+         * @param {Array} resourceNames - names of currently installed resources
          * @param {Array} data - the list of available forms from the server
          */
-        var updateFormList = function(currentList, tables, data) {
+        var updateFormList = function(currentList, resourceNames, data) {
 
             // Build dict from current form list
             var items = {};
             currentList.forEach(function(item) {
-                items[item.tableName] = item;
+                items[item.name] = item;
             });
 
             var formList = [],
-                tableName,
+                name,
                 installed,
                 download,
                 item,
@@ -160,8 +165,8 @@ EdenMobile.factory('emSync', [
             data.forEach(function(formData) {
 
                 // Check if already installed
-                tableName = formData.t;
-                if (tables.indexOf(tableName) == -1) {
+                name = formData.n;
+                if (resourceNames.indexOf(name) == -1) {
                     installed = false;
                 } else {
                     installed = true;
@@ -171,14 +176,15 @@ EdenMobile.factory('emSync', [
                 download = true;
 
                 // Retain previous download status
-                item = items[tableName];
+                item = items[name];
                 if (item !== undefined) {
                     download = item.download;
                 }
 
                 var entry = {
-                    'name': formData.n,
-                    'tableName': tableName,
+                    'label': formData.l,
+                    'resourceName': name,
+                    'tableName': formData.t,
                     'ref': formData.r,
                     'installed': installed,
                     'download': download
@@ -208,8 +214,8 @@ EdenMobile.factory('emSync', [
                 // Fetch new form list from server and select automatically
                 emServer.formList(
                     function(data) {
-                        emDB.tables().then(function(tableNames) {
-                            formList = updateFormList([], tableNames, data);
+                        emResources.names().then(function(resourceNames) {
+                            formList = updateFormList([], resourceNames, data);
                             deferred.resolve(formList);
                         });
                     },
@@ -236,7 +242,13 @@ EdenMobile.factory('emSync', [
             var jobsScheduled = 0;
             formList.forEach(function(form) {
                 if (form.download) {
-                    var job = new SyncJob('form', 'pull', form.tableName, form.ref);
+                    var job = new SyncJob(
+                        'form',
+                        'pull',
+                        form.resourceName,
+                        form.tableName,
+                        form.ref
+                    );
                     syncJobs.push(job);
                     jobsScheduled++;
                 }

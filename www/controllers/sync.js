@@ -30,8 +30,8 @@
  * Controller for synchronisation page
  */
 EdenMobile.controller('EMSync', [
-    '$ionicModal', '$rootScope', '$scope', 'emDB', 'emServer', 'emSync',
-    function($ionicModal, $rootScope, $scope, emDB, emServer, emSync) {
+    '$ionicModal', '$rootScope', '$scope', 'emResources', 'emServer', 'emSync',
+    function($ionicModal, $rootScope, $scope, emResources, emServer, emSync) {
 
         $scope.formList = [];
 
@@ -69,8 +69,8 @@ EdenMobile.controller('EMSync', [
             emServer.formList(
                 function(data) {
                     $scope.formListLoading = false;
-                    emDB.tables().then(function(tableNames) {
-                        $scope.formList = emSync.updateFormList($scope.formList, tableNames, data);
+                    emResources.names().then(function(resourceNames) {
+                        $scope.formList = emSync.updateFormList($scope.formList, resourceNames, data);
                         countSelected();
                         $ionicModal.fromTemplateUrl('views/sync/formlist.html', {
                             scope: $scope

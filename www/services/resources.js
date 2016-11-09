@@ -459,10 +459,12 @@
                  */
                 install: function(tableName, schemaData) {
 
-                    var resourceInstalled = $q.defer();
+                    var resourceInstalled = $q.defer(),
+                        schema = emDB.parseSchema(schemaData),
+                        options = angular.extend({}, schema.settings, {fields: schema.fields});
 
                     var installResource = function(table) {
-                        var resource = new Resource(table, schemaData);
+                        var resource = new Resource(table, options);
                         resources[resource.name] = resource;
                         resource.saveSchema();
                         resourceInstalled.resolve(resource);
@@ -470,7 +472,6 @@
 
                     emDB.table(tableName).then(function(table) {
                         if (!table) {
-                            var schema = emDB.parseSchema(schemaData);
                             emDB.defineTable(
                                 tableName,
                                 schema.fields,
