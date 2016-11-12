@@ -344,18 +344,19 @@
                 var tableName = record.tablename;
                 emDB.table(tableName).then(function(table) {
                     if (table !== undefined) {
-                        var options = {
-                            'name': record.name,
-                            'controller': record.controller,
-                            'function': record.function,
-                            'settings': record.settings
-                        };
-                        var fieldOpts = record.fields,
+                        var resourceName = record.name,
+                            fieldOpts = record.fields,
+                            options = {
+                                'name': resourceName,
+                                'controller': record.controller,
+                                'function': record.function,
+                                'settings': record.settings
+                            },
                             schema;
                         if (fieldOpts) {
                             options.fields = emDB.parseSchema(fieldOpts).fields;
                         }
-                        resources[tableName] = new Resource(table, options);
+                        resources[resourceName] = new Resource(table, options);
                     }
                     if (callback) {
                         callback(record.name);
@@ -491,6 +492,47 @@
                 remove: function(resourceName) {
 
                     // Remove a resource
+                },
+
+                /**
+                 * Get a list of available resources with the numbers of
+                 * records updated since the last synchronization with the
+                 * server.
+                 *
+                 * @param {function} callback: callback, function(resourceList)
+                 *                             with resourceList being a list of
+                 *                             {resource:Resource, numRows:integer}
+                 */
+                resourceList: function(callback) {
+
+                    var names = {},
+                        resourceList = [],
+                        resourceName;
+
+                    for (resourceName in resources) {
+                        names[resourceName] = null;
+                    }
+
+                    var addResourceInfo = function(resourceName, numRows) {
+                        resourceList.push({
+                            resource: resources[resourceName],
+                            numRows: numRows
+                        });
+                        delete names[resourceName];
+                        if (Object.keys(names).length === 0 && callback) {
+                            callback(resourceList);
+                        }
+                    };
+
+                    var resource,
+                        tableName,
+                        query;
+                    for (resourceName in names) {
+                        resource = resources[resourceName];
+                        tableName = resource.tableName;
+                        query = 'synchronized_on IS NULL OR synchronized_on<modified_on';
+                        resource.count(query, addResourceInfo);
+                    }
                 }
             };
 
