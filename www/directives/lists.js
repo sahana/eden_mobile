@@ -162,4 +162,43 @@ EdenMobile.directive("emSyncFormCard", [
     }
 ]);
 
+// ============================================================================
+/**
+ * emSyncResourceCard - directive for cards in sync resource selection
+ *
+ * @class emSyncResourceCard
+ * @memberof EdenMobile
+ */
+EdenMobile.directive("emSyncResourceCard", [
+    '$compile',
+    function($compile) {
+
+        var renderCard = function($scope, elem, attr) {
+
+            var resource = $scope.resource,
+                label = resource.label;
+
+            // @todo: clean this up (readability)
+            var ngClass="{'dark': !resource.upload," +
+                        "'balanced': resource.upload," +
+                        "'ion-android-checkbox-outline': resource.upload," +
+                        "'ion-android-checkbox-outline-blank': !resource.upload, " +
+                        "'icon': true}";
+
+            var cardTemplate = '<a class="item item-icon-right" ng-click="resource.upload=!resource.upload; countSelected();">' +
+                               '<i ng-class="' + ngClass + '"></i>' +
+                               '<h2>' + label + '</h2>' +
+                               '<p><small>' + resource.updated + ' new/updated records</small></p>' +
+                               '</a>';
+
+            var compiled = $compile(cardTemplate)($scope);
+            elem.replaceWith(compiled);
+        };
+
+        return {
+            link: renderCard
+        };
+    }
+]);
+
 // END ========================================================================

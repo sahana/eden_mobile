@@ -34,15 +34,20 @@ EdenMobile.controller('EMSync', [
     function($ionicModal, $rootScope, $scope, emResources, emServer, emSync) {
 
         $scope.formList = [];
+        $scope.resourceList = [];
 
         var countSelected = function() {
 
             var formList = $scope.formList,
-                available = 0,
-                selected = 0;
+                resourceList = $scope.resourceList,
+                available,
+                selected;
+
             if (!formList.length) {
                 $scope.selectedForms = 'select automatically';
             } else {
+                available = 0;
+                selected = 0;
                 formList.forEach(function(form) {
                     available++;
                     if (form.download) {
@@ -50,6 +55,20 @@ EdenMobile.controller('EMSync', [
                     }
                 });
                 $scope.selectedForms = selected + '/' + available + ' selected';
+            }
+
+            if (!resourceList.length) {
+                $scope.selectedResources = 'select automatically';
+            } else {
+                available = 0;
+                selected = 0;
+                resourceList.forEach(function(resource) {
+                    available++;
+                    if (resource.upload) {
+                        selected++;
+                    }
+                });
+                $scope.selectedResources = selected + '/' + available + ' selected';
             }
         };
 
@@ -85,6 +104,29 @@ EdenMobile.controller('EMSync', [
                     emServer.httpError(response);
                 }
             );
+        };
+
+        /**
+         * Modal to select resources for upload
+         */
+        $scope.selectResources = function() {
+
+            if ($scope.resourceListLoading) {
+                return;
+            }
+            $scope.resourceListLoading = true;
+
+            emResources.resourceList(function(resourceList) {
+                $scope.resourceListLoading = false;
+                $scope.resourceList = emSync.updateResourceList($scope.resourceList, resourceList);
+                countSelected();
+                $ionicModal.fromTemplateUrl('views/sync/resourcelist.html', {
+                    scope: $scope
+                }).then(function(modal) {
+                    $scope.modal = modal;
+                    modal.show();
+                });
+            });
         };
 
         /**

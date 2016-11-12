@@ -152,7 +152,7 @@ EdenMobile.factory('emSync', [
             // Build dict from current form list
             var items = {};
             currentList.forEach(function(item) {
-                items[item.name] = item;
+                items[item.resourceName] = item;
             });
 
             var formList = [],
@@ -181,7 +181,7 @@ EdenMobile.factory('emSync', [
                     download = item.download;
                 }
 
-                var entry = {
+                entry = {
                     'label': formData.l,
                     'resourceName': name,
                     'tableName': formData.t,
@@ -226,6 +226,76 @@ EdenMobile.factory('emSync', [
                     }
                 );
             }
+            return deferred.promise;
+        };
+
+        // ====================================================================
+        /**
+         * Update the list of available/selected resources
+         */
+        var updateResourceList = function(currentList, resources) {
+
+            // Build dict from current form list
+            var items = {};
+            currentList.forEach(function(item) {
+                items[item.resourceName] = item;
+            });
+
+            var resourceList = [],
+                resource,
+                numRows,
+                upload,
+                item,
+                entry;
+
+            resources.forEach(function(resourceData) {
+
+                resource = resourceData.resource;
+                numRows = resourceData.numRows;
+
+                // @todo: check autoUpload option for default
+                upload = true;
+
+                item = items[resource.name];
+                if (item !== undefined) {
+                    upload = item.upload;
+                }
+
+                entry = {
+                    'label': resource.getLabel(true),
+                    'resourceName': resource.name,
+                    'tableName': resource.tableName,
+                    'ref': {
+                        'c': resource.controller,
+                        'f': resource.function
+                    },
+                    'updated': numRows,
+                    'upload': upload
+                };
+                resourceList.push(entry);
+            });
+
+            return resourceList;
+        };
+
+        // ====================================================================
+        /**
+         * Get an updated list of available resources
+         *
+         * @param {Array} currentList - the current list of available resources
+         *
+         * @returns {promise} - a promise that resolves into the updated
+         *                      resource list
+         */
+        var getResourceList = function(currentList) {
+
+            var deferred = $q.defer();
+
+            emResources.resourceList(function(resourceList) {
+                resourceList = updateResourceList(currentList, resourceList);
+                deferred.resolve(resourceList);
+            });
+
             return deferred.promise;
         };
 
@@ -292,6 +362,8 @@ EdenMobile.factory('emSync', [
         var api = {
 
             updateFormList: updateFormList,
+            updateResourceList: updateResourceList,
+
             synchronize: synchronize
 
         };
