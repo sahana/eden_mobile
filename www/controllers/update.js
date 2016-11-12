@@ -60,7 +60,7 @@ EdenMobile.controller("EMDataUpdate", [
                 var strings = resource.strings,
                     formTitle = resourceName;
                 if (strings) {
-                    formTitle = strings.name || listTitle;
+                    formTitle = strings.name || formTitle;
                 }
                 $scope.formTitle = formTitle;
 
