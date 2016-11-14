@@ -102,41 +102,48 @@ EdenMobile.factory('emSync', [
             }
             self.status = 'active';
 
-            emServer.getForm(self.ref,
-                function(data) {
-                    // Successfully downloaded form description
+            if (self.type == 'form') {
 
-                    var schemaData = data[tableName];
-                    if (schemaData === undefined) {
-                        self.status = 'error';
-                        self.error = 'No schema definition received for ' + tableName;
-                        updateSyncStatus();
-                        return;
-                    }
+                emServer.getForm(self.ref,
+                    function(data) {
+                        // Successfully downloaded form description
 
-                    schemaData._name = self.resourceName;
-
-                    emResources.install(tableName, schemaData).then(
-                        function(resource) {
-                            // Success
-                            self.status = 'success';
-                            updateSyncStatus();
-                        },
-                        function(error) {
-                            // Error
+                        var schemaData = data[tableName];
+                        if (schemaData === undefined) {
                             self.status = 'error';
-                            self.error = error;
+                            self.error = 'No schema definition received for ' + tableName;
                             updateSyncStatus();
+                            return;
                         }
-                    );
-                },
-                function(response) {
-                    // Error
-                    // @todo: store error in log, make log accessible in Sync controller
-                    self.status = 'error';
-                    updateSyncStatus();
-                }
-            );
+
+                        schemaData._name = self.resourceName;
+
+                        emResources.install(tableName, schemaData).then(
+                            function(resource) {
+                                // Success
+                                self.status = 'success';
+                                updateSyncStatus();
+                            },
+                            function(error) {
+                                // Error
+                                self.status = 'error';
+                                self.error = error;
+                                updateSyncStatus();
+                            }
+                        );
+                    },
+                    function(response) {
+                        // Error
+                        // @todo: store error in log, make log accessible in Sync controller
+                        self.status = 'error';
+                        updateSyncStatus();
+                    }
+                );
+            } else {
+                self.status = 'error';
+                self.error = 'Not implemented yet';
+                updateSyncStatus();
+            }
         };
 
         // ====================================================================
@@ -304,15 +311,18 @@ EdenMobile.factory('emSync', [
          * Generate synchronization jobs
          *
          * @param {Array} formList - array of form descriptions
+         * @param {Array} resourceList - array of resource descriptions
          *
          * @returns {integer} - number of jobs scheduled
          */
-        var generateSyncJobs = function(formList) {
+        var generateSyncJobs = function(formList, resourceList) {
 
-            var jobsScheduled = 0;
+            var jobsScheduled = 0,
+                job;
+
             formList.forEach(function(form) {
                 if (form.download) {
-                    var job = new SyncJob(
+                    job = new SyncJob(
                         'form',
                         'pull',
                         form.resourceName,
@@ -323,6 +333,24 @@ EdenMobile.factory('emSync', [
                     jobsScheduled++;
                 }
             });
+
+            resourceList.forEach(function(resource) {
+                if (resource.upload) {
+                    var ref = resource.ref;
+                    if (ref.c && ref.f) {
+                        job = new SyncJob(
+                            'data',
+                            'push',
+                            resource.resourceName,
+                            resource.tableName,
+                            resource.ref
+                        );
+                        syncJobs.push(job);
+                        jobsScheduled++;
+                    }
+                }
+            });
+
             return jobsScheduled;
         };
 
@@ -331,9 +359,11 @@ EdenMobile.factory('emSync', [
          * Run synchronization jobs
          *
          * @param {Array} forms - the current list of available/selected forms for
-         *                        synchronization (to create sync jobs as needed)
+         *                        synchronization
+         * @param {Array} resource - the current list of available/selected resources
+         *                           for synchronization
          */
-        var synchronize = function(forms) {
+        var synchronize = function(forms, resources) {
 
             $rootScope.syncInProgress = true;
 
@@ -345,11 +375,22 @@ EdenMobile.factory('emSync', [
                     }
                 });
             } else {
-                // Generate jobs for forms
-                getFormList(forms).then(function(formList) {
-                    var jobsScheduled = generateSyncJobs(formList);
+
+                var lists = {
+                    formList: getFormList(forms),
+                    resourceList: getResourceList(resources)
+                };
+
+                $q.all(lists).then(function(pending) {
+                    var jobsScheduled = generateSyncJobs(
+                        pending.formList,
+                        pending.resourceList
+                    );
                     if (jobsScheduled) {
-                        synchronize(formList);
+                        synchronize(
+                            pending.formlist,
+                            pending.resourceList
+                        );
                     } else {
                         updateSyncStatus();
                     }

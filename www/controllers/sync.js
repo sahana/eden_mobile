@@ -137,7 +137,7 @@ EdenMobile.controller('EMSync', [
             if ($rootScope.syncInProgress) {
                 return;
             } else {
-                emSync.synchronize($scope.formList);
+                emSync.synchronize($scope.formList, $scope.resourceList);
             }
         };
     }
