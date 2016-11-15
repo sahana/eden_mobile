@@ -140,9 +140,20 @@ EdenMobile.factory('emSync', [
                     }
                 );
             } else {
-                self.status = 'error';
-                self.error = 'Not implemented yet';
-                updateSyncStatus();
+
+                emResources.open(self.resourceName).then(function(resource) {
+
+                    var query = 'synchronized_on IS NULL OR synchronized_on<modified_on';
+
+                    resource.exportJSON(query, function(output) {
+
+                        // @todo: POST output to server
+
+                        self.status = 'error';
+                        self.error = 'Not implemented yet';
+                        updateSyncStatus();
+                    });
+                });
             }
         };
 

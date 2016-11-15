@@ -192,6 +192,36 @@ EdenMobile.factory('emDB', [
             return field;
         };
 
+        // --------------------------------------------------------------------
+        /**
+         * Format a field value for JSON export to Sahana server
+         *
+         * @param {mixed} value - the JS field value
+         *
+         * @returns {mixed} - the formatted field value
+         */
+        Field.prototype.format = function(jsValue) {
+
+            var formatted = jsValue;
+
+            switch(this.type) {
+                case 'date':
+                case 'datetime':
+                    if (jsValue) {
+                        jsValue.setMilliseconds(0);
+                        formatted = jsValue.toISOString();
+                    }
+                    break;
+                case 'json':
+                    formatted = JSON.stringify(jsValue);
+                    break;
+                default:
+                    break;
+            }
+
+            return formatted;
+        };
+
         // ====================================================================
 
         /**

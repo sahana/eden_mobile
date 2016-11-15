@@ -105,7 +105,7 @@ EdenMobile.factory('emResources', [
 
         // ------------------------------------------------------------------------
         /**
-         * @todo: docstring
+         * Save the schema for this resource in the em_resource table
          */
         Resource.prototype.saveSchema = function() {
 
@@ -267,7 +267,12 @@ EdenMobile.factory('emResources', [
                     break;
                 case 2:
                     callback = query;
-                    query = null
+                    if (typeof fields == 'string') {
+                        query = fields;
+                        fields = null;
+                    } else {
+                        query = null;
+                    }
                     break;
                 default:
                     break;
@@ -319,10 +324,95 @@ EdenMobile.factory('emResources', [
             this.table.deleteRecords(this.extendQuery(query), callback);
         };
 
+        // ------------------------------------------------------------------------
+        /**
+         * Serialize a record for JSON export to Sahana server
+         *
+         * @param {object} record - the record
+         *
+         * @returns {object} - the record with values converted to export format
+         */
+        Resource.prototype.serialize = function(record) {
+
+            var output = {},
+                fields = this.fields,
+                fieldName,
+                field,
+                value;
+
+            for (fieldName in fields) {
+                field = fields[fieldName];
+                value = record[fieldName];
+                if (value !== undefined) {
+                    output[fieldName] = field.format(value);
+                }
+            }
+
+            return output;
+        };
+
+        // ------------------------------------------------------------------------
+        /**
+         * Export records from this resource for upload to Sahana server
+         *
+         * @param {Array} fields - array of field names (optional)
+         * @param {string} query - SQL WHERE expression to select the records
+         * @param {function} callback - callback function: function(output)
+         */
+        Resource.prototype.exportJSON = function(fields, query, callback) {
+
+            var self = this;
+
+            switch(arguments.length) {
+                case 1:
+                    callback = fields;
+                    fields = null;
+                    query = null;
+                    break;
+                case 2:
+                    callback = query;
+                    query = fields;
+                    fields = null;
+                    break;
+                default:
+                    break;
+            }
+
+            if (!fields) {
+                fields = Object.keys(self.fields);
+            }
+
+            var requiredFields = ['uuid', 'created_on', 'modified_on'];
+            requiredFields.forEach(function(fieldName) {
+                if (fields.indexOf(fieldName) == -1) {
+                    fields.push(fieldName);
+                }
+            });
+
+            self.select(fields, query, function(records) {
+
+                var output = {},
+                    rows = [],
+                    row;
+
+                for (var i=0, len=records.length; i<len; i++) {
+                    row = self.serialize(records[i]);
+                    rows.push(row);
+                }
+
+                output[self.tableName] = rows;
+                if (callback) {
+                    callback(JSON.stringify(output));
+                }
+            });
+        };
 
         // ====================================================================
         /**
-         * @todo: docstring
+         * Set up the default resource for a table
+         *
+         * @param {string} tableName - the table name
+         * @param {function} callback - callback function: function(tableName)
          */
         var setupDefaultResource = function(tableName, callback) {
 
@@ -340,7 +430,7 @@ EdenMobile.factory('emResources', [
 
         // --------------------------------------------------------------------
         /**
-         * @todo: docstring
+         * Set up default resources for pre-installed tables (emDefaultSchema)
          */
         var setupDefaultResources = function() {
 
@@ -368,7 +458,10 @@ EdenMobile.factory('emResources', [
 
         // --------------------------------------------------------------------
         /**
-         * @todo: docstring
+         * Set up a resource from a em_resource record
+         *
+         * @param {object} record - the em_resource record
+         * @param {function} callback - callback function: function(resourceName)
          */
         var setupResource = function(record, callback) {
 
@@ -398,6 +491,8 @@ EdenMobile.factory('emResources', [
         // --------------------------------------------------------------------
         /**
          * Load all resources and attach them to the tables
+         *
+         * - resolves the resourcesLoaded promise
          */
         var loadResources = function() {
 
