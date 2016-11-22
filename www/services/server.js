@@ -507,6 +507,92 @@
             };
 
             /**
+             * HTTP POST to the configured Sahana server
+             *
+             * @param {SahanaURL|string} - the URL to post the data to
+             * @param {string} format - the expected data format, 'text'|'json',
+             *                          auto-detected from SahanaURL 'extension'
+             *                          option if present
+             * @param {object|string} data - the data; string will be sent as-is
+             *                               with contentType 'application/json',
+             *                               object will be sent as 'multipart/formdata'
+             * @param {function} successCallback - callback function to invoke
+             *                                     when the request was successful,
+             *                                     function(data)
+             * @param {function} errorCallback - callback function to invoke when
+             *                                   the request was unsuccessful,
+             *                                   function(response), defaults to
+             *                                   standard httpError handler
+             */
+            var post = function(url, format, data, successCallback, errorCallback) {
+
+                // Format parameter omitted?
+                if (typeof data == 'function') {
+                    errorCallback = successCallback;
+                    successCallback = data;
+                    data = format;
+                    format = null;
+                }
+
+                // If no format was specified, try to look it up from SahanaURL
+                if (!format && url instanceof SahanaURL) {
+                    format = url.getFormat();
+                }
+
+                // Configure the response type according to the format extension
+                var responseType = 'text';
+                if (format == 'json') {
+                    responseType = 'json';
+                }
+
+                // The request config
+                var config = {
+                    method: 'POST',
+                    url: url,
+                    responseType: responseType,
+                    data: data,
+                };
+
+                if (typeof data == 'string') {
+                    // Assume JSON
+                    config.headers = {
+                        'Content-Type': 'application/json'
+                    };
+                } else {
+                    // Assume multipart
+                    config.headers = {
+                        'Content-Type': undefined
+                    };
+                    config.transformRequest = function(data, headersGetter) {
+                        var formData = new FormData();
+                        angular.forEach(data, function(value, key) {
+                            formData.append(key, value);
+                        });
+                        return formData;
+                    };
+                }
+
+                // Default to generic httpError handler
+                if (!errorCallback) {
+                    errorCallback = httpError;
+                }
+
+                // Execute the request
+                http(config).then(
+                    function(response) {
+                        if (successCallback) {
+                            successCallback(response.data);
+                        }
+                    },
+                    function(response) {
+                        if (errorCallback) {
+                            errorCallback(response);
+                        }
+                    }
+                );
+            };
+
+            /**
              * The emServer API
              */
             var api = {
@@ -522,7 +608,7 @@
 
                 // HTTP commands
                 get: get,
-                //post: post, // @todo
+                post: post,
 
                 /**
                  * Download a list of available mobile forms
