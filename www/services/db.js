@@ -116,6 +116,20 @@ EdenMobile.factory('emDB', [
 
         // --------------------------------------------------------------------
         /**
+         * Get the selectable options for this field
+         *
+         * @returns {object} - the field options as specified in the model
+         *
+         * @todo: return copy
+         * @todo: lookup options if reference
+         */
+        Field.prototype.getOptions = function() {
+
+            return this._description.options;
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Get the description for this field
          *
          * @returns {object} - the field description

@@ -51,23 +51,29 @@ EdenMobile.factory('emForms', [
             // @todo: ability to override the widget
 
             if (writable || typeof writable == 'undefined') {
-                switch(fieldType) {
-                    case 'boolean':
-                        widgetType = '<em-boolean-widget>';
-                        break;
-                    case 'date':
-                        widgetType = '<em-date-widget>';
-                        break;
-                    case 'integer':
-                        // @ToDo: We definitely need to be able to configure this!
-                        widgetType = '<em-options-widget>';
-                        break;
-                    case 'password':
-                        widgetType = '<em-text-widget type="password">';
-                        break;
-                    default:
-                        widgetType = '<em-text-widget>';
-                        break;
+
+                var options = field.getOptions();
+                if (options) {
+                    widgetType = '<em-options-widget>';
+                } else {
+                    switch(fieldType) {
+                        case 'boolean':
+                            widgetType = '<em-boolean-widget>';
+                            break;
+                        case 'date':
+                            widgetType = '<em-date-widget>';
+                            break;
+                        case 'double':
+                        case 'integer':
+                            widgetType = '<em-number-widget>';
+                            break;
+                        case 'password':
+                            widgetType = '<em-text-widget type="password">';
+                            break;
+                        default:
+                            widgetType = '<em-text-widget>';
+                            break;
+                    }
                 }
             } else {
                 widgetType = '<em-text-widget>';
@@ -135,7 +141,7 @@ EdenMobile.factory('emForms', [
                 for (fieldName in resource.fields) {
                     field = resource.fields[fieldName];
                     if (field.readable || field.writable) {
-                        fieldNames.push(fieldName)
+                        fieldNames.push(fieldName);
                     }
                 }
             }
@@ -157,7 +163,7 @@ EdenMobile.factory('emForms', [
                     };
 
                     // Options (for options widget)
-                    options = description.options;
+                    options = field.getOptions();
                     if (options) {
                         attributes.options = JSON.stringify(options);
                     }

@@ -395,7 +395,7 @@
      */
     SQLTable.prototype.deleteRecords = function(query) {
 
-        var sql = 'DELETE FROM ' + quoted(tableName);
+        var sql = 'DELETE FROM ' + quoted(this.name);
         if (query) {
             sql += (' WHERE ' + query);
         }

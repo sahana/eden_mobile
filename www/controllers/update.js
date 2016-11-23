@@ -77,7 +77,7 @@ EdenMobile.controller("EMDataUpdate", [
                             fieldName,
                             value;
                         for (fieldName in fields) {
-                            field = fields[fieldName]
+                            field = fields[fieldName];
                             if (!field.readable) {
                                 continue;
                             }
@@ -156,7 +156,8 @@ EdenMobile.controller("EMDataUpdate", [
                     'Delete Record',
                     'Are you sure you want to delete this record?',
                     function() {
-                        emResource.open(resourceName).then(function(resource) {
+                        emResources.open(resourceName).then(function(resource) {
+                            var query = resource.tableName + '.id=' + recordID;
                             resource.deleteRecords(query, confirmDelete);
                         });
                     }
