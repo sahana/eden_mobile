@@ -103,58 +103,90 @@ EdenMobile.factory('emSync', [
             self.status = 'active';
 
             if (self.type == 'form') {
-
-                emServer.getForm(self.ref,
-                    function(data) {
-                        // Successfully downloaded form description
-
-                        var schemaData = data[tableName];
-                        if (schemaData === undefined) {
-                            self.status = 'error';
-                            self.error = 'No schema definition received for ' + tableName;
-                            updateSyncStatus();
-                            return;
-                        }
-
-                        schemaData._name = self.resourceName;
-
-                        emResources.install(tableName, schemaData).then(
-                            function(resource) {
-                                // Success
-                                self.status = 'success';
-                                updateSyncStatus();
-                            },
-                            function(error) {
-                                // Error
-                                self.status = 'error';
-                                self.error = error;
-                                updateSyncStatus();
-                            }
-                        );
-                    },
-                    function(response) {
-                        // Error
-                        // @todo: store error in log, make log accessible in Sync controller
-                        self.status = 'error';
-                        updateSyncStatus();
-                    }
-                );
+                self.downloadForm();
             } else {
-
-                emResources.open(self.resourceName).then(function(resource) {
-
-                    var query = 'synchronized_on IS NULL OR synchronized_on<modified_on';
-
-                    resource.exportJSON(query, function(output) {
-
-                        // @todo: POST output to server
-
-                        self.status = 'error';
-                        self.error = 'Not implemented yet';
-                        updateSyncStatus();
-                    });
-                });
+                if (self.mode == 'push') {
+                    self.uploadData();
+                }
             }
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Download form definition from server
+         */
+        SyncJob.prototype.downloadForm = function() {
+
+            var self = this,
+                tableName = self.tableName;
+
+            emServer.getForm(self.ref,
+                function(data) {
+
+                    // Process form definition
+                    var schemaData = data[tableName];
+                    if (schemaData === undefined) {
+                        self.status = 'error';
+                        self.error = 'No schema definition received for ' + tableName;
+                        updateSyncStatus();
+                        return;
+                    }
+                    schemaData._name = self.resourceName;
+
+                    // Install resource
+                    emResources.install(tableName, schemaData).then(
+                        function(resource) {
+                            // Success
+                            self.status = 'success';
+                            updateSyncStatus();
+                        },
+                        function(error) {
+                            // Error
+                            self.status = 'error';
+                            self.error = error;
+                            updateSyncStatus();
+                        }
+                    );
+                },
+                function(response) {
+                    // Error
+                    self.status = 'error';
+                    updateSyncStatus();
+                }
+            );
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Upload resource data to the server
+         */
+        SyncJob.prototype.uploadData = function() {
+
+            var self = this,
+                resourceName = self.resourceName;
+
+            emResources.open(resourceName).then(function(resource) {
+
+                var query = 'synchronized_on IS NULL OR synchronized_on<modified_on';
+
+                resource.exportJSON(query, function(output) {
+
+                    emServer.postData(self.ref, output,
+                        function(data) {
+
+                            // @todo: update synchronized_on
+
+                            self.status = 'success';
+                            updateSyncStatus();
+                        },
+                        function(response) {
+                            // Error
+                            self.status = 'error';
+                            updateSyncStatus();
+                        }
+                    );
+                });
+            });
         };
 
         // ====================================================================
