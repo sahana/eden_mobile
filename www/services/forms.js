@@ -50,33 +50,31 @@ EdenMobile.factory('emForms', [
 
             // @todo: ability to override the widget
 
-            if (writable || typeof writable == 'undefined') {
-
-                var options = field.getOptions();
-                if (options) {
-                    widgetType = '<em-options-widget>';
-                } else {
-                    switch(fieldType) {
-                        case 'boolean':
-                            widgetType = '<em-boolean-widget>';
-                            break;
-                        case 'date':
-                            widgetType = '<em-date-widget>';
-                            break;
-                        case 'double':
-                        case 'integer':
-                            widgetType = '<em-number-widget>';
-                            break;
-                        case 'password':
-                            widgetType = '<em-text-widget type="password">';
-                            break;
-                        default:
-                            widgetType = '<em-text-widget>';
-                            break;
-                    }
-                }
+            var options = field.getOptions();
+            if (options) {
+                widgetType = '<em-options-widget>';
             } else {
-                widgetType = '<em-text-widget>';
+                switch(fieldType) {
+                    case 'boolean':
+                        widgetType = '<em-boolean-widget>';
+                        break;
+                    case 'date':
+                        widgetType = '<em-date-widget>';
+                        break;
+                    case 'double':
+                    case 'integer':
+                        widgetType = '<em-number-widget>';
+                        break;
+                    case 'password':
+                        widgetType = '<em-text-widget type="password">';
+                        break;
+                    default:
+                        widgetType = '<em-text-widget>';
+                        break;
+                }
+            }
+
+            if (writable === false) {
                 attr.disabled = 'disabled';
             }
 
@@ -155,6 +153,10 @@ EdenMobile.factory('emForms', [
                 field = resource.fields[fieldName];
                 if (field) {
                     description = field._description;
+
+                    if (!field.readable) {
+                        return;
+                    }
 
                     // Label and model-link
                     attributes = {
