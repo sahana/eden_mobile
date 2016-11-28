@@ -27,14 +27,64 @@
 
 // ============================================================================
 /**
+ * emSync - Service to log synchronization events/results
+ *
+ * @class emSync
+ * @memberof EdenMobile.Services
+ */
+EdenMobile.factory('emSyncLog', [
+    'emDB',
+    function(emDB) {
+
+        var api = {
+
+            /**
+             * Create an entry in the synchronization log
+             *
+             * @param {SyncJob} job - the sync job the entry is related to
+             * @param {string} result - the result of the action: success|error|cancelled
+             * @param {string} message - the error message
+             */
+            log: function(job, result, message) {
+
+                var entry = {
+                    timestamp: new Date(),
+                    result: result,
+                    message: message
+                };
+
+                if (job) {
+                    entry.type = job.type;
+                    entry.mode = job.mode;
+                    entry.resource = job.resourceName;
+                }
+
+                emDB.table('em_sync_log').then(function(table) {
+                    table.insert(entry);
+                });
+            },
+
+            obsolete: function() {
+
+                emDB.table('em_sync_log').then(function(table) {
+                    table.update({current: false});
+                });
+            }
+        };
+        return api;
+    }
+]);
+
+// ============================================================================
+/**
  * emSync - Service for synchronization of data and forms
  *
  * @class emSync
  * @memberof EdenMobile.Services
  */
 EdenMobile.factory('emSync', [
-    '$q', '$rootScope', '$timeout', 'emResources', 'emServer',
-    function ($q, $rootScope, $timeout, emResources, emServer) {
+    '$q', '$rootScope', '$timeout', 'emResources', 'emServer', 'emSyncLog',
+    function ($q, $rootScope, $timeout, emResources, emServer, emSyncLog) {
 
         // Current job queue and flags
         var syncJobs = [],
@@ -113,6 +163,33 @@ EdenMobile.factory('emSync', [
 
         // --------------------------------------------------------------------
         /**
+         * Set the job result, log it and update the job queue
+         *
+         * @param {string} status: the final status success|error|cancelled
+         * @param {string} message: the error message (if any)
+         */
+        SyncJob.prototype.result = function(status, message) {
+
+            this.status = status;
+            this.error = message || null;
+
+            var result = null;
+            switch(status) {
+                case 'success':
+                case 'error':
+                case 'cancelled':
+                    result = status;
+                    break;
+                default:
+                    break;
+            }
+
+            emSyncLog.log(this, result, this.error);
+            updateSyncStatus();
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Download form definition from server
          */
         SyncJob.prototype.downloadForm = function() {
@@ -126,9 +203,7 @@ EdenMobile.factory('emSync', [
                     // Process form definition
                     var schemaData = data[tableName];
                     if (schemaData === undefined) {
-                        self.status = 'error';
-                        self.error = 'No schema definition received for ' + tableName;
-                        updateSyncStatus();
+                        self.result('error', 'No schema definition received for ' + tableName);
                         return;
                     }
                     schemaData._name = self.resourceName;
@@ -137,21 +212,23 @@ EdenMobile.factory('emSync', [
                     emResources.install(tableName, schemaData).then(
                         function(resource) {
                             // Success
-                            self.status = 'success';
-                            updateSyncStatus();
+                            self.result('success');
                         },
                         function(error) {
                             // Error
-                            self.status = 'error';
-                            self.error = error;
-                            updateSyncStatus();
+                            self.result('error', error);
                         }
                     );
                 },
                 function(response) {
                     // Error
-                    self.status = 'error';
-                    updateSyncStatus();
+                    var message;
+                    if (typeof response == 'string') {
+                        message = response;
+                    } else if (response.status) {
+                        message = response.status + ' ' + response.statusText;
+                    }
+                    self.result('error', message);
                 }
             );
         };
@@ -176,13 +253,17 @@ EdenMobile.factory('emSync', [
 
                             // @todo: update synchronized_on
 
-                            self.status = 'success';
-                            updateSyncStatus();
+                            self.result('success');
                         },
                         function(response) {
                             // Error
-                            self.status = 'error';
-                            updateSyncStatus();
+                            var message;
+                            if (typeof response == 'string') {
+                                message = response;
+                            } else if (response.status) {
+                                message = response.status + ' ' + response.statusText;
+                            }
+                            self.result('error', message);
                         }
                     );
                 });
@@ -411,13 +492,17 @@ EdenMobile.factory('emSync', [
             $rootScope.syncInProgress = true;
 
             if (syncJobs.length) {
+
                 // Run all pending jobs
                 syncJobs.forEach(function(job) {
                     if (job.status == 'pending') {
                         job.run();
                     }
                 });
+
             } else {
+
+                emSyncLog.obsolete();
 
                 var lists = {
                     formList: getFormList(forms),

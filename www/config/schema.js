@@ -112,6 +112,45 @@ EdenMobile.factory('emDefaultSchema', ['$injector', function ($injector) {
         },
 
         /**
+         * Synchronization log
+         */
+        'em_sync_log': {
+            'timestamp': {
+                type: 'datetime',
+                label: 'Date/Time'
+            },
+            'type': {
+                type: 'string',
+                label: 'Job Type'
+            },
+            'mode': {
+                type: 'string',
+                label: 'Transmission Mode'
+            },
+            'resource': {
+                type: 'string',
+                label: 'Resource Name'
+            },
+            'result': {
+                type: 'string',
+                label: 'Result'
+            },
+            'remote_error': {
+                type: 'boolean',
+                label: 'Remote Error',
+                defaultValue: false
+            },
+            'message': {
+                type: 'string',
+                label: 'Message'
+            },
+            'current': {
+                type: 'boolean',
+                defaultValue: true
+            }
+        },
+
+        /**
         * Meta fields for user tables
         */
         '_meta_fields': {
