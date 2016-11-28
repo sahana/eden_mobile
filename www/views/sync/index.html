@@ -2,23 +2,30 @@
     <ion-content class="has-header has-footer">
         <h2 class="padding" translate="Synchronize"></h2>
         <div class="list card">
-            <a class="item item-icon-right" ng-disabled="syncInProgress || formListLoading || resourceListLoading" ng-click="selectForms()">
+            <div class="item item-icon-right" ng-click="!syncInProgress && !formListLoading && !resourceListLoading && selectForms()">
                 <i class="icon ion-arrow-right-b" ng-show="!formListLoading"></i>
                 <ion-spinner class="icon" ng-show="formListLoading" icon="dots"></ion-spinner>
                 <h3>Forms</h3>
                 <p><small>{{selectedForms}}</small></p>
-            </a>
-            <a class="item item-icon-right" ng-disabled="syncInProgress || formListLoading || resourceListLoading" ng-click="selectResources()">
-                <i class="icon ion-arrow-right-b"></i>
+            </div>
+            <div class="item item-icon-right" ng-click="!syncInProgress && !formListLoading && !resourceListLoading && selectResources()">
+                <i class="icon ion-arrow-right-b" ng-show="!resourceListLoading"></i>
                 <ion-spinner class="icon" ng-show="resourceListLoading" icon="dots"></ion-spinner>
                 <h3>Data</h3>
                 <p><small>{{selectedResources}}</small></p>
-            </a>
+            </div>
         </div>
         <div class="padding">
             <button type="button" ng-disabled="syncInProgress || formListLoading || resourceListLoading" ng-click="synchronize()" class="button button-block button-positive">
                 Synchronize
             </button>
+        </div>
+        <div class="list card">
+            <div type="button" class="item item-icon-right" ng-click="!syncInProgress && !syncLogLoading && viewResults()">
+                <i class="icon ion-arrow-right-b" ng-show="!syncLogLoading"></i>
+                <ion-spinner class="icon" ng-show="syncLogLoading" icon="dots"></ion-spinner>
+                <h3>View Results</h3>
+            </div>
         </div>
     </ion-content>
 </ion-view>

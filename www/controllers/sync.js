@@ -30,12 +30,15 @@
  * Controller for synchronisation page
  */
 EdenMobile.controller('EMSync', [
-    '$ionicModal', '$rootScope', '$scope', 'emResources', 'emServer', 'emSync',
-    function($ionicModal, $rootScope, $scope, emResources, emServer, emSync) {
+    '$ionicModal', '$rootScope', '$scope', 'emResources', 'emServer', 'emSync', 'emSyncLog',
+    function($ionicModal, $rootScope, $scope, emResources, emServer, emSync, emSyncLog) {
 
         $scope.formList = [];
         $scope.resourceList = [];
 
+        /**
+         * Count selected forms/resource (to show numbers on cards)
+         */
         var countSelected = function() {
 
             var formList = $scope.formList,
@@ -85,6 +88,11 @@ EdenMobile.controller('EMSync', [
             }
             $scope.formListLoading = true;
 
+            // Remove any exiting modal
+            if ($scope.formListModal) {
+                $scope.formListModal.remove();
+            }
+
             emServer.formList(
                 function(data) {
                     $scope.formListLoading = false;
@@ -94,7 +102,7 @@ EdenMobile.controller('EMSync', [
                         $ionicModal.fromTemplateUrl('views/sync/formlist.html', {
                             scope: $scope
                         }).then(function(modal) {
-                            $scope.modal = modal;
+                            $scope.formListModal = modal;
                             modal.show();
                         });
                     });
@@ -116,6 +124,11 @@ EdenMobile.controller('EMSync', [
             }
             $scope.resourceListLoading = true;
 
+            // Remove any exiting modal
+            if ($scope.resourceListModal) {
+                $scope.resourceListModal.remove();
+            }
+
             emResources.resourceList(function(resourceList) {
                 $scope.resourceListLoading = false;
                 $scope.resourceList = emSync.updateResourceList($scope.resourceList, resourceList);
@@ -123,7 +136,7 @@ EdenMobile.controller('EMSync', [
                 $ionicModal.fromTemplateUrl('views/sync/resourcelist.html', {
                     scope: $scope
                 }).then(function(modal) {
-                    $scope.modal = modal;
+                    $scope.resourceListModal = modal;
                     modal.show();
                 });
             });
@@ -139,6 +152,33 @@ EdenMobile.controller('EMSync', [
             } else {
                 emSync.synchronize($scope.formList, $scope.resourceList);
             }
+        };
+
+        /**
+         * View synchronization results (syncLog)
+         */
+        $scope.viewResults = function() {
+
+            if ($scope.syncInProgress || $scope.syncLogLoading) {
+                return;
+            }
+            $scope.syncLogLoading = true;
+
+            // Remove any exiting modal
+            if ($scope.syncLogModal) {
+                $scope.syncLogModal.remove();
+            }
+
+            emSyncLog.entries(function(records) {
+                $scope.syncLogLoading = false;
+                $scope.logEntries = records;
+                $ionicModal.fromTemplateUrl('views/sync/log.html', {
+                    scope: $scope
+                }).then(function(modal) {
+                    $scope.syncLogModal = modal;
+                    modal.show();
+                });
+            });
         };
     }
 

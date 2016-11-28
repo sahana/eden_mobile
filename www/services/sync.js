@@ -64,10 +64,35 @@ EdenMobile.factory('emSyncLog', [
                 });
             },
 
+            /**
+             * Mark all existing log entries as obsolete (current=false)
+             */
             obsolete: function() {
 
                 emDB.table('em_sync_log').then(function(table) {
                     table.update({current: false});
+                });
+            },
+
+            /**
+             * Get all current log entries
+             *
+             * @param {function} callback - callback function: function(records, result)
+             */
+            entries: function(callback) {
+
+                emDB.table('em_sync_log').then(function(table) {
+
+                    var fields = [
+                            'timestamp',
+                            'type',
+                            'mode',
+                            'resource',
+                            'result',
+                            'message'
+                        ];
+
+                    table.select(fields, 'current=1', callback);
                 });
             }
         };

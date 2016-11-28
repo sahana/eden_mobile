@@ -201,4 +201,98 @@ EdenMobile.directive("emSyncResourceCard", [
     }
 ]);
 
+// ============================================================================
+/**
+ * emSyncLogCard - directive for cards in sync log data view
+ *
+ * @class emSyncLogCard
+ * @memberof EdenMobile
+ */
+EdenMobile.directive("emSyncLogCard", [
+    '$compile',
+    function($compile) {
+
+        var renderCard = function($scope, elem, attr) {
+
+            var entry = $scope.entry,
+                cardTemplate = angular.element('<div class="item">'),
+                headers = [],
+                footers = [];
+
+            var timestamp = entry.timestamp;
+            if (timestamp) {
+                headers.push(timestamp.toLocaleString());
+            }
+            var jobStr = [];
+            switch(entry.mode) {
+                case 'pull':
+                    jobStr.push('Download');
+                    break;
+                case 'push':
+                    jobStr.push('Upload');
+                    break;
+                default:
+                    break;
+            }
+            switch(entry.type) {
+                case 'data':
+                    jobStr.push('Data');
+                    break;
+                case 'form':
+                    jobStr.push('Form');
+                    break;
+                default:
+                    break;
+            }
+            if (jobStr.length) {
+                headers.push(jobStr.join('/'));
+            }
+
+            if (headers.length) {
+                var header = angular.element('<p><small>' + headers.join(' - ') + '</small></p>');
+                cardTemplate.append(header);
+            }
+
+            if (entry.resource) {
+                var resource = angular.element('<h2>' + entry.resource + '</h2>');
+                cardTemplate.append(resource);
+            }
+
+            var result,
+                resultClass;
+            switch(entry.result) {
+                case 'success':
+                    result = 'Success';
+                    resultClass = 'sync-result success';
+                    break;
+                case 'error':
+                    result = 'Error';
+                    resultClass = 'sync-result error';
+                    break;
+                default:
+                    result = entry.result;
+                    resultClass = 'sync-result';
+                    break;
+            }
+            if (result) {
+                footers.push(result);
+            }
+            if (entry.message) {
+                footers.push(entry.message);
+            }
+            if (footers.length) {
+                var footer = angular.element('<p class="' + resultClass + '">' + footers.join(': ') + '</p>');
+                cardTemplate.append(footer);
+            }
+
+            var compiled = $compile(cardTemplate)($scope);
+            elem.replaceWith(compiled);
+        };
+
+        return {
+            link: renderCard
+        };
+    }
+]);
+
 // END ========================================================================

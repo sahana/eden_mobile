@@ -1,9 +1,24 @@
 input.readonly {
     background-color: #FFFFFF;
-    color: #7f7f7f;
+    color: #7F7F7F;
     font-style: italic;
 }
 input[type="text"],
 input[type="password"] {
     width: 100%;
+}
+.sync-result {
+    font-size: 0.8rem;
+    font-style: italic;
+}
+.sync-result.error {
+    color: red!important;
+}
+.sync-result.success {
+    color: green!important;
+}
+.sync-log-empty {
+    color: #7F7F7F;
+    font-size: 0.8rem;
+    font-style: italic;
 }

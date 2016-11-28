@@ -1,0 +1,12 @@
+<ion-modal-view>
+    <div class="bar bar-header bar-energized">
+        <button class="button button-clear icon ion-arrow-left-b" ng-click="syncLogModal.remove()"></button>
+        <h1 class="title" translate="Synchronization Results"></h1>
+    </div>
+    <ion-content class="has-header">
+        <div class="list card" ng-show="logEntries.length>0">
+            <em-sync-log-card ng-repeat="entry in logEntries"/>
+        </div>
+        <div class="sync-log-empty padding" ng-show="logEntries.length==0">No entries</div>
+    </ion-content>
+</ion-modal-view>
