@@ -15,7 +15,14 @@
         },
         "cordova_app_version_plugin": {
             "PACKAGE_NAME": "org.sahanafoundation.eden_mobile"
+        },
+        "cordova-plugin-camera": {
+            "PACKAGE_NAME": "org.sahanafoundation.eden_mobile"
         }
     },
-    "dependent_plugins": {}
+    "dependent_plugins": {
+        "cordova-plugin-compat": {
+            "PACKAGE_NAME": "org.sahanafoundation.eden_mobile"
+        }
+    }
 }
