@@ -251,7 +251,13 @@ EdenMobile.factory('emSync', [
                     if (typeof response == 'string') {
                         message = response;
                     } else if (response.status) {
-                        message = response.status + ' ' + response.statusText;
+                        if (response.data) {
+                            message = response.data.message;
+                        }
+                        if (!message) {
+                            message = response.statusText;
+                        }
+                        message = response.status + ' ' + message;
                     }
                     self.result('error', message);
                 }
@@ -286,7 +292,13 @@ EdenMobile.factory('emSync', [
                             if (typeof response == 'string') {
                                 message = response;
                             } else if (response.status) {
-                                message = response.status + ' ' + response.statusText;
+                                if (response.data) {
+                                    message = response.data.message;
+                                }
+                                if (!message) {
+                                    message = response.statusText;
+                                }
+                                message = response.status + ' ' + message;
                             }
                             self.result('error', message);
                         }
