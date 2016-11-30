@@ -266,6 +266,44 @@ EdenMobile.factory('emSync', [
 
         // --------------------------------------------------------------------
         /**
+         * @todo: docstring
+         */
+        SyncJob.prototype.updateSyncDate = function(synchronized_on, created, updated) {
+
+            var deferred = $q.defer();
+
+            var uuids = [],
+                add = function(uuid) {
+                    uuids.push("'" + uuid + "'");
+                };
+            if (created) {
+                created.forEach(add);
+            }
+            if (updated) {
+                updated.forEach(add);
+            }
+
+            if (uuids.length) {
+                emResources.open(this.resourceName).then(function(resource) {
+                    var query = 'uuid IN (' + uuids.join(',') + ')',
+                        data = {
+                            'synchronized_on': synchronized_on,
+                            // don't change modified_on:
+                            'modified_on': undefined
+                        };
+                    resource.update(data, query, function() {
+                        deferred.resolve();
+                    });
+                });
+            } else {
+                deferred.resolve();
+            }
+
+            return deferred.promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Upload resource data to the server
          */
         SyncJob.prototype.uploadData = function() {
@@ -279,12 +317,28 @@ EdenMobile.factory('emSync', [
 
                 resource.exportJSON(query, function(output) {
 
+                    if (!output) {
+                        // Skip if empty
+                        self.result(null, 'not modified');
+                        return;
+                    }
+
+                    var synchronized_on = new Date();
+
                     emServer.postData(self.ref, output,
                         function(data) {
-
-                            // @todo: update synchronized_on
-
-                            self.result('success');
+                            // Success
+                            if (data) {
+                                self.updateSyncDate(
+                                    synchronized_on,
+                                    data.created,
+                                    data.updated
+                                ).then(function() {
+                                    self.result('success');
+                                });
+                            } else {
+                                self.result('success');
+                            }
                         },
                         function(response) {
                             // Error
@@ -341,7 +395,7 @@ EdenMobile.factory('emSync', [
                 }
 
                 // @todo: check autoInstall/autoUpdate option for default
-                download = true;
+                download = !installed; // true;
 
                 // Retain previous download status
                 item = items[name];

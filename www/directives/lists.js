@@ -139,7 +139,7 @@ EdenMobile.directive("emSyncFormCard", [
                 label = form.label;
 
             // @todo: clean this up (readability)
-            var ngClass="{'dark': !form.download," +
+            var ngClass="{'inactive': !form.download," +
                         "'balanced': form.download," +
                         "'ion-android-checkbox-outline': form.installed && !form.download || !form.installed && form.download," +
                         "'ion-android-sync': form.installed && form.download," +
@@ -179,7 +179,7 @@ EdenMobile.directive("emSyncResourceCard", [
                 label = resource.label;
 
             // @todo: clean this up (readability)
-            var ngClass="{'dark': !resource.upload," +
+            var ngClass="{'inactive': !resource.upload," +
                         "'balanced': resource.upload," +
                         "'ion-android-checkbox-outline': resource.upload," +
                         "'ion-android-checkbox-outline-blank': !resource.upload, " +

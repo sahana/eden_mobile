@@ -395,14 +395,19 @@ EdenMobile.factory('emResources', [
                     rows = [],
                     row;
 
-                for (var i=0, len=records.length; i<len; i++) {
-                    row = self.serialize(records[i]);
-                    rows.push(row);
-                }
-
-                output[self.tableName] = rows;
-                if (callback) {
-                    callback(JSON.stringify(output));
+                if (!records.length) {
+                    if (callback) {
+                        callback();
+                    }
+                } else {
+                    for (var i=0, len=records.length; i<len; i++) {
+                        row = self.serialize(records[i]);
+                        rows.push(row);
+                    }
+                    output[self.tableName] = rows;
+                    if (callback) {
+                        callback(JSON.stringify(output));
+                    }
                 }
             });
         };

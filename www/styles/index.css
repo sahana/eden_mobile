@@ -22,3 +22,6 @@ input[type="password"] {
     font-size: 0.8rem;
     font-style: italic;
 }
+.inactive {
+    color: #E0E0E0;
+}
