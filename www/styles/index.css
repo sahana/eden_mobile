@@ -25,3 +25,7 @@ input[type="password"] {
 .inactive {
     color: #E0E0E0;
 }
+.error {
+    color: #FF0000;
+    padding-top: 5px;
+}

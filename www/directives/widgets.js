@@ -481,6 +481,7 @@
                     labelText = setting.label || settingName,
                     label = angular.element('<h3>')
                                    .attr('translate', labelText),
+                    onValidation = setting.onValidation,
                     placeholder = setting.placeholder,
                     empty = setting.empty || 'not configured',
                     inputType = 'text',
@@ -545,7 +546,8 @@
                         var dialogOptions = {
                             'inputType': inputType,
                             'defaultText': value,
-                            'inputPlaceholder': placeholder
+                            'inputPlaceholder': placeholder,
+                            'onValidation': onValidation
                         };
                         emDialogs.stringInput(
                             labelText,

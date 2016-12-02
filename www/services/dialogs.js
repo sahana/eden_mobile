@@ -141,6 +141,7 @@ EdenMobile.factory('emDialogs', [
                     options = {};
                 }
 
+                /* Can't do validation with the simplified 'prompt'
                 var stringInput = $ionicPopup.prompt({
                     title: title,
                     subTitle: question,
@@ -159,6 +160,49 @@ EdenMobile.factory('emDialogs', [
                             actionCallback(inputValue);
                         }
                     }
+                }); */
+
+                // Use a separate scope for the dialog
+                var scope = $rootScope.$new();
+                scope.data = {};
+
+                var inputType = options.inputType || 'text';
+                var template = '<input type="' + inputType + '" value="' + options.defaultText + '" placeholder="' + options.inputPlaceholder + '" ng-model="data.input"><div class="error" ng-show="data.invalid">Invalid!</div>';
+                var stringInput = $ionicPopup.show({
+                    scope: scope,
+                    template: template,
+                    title: title,
+                    subTitle: question,
+                    buttons: [{
+                        text: 'Cancel',
+                        type: 'button-default',
+                        onTap: function(e) {
+                            if (cancelCallback) {
+                                cancelCallback();
+                            }
+                        }
+                      }, {
+                        text: 'OK',
+                        type: 'button-positive',
+                        onTap: function(e) {
+                            var inputValue = scope.data.input;
+                            if (options.onValidation) {
+                                var valid = options.onValidation(inputValue);
+                            } else {
+                                var valid = true;
+                            }
+                            if (valid) {
+                                scope.data.invalid = false;
+                                if (actionCallback) {
+                                    actionCallback(inputValue);
+                                }
+                                return inputValue;
+                            } else {
+                                scope.data.invalid = true;
+                                e.preventDefault();
+                            }
+                        }
+                    }]
                 });
             },
 

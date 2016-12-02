@@ -38,20 +38,26 @@ EdenMobile.value('emSettings', {
 
         'url': {
             type: 'url',
-            //defaultValue: 'http://ims.example.com/eden',
+            //defaultValue: 'http://sahana.example.com/eden',
             //writable: false,
             label: 'Sahana Server URL',
             help: 'e.g. http://sahana.example.com/eden',
-            placeholder: 'Enter the server URL'
+            placeholder: 'Enter the server URL',
+            onValidation: function(value) {
+                // https://github.com/jzaefferer/jquery-validation/blob/master/src/core.js#L1342
+                return /^(?:(?:(?:https?|ftp):)?\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\uffff]{2,})).?)(?::\d{2,5})?(?:[/?#]\S*)?$/i.test( value );
+            }
         },
         'username': {
             type: 'string',
+            //defaultValue: 'user@example.com',
             label: 'Username for Sahana Server',
             help: 'e.g. admin@example.com',
             placeholder: 'Enter your username'
         },
         'password': {
             type: 'password',
+            //defaultValue: 'mypassword',
             label: 'Password for Sahana Server',
             empty: 'not specified',
             placeholder: 'Enter your password'

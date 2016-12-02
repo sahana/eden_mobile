@@ -98,7 +98,7 @@ EdenMobile.directive('emConfigForm', [
                 for (sectionName in emSettings) {
                     if (sectionName[0] != '_') {
                         section = angular.element('<em-config-section>')
-                                        .attr('section-name', sectionName);
+                                         .attr('section-name', sectionName);
                         form.append(section);
                     }
                 }
