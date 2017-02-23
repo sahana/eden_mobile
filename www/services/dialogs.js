@@ -38,6 +38,7 @@ EdenMobile.factory('emDialogs', [
 
         var dialogs = {
 
+            // ================================================================
             /**
              * Show a confirmation popup
              *
@@ -60,6 +61,7 @@ EdenMobile.factory('emDialogs', [
                 }, 800);
             },
 
+            // ================================================================
             /**
              * Show an error popup with user confirmation
              *
@@ -87,6 +89,7 @@ EdenMobile.factory('emDialogs', [
                 });
             },
 
+            // ================================================================
             /**
              * Show a popup asking for user confirmation
              *
@@ -119,6 +122,7 @@ EdenMobile.factory('emDialogs', [
                 });
             },
 
+            // ================================================================
             /**
              * Show a popup prompting for a single string input
              *
@@ -137,37 +141,22 @@ EdenMobile.factory('emDialogs', [
              */
             stringInput: function(title, question, options, actionCallback, cancelCallback) {
 
+                // Use a separate scope for the dialog
+                var scope = $rootScope.$new(),
+                    data = {'invalid': false};
+
                 if (options === undefined) {
                     options = {};
                 }
+                if (options.defaultText) {
+                    data.input = options.defaultText;
+                }
+                scope.data = data;
 
-                /* Can't do validation with the simplified 'prompt'
-                var stringInput = $ionicPopup.prompt({
-                    title: title,
-                    subTitle: question,
-                    inputType: options.inputType || 'text',
-                    inputPlaceholder: options.inputPlaceholder,
-                    defaultText: options.defaultText
-                });
+                // Input template
+                var inputType = options.inputType || 'text',
+                    template = '<input type="' + inputType + '" placeholder="' + options.inputPlaceholder + '" ng-model="data.input"><div class="error" ng-show="data.invalid">Invalid!</div>';
 
-                stringInput.then(function(inputValue) {
-                    if (inputValue === undefined) {
-                        if (cancelCallback) {
-                            cancelCallback();
-                        }
-                    } else {
-                        if (actionCallback) {
-                            actionCallback(inputValue);
-                        }
-                    }
-                }); */
-
-                // Use a separate scope for the dialog
-                var scope = $rootScope.$new();
-                scope.data = {};
-
-                var inputType = options.inputType || 'text';
-                var template = '<input type="' + inputType + '" value="' + options.defaultText + '" placeholder="' + options.inputPlaceholder + '" ng-model="data.input"><div class="error" ng-show="data.invalid">Invalid!</div>';
                 var stringInput = $ionicPopup.show({
                     scope: scope,
                     template: template,
@@ -185,11 +174,10 @@ EdenMobile.factory('emDialogs', [
                         text: 'OK',
                         type: 'button-positive',
                         onTap: function(e) {
-                            var inputValue = scope.data.input;
+                            var inputValue = scope.data.input,
+                                valid = true;
                             if (options.onValidation) {
-                                var valid = options.onValidation(inputValue);
-                            } else {
-                                var valid = true;
+                                valid = options.onValidation(inputValue);
                             }
                             if (valid) {
                                 scope.data.invalid = false;
@@ -206,6 +194,7 @@ EdenMobile.factory('emDialogs', [
                 });
             },
 
+            // ================================================================
             /**
              * Show a popup to enter username and password
              *

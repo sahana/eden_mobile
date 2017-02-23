@@ -724,17 +724,26 @@ EdenMobile.factory('emDB', [
                 adapter = self._adapter,
                 status = self._status;
 
-            var sql = 'SELECT DISTINCT tbl_name FROM sqlite_master WHERE tbl_name = "em_version"';
+            // Enable foreign key support
+            var sql = 'PRAGMA foreign_keys = ON;';
             adapter.executeSql(sql, [], function(result) {
-                if (result.rows.length) {
-                    self._loadTables().then(function() {
-                        status.resolve();
-                    });
-                } else {
-                    self._firstRun().then(function() {
-                        status.resolve();
-                    });
-                }
+
+                sql = 'SELECT DISTINCT tbl_name FROM sqlite_master WHERE tbl_name = "em_version"';
+                adapter.executeSql(sql, [], function(result) {
+
+                    if (result.rows.length) {
+                        // em_version table exists => load tables
+                        self._loadTables().then(function() {
+                            status.resolve();
+                        });
+
+                    } else {
+                        // em_version table does not exist => first run
+                        self._firstRun().then(function() {
+                            status.resolve();
+                        });
+                    }
+                }, self.sqlError);
             }, self.sqlError);
         };
 
