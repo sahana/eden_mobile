@@ -1,7 +1,7 @@
 /**
  * Sahana Eden Mobile - Database Service
  *
- * Copyright (c) 2016: Sahana Software Foundation
+ * Copyright (c) 2016-2017: Sahana Software Foundation
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -322,7 +322,7 @@ EdenMobile.factory('emDB', [
                 fields.id = new Field('id', {type: 'id'}, true);
             }
 
-            var metaFields = emDefaultSchema._meta_fields,
+            var metaFields = emDefaultSchema.metaFields,
                 field;
             if (metaFields && tableName.slice(0, 3) != 'em_') {
                 for (var fieldName in metaFields) {
@@ -756,18 +756,23 @@ EdenMobile.factory('emDB', [
 
             var firstRunComplete = $q.defer(),
                 pendingTables = {},
-                tableName;
+                queue = [];
 
             // Schedule tables
-            for (tableName in emDefaultSchema) {
+            emDefaultSchema.tables.forEach(function(schema) {
+
+                var tableName = schema._name;
                 if (tableName[0] != '_') {
+                    queue.push(schema);
                     pendingTables[tableName] = null;
                 }
-            }
+            });
 
             // Callback to check progress
             var whenTableCreated = function(tableName) {
+
                 pendingTables[tableName] = true;
+
                 // Check for pending table definitions
                 var ready = true;
                 for (var t in pendingTables) {
@@ -776,21 +781,27 @@ EdenMobile.factory('emDB', [
                         break;
                     }
                 }
+
                 // Resolve promise when all tables are defined
                 if (ready) {
                     firstRunComplete.resolve();
                 }
             };
 
-            // Create tables
-            var schema,
+            // Run the queue
+            var self = this,
                 table;
-            for (tableName in pendingTables) {
-                schema = parseSchema(emDefaultSchema[tableName]);
-                table = new Table(this, tableName, schema.fields, schema.settings);
+            queue.forEach(function(schema) {
+
+                // Parse the schema
+                var tableName = schema._name,
+                    parsed = parseSchema(schema);
+
+                // Create the table (asynchronously)
+                table = new Table(self, tableName, parsed.fields, parsed.settings);
                 table.addMetaFields();
-                table.create(schema.records, whenTableCreated);
-            }
+                table.create(parsed.records, whenTableCreated);
+            });
 
             return firstRunComplete.promise;
         };
@@ -806,7 +817,7 @@ EdenMobile.factory('emDB', [
                 tablesLoaded = $q.defer();
 
             var tables = self.tables,
-                schema = parseSchema(emDefaultSchema.em_schema),
+                schema = parseSchema(emDefaultSchema.schema('em_schema')),
                 schemaTable = new Table(self, 'em_schema', schema.fields);
 
             schemaTable.select(['name', 'fields', 'settings'], function(rows) {
