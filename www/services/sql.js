@@ -27,6 +27,8 @@
 
 (function() {
 
+    var refPattern = /reference\s+([a-z]{1}[a-z0-9_]*)(?:\.([a-z]{1}[a-z0-9_]*)){0,1}/gi;
+
     // ========================================================================
     /**
      * Helper function to quote SQL identifiers
@@ -61,13 +63,29 @@
      */
     SQLField.prototype.define = function() {
 
-        var description = this.description,
-            sqlType = null;
+        var fieldName = this.name,
+            fieldType = this.type,
+            description = this.description,
+            sqlType = null,
+            tableConstraints = [];
+
+        var reference = refPattern.exec(fieldType);
+        if (reference) {
+            // @todo: ondelete-setting
+            var lookupTable = reference[1],
+                key = reference[2] || 'id';
+            tableConstraints.push('FOREIGN KEY (' + quoted(fieldName) + ') ' +
+                                  'REFERENCES ' + lookupTable + '(' + quoted(key) + ')');
+            fieldType = 'reference';
+        }
 
         // Determine the SQL field type
-        switch(this.type) {
+        switch(fieldType) {
             case 'id':
                 sqlType = 'INTEGER PRIMARY KEY AUTOINCREMENT';
+                break;
+            case 'reference':
+                sqlType = 'INTEGER';
                 break;
             case 'string':
                 sqlType = 'TEXT';
@@ -101,19 +119,15 @@
                 break;
         }
 
-        // Check other field constraints
-        var sqlContraints = [];
+        var columnDef = [quoted(this.name), sqlType];
         if (description.notnull) {
-            sqlContraints.push('NOT NULL');
+            columnDef.push('NOT NULL');
         }
 
-        // Construct field definition SQL
-        var sqlDef = quoted(this.name) + ' ' + sqlType;
-        if (sqlContraints.length) {
-            sqlDef += ' ' + sqlContraints.join(' ');
-        }
-
-        return sqlDef;
+        return {
+            columnDef: columnDef.join(' '),
+            tableConstraint: tableConstraints.join(',')
+        };
     };
 
     // ------------------------------------------------------------------------
@@ -243,14 +257,24 @@
 
         var fields = this.fields,
             sqlField,
-            cols = [];
+            sql,
+            cols = [],
+            tableConstraints = [];
 
-        // Column definitions
+        // Column definitions and table constraints
         for (var fieldName in fields) {
+
             sqlField = new SQLField(fields[fieldName]);
-            cols.push(sqlField.define());
+            sql = sqlField.define();
+
+            if (sql.columnDef) {
+                cols.push(sql.columnDef);
+            }
+            if (sql.tableConstraint) {
+                tableConstraints.push(sql.tableConstraint);
+            }
         }
-        cols = cols.join(',');
+        cols = cols.concat(tableConstraints).join(',');
 
         return 'CREATE TABLE IF NOT EXISTS ' + quoted(this.name) + ' (' + cols + ')';
     };

@@ -687,7 +687,16 @@ EdenMobile.factory('emDB', [
          */
         Database.prototype.sqlError = function(error) {
 
-            alert("Error processing SQL: " + JSON.stringify(error));
+            var message;
+            if (error) {
+                message = error.message;
+                if (!message) {
+                    message = JSON.stringify(error);
+                }
+            } else {
+                message = 'unknown error';
+            }
+            alert("Error processing SQL: " + message);
         };
 
         // --------------------------------------------------------------------
