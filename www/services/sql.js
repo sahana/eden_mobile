@@ -73,9 +73,11 @@
         if (reference) {
             // @todo: ondelete-setting
             var lookupTable = reference[1],
-                key = reference[2] || 'id';
+                key = reference[2] || 'id',
+                ondelete = description.ondelete || 'RESTRICT';
             tableConstraints.push('FOREIGN KEY (' + quoted(fieldName) + ') ' +
-                                  'REFERENCES ' + lookupTable + '(' + quoted(key) + ')');
+                                  'REFERENCES ' + lookupTable + '(' + quoted(key) + ') ' +
+                                  'ON DELETE ' + ondelete);
             fieldType = 'reference';
         }
 
