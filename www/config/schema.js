@@ -205,6 +205,19 @@ EdenMobile.factory('emDefaultSchema', ['$injector', function ($injector) {
                 namePlural: 'Persons',
                 icon: 'ion-person-stalker'
             }
+        },
+
+        {
+            _name: 'Test',
+            'person_id': {
+                type: 'reference person',
+                label: 'Person',
+                represent: ['first_name', 'last_name']
+            },
+            'other': {
+                type: 'integer',
+                label: 'Some Number'
+            }
         }
     ];
 

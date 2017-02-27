@@ -33,7 +33,8 @@
  * @memberof EdenMobile
  */
 EdenMobile.factory('emForms', [
-    function () {
+    '$compile',
+    function ($compile) {
 
         // ====================================================================
         /**
@@ -50,8 +51,7 @@ EdenMobile.factory('emForms', [
 
             // @todo: ability to override the widget
 
-            var options = field.getOptions();
-            if (options) {
+            if (field.hasOptions()) {
                 widgetType = '<em-options-widget>';
             } else {
                 switch(fieldType) {
@@ -145,39 +145,75 @@ EdenMobile.factory('emForms', [
             }
 
             var description,
-                attributes,
                 options,
                 placeholder,
                 widget;
             fieldNames.forEach(function(fieldName) {
+
                 field = resource.fields[fieldName];
                 if (field) {
-                    description = field._description;
 
                     if (!field.readable) {
                         return;
                     }
 
-                    // Label and model-link
-                    attributes = {
-                        'label': description.label || fieldName,
-                        'ng-model': scopeName + '.' + fieldName
-                    };
+                    description = field._description;
+                    if (field.hasOptions()) {
 
-                    // Options (for options widget)
-                    options = field.getOptions();
-                    if (options) {
-                        attributes.options = JSON.stringify(options);
+                        // Placeholder until options available
+                        widget = angular.element('<div>');
+
+                        // Asynchronous context
+                        var data = {
+                            field: field,
+                            label: description.label,
+                            widget: widget,
+                            scopeName: scopeName
+                        };
+
+                        // Extract options (asynchronously)
+                        field.getOptions(data).then(function(data) {
+
+                            // Re-instate the context
+                            var field = data.field,
+                                fieldName = field.name,
+                                scopeName = data.scopeName,
+                                widget = data.widget;
+
+                            // Label and model-link
+                            var attr = {
+                                'label': data.label || fieldName,
+                                'ng-model': scopeName + '.' + fieldName
+                            };
+                            attr.options = JSON.stringify(data.options);
+
+                            // Replace the placeholder with the widget,
+                            // then recompile it
+                            var widget = data.widget,
+                                optionsWidget = createWidget(field, attr);
+                            widget.replaceWith(optionsWidget);
+                            $compile(optionsWidget)(optionsWidget.scope());
+                        });
+
+                    } else {
+
+                        // Label and model-link
+                        var attr = {
+                            'label': description.label || fieldName,
+                            'ng-model': scopeName + '.' + fieldName
+                        };
+
+                        // Placeholder (for text input)
+                        placeholder = description.placeholder;
+                        if (placeholder) {
+                            attr.placeholder = placeholder;
+                        }
+
+                        // Instantiate the widget
+                        widget = createWidget(field, attr);
                     }
 
-                    // Placeholder (for text input)
-                    placeholder = description.placeholder;
-                    if (placeholder) {
-                        attributes.placeholder = placeholder;
-                    }
-
-                    // Instantiate the widget and append it to form rows
-                    widget = createWidget(field, attributes);
+                    // Append widget to form rows
                     formRows.append(widget);
                 }
             });

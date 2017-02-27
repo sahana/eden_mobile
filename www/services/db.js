@@ -33,8 +33,8 @@
  * @memberof EdenMobile
  */
 EdenMobile.factory('emDB', [
-    '$q', 'emDefaultSchema', 'emSQL',
-    function ($q, emDefaultSchema, emSQL) {
+    '$injector', '$q', 'emDefaultSchema', 'emSQL',
+    function ($injector, $q, emDefaultSchema, emSQL) {
 
         // ====================================================================
 
@@ -118,14 +118,148 @@ EdenMobile.factory('emDB', [
         /**
          * Get the selectable options for this field
          *
-         * @returns {object} - the field options as specified in the model
+         * @param {object} data - data object to write the options to
          *
-         * @todo: return copy
-         * @todo: lookup options if reference
+         * @returns {promise} - promise that resolves into the updated data
+         *                      object with an additional "options" attribute
+         *                      holding the field options (as object)
          */
-        Field.prototype.getOptions = function() {
+        Field.prototype.getOptions = function(data) {
 
-            return this._description.options;
+            var optionsLoaded = $q.defer();
+
+            if (data === undefined) {
+                data = {};
+            }
+            if (this.type.split(' ')[0] == 'reference') {
+
+                // Determine look-up table
+                var foreignKey = this.getForeignKey();
+                if (!foreignKey) {
+                    optionsLoaded.resolve(data);
+                }
+
+                // Instantiate resource
+                var self = this,
+                    emResources = $injector.get('emResources');
+                emResources.open(foreignKey.table).then(function(resource) {
+
+                    if (!resource) {
+                        // Look-up table doesn't exist
+                        optionsLoaded.resolve(data);
+                        return;
+                    }
+
+                    // Fields to extract
+                    // => assumes description.represent is an Array of field names
+                    //    @todo: support string templates
+                    var fields = angular.copy(self._description.represent) || [];
+                    if (!fields && resource.fields.hasOwnProperty('name')) {
+                        fields.push('name');
+                    }
+
+                    // Fields to use for option representation
+                    var represent = [];
+                    fields.forEach(function(fieldName) {
+                        represent.push(fieldName);
+                    });
+
+                    // Make sure the key is loaded
+                    var key = foreignKey.key;
+                    if (fields.indexOf(key) == -1) {
+                        fields.push(key);
+                    }
+
+                    // Select records
+                    resource.select(fields, function(records, result) {
+
+                        // Build options object
+                        var options = {},
+                            values = [],
+                            value;
+
+                        records.forEach(function(record) {
+
+                            values = [];
+
+                            represent.forEach(function(fieldName) {
+                                value = record[fieldName];
+                                if (value) {
+                                    values.push(value);
+                                }
+                            });
+                            if (!values) {
+                                values = [record[key]];
+                            }
+                            options[record[key]] = values.join(' ');
+                        });
+
+                        // Resolve promise
+                        data.options = options;
+                        optionsLoaded.resolve(data);
+                    });
+                });
+
+            } else {
+
+                // @todo: return copy rather than the original dict
+                data.options = this._description.options;
+
+                // Resolve promise
+                optionsLoaded.resolve(data);
+            }
+
+            return optionsLoaded.promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Resolve a reference into table name and key name
+         *
+         * @returns {object} - an object holding the table name ('table')
+         *                     and the key name ('key') referenced by this
+         *                     field
+         */
+        Field.prototype.getForeignKey = function() {
+
+            var fieldTypeOpts = this.type.split(' '),
+                fieldType = fieldTypeOpts[0],
+                foreignKey;
+
+            if (fieldType == 'reference') {
+                if (fieldTypeOpts.length > 1) {
+
+                    foreignKey = {};
+                    var lookup = fieldTypeOpts[1].split('.');
+                    if (lookup.length == 1) {
+                        foreignKey = {
+                            table: lookup[0],
+                            key: 'id'
+                        };
+                    } else {
+                        foreignKey = {
+                            table: lookup[0],
+                            key: lookup[1]
+                        };
+                    }
+                }
+            }
+            return foreignKey;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Check if this field has selectable options
+         *
+         * @returns {boolean} - whether the field has selectable options
+         */
+        Field.prototype.hasOptions = function() {
+
+            if (this.type.split(' ')[0] == 'reference') {
+                return true;
+            } else {
+                return !!this._description.options;
+            }
         };
 
         // --------------------------------------------------------------------
