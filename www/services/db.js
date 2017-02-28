@@ -118,25 +118,20 @@ EdenMobile.factory('emDB', [
         /**
          * Get the selectable options for this field
          *
-         * @param {object} data - data object to write the options to
-         *
-         * @returns {promise} - promise that resolves into the updated data
-         *                      object with an additional "options" attribute
-         *                      holding the field options (as object)
+         * @returns {promise} - promise that resolves into the options
+         *                      object, or undefined if no options are
+         *                      available
          */
-        Field.prototype.getOptions = function(data) {
+        Field.prototype.getOptions = function() {
 
             var optionsLoaded = $q.defer();
 
-            if (data === undefined) {
-                data = {};
-            }
             if (this.type.split(' ')[0] == 'reference') {
 
                 // Determine look-up table
                 var foreignKey = this.getForeignKey();
                 if (!foreignKey) {
-                    optionsLoaded.resolve(data);
+                    optionsLoaded.resolve();
                 }
 
                 // Instantiate resource
@@ -146,7 +141,7 @@ EdenMobile.factory('emDB', [
 
                     if (!resource) {
                         // Look-up table doesn't exist
-                        optionsLoaded.resolve(data);
+                        optionsLoaded.resolve();
                         return;
                     }
 
@@ -195,18 +190,14 @@ EdenMobile.factory('emDB', [
                         });
 
                         // Resolve promise
-                        data.options = options;
-                        optionsLoaded.resolve(data);
+                        optionsLoaded.resolve(options);
                     });
                 });
 
             } else {
 
-                // @todo: return copy rather than the original dict
-                data.options = this._description.options;
-
-                // Resolve promise
-                optionsLoaded.resolve(data);
+                var options = angular.copy(this._description.options);
+                optionsLoaded.resolve(options);
             }
 
             return optionsLoaded.promise;

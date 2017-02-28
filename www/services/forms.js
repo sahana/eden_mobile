@@ -43,7 +43,7 @@ EdenMobile.factory('emForms', [
          * @param {object} field - the field parameters (from schema)
          * @param {object} attr - attributes for the widget
          */
-        var createWidget = function(field, attr) {
+        var createWidget = function(resource, field, attr) {
 
             var fieldType = field.type,
                 writable = field.writable,
@@ -53,6 +53,8 @@ EdenMobile.factory('emForms', [
 
             if (field.hasOptions()) {
                 widgetType = '<em-options-widget>';
+                attr.resource = resource.name;
+                attr.field = field.name;
             } else {
                 switch(fieldType) {
                     case 'boolean':
@@ -158,60 +160,21 @@ EdenMobile.factory('emForms', [
                     }
 
                     description = field._description;
-                    if (field.hasOptions()) {
 
-                        // Placeholder until options available
-                        widget = angular.element('<div>');
+                    // Label and model-link
+                    var attr = {
+                        'label': description.label || fieldName,
+                        'ng-model': scopeName + '.' + fieldName
+                    };
 
-                        // Asynchronous context
-                        var data = {
-                            field: field,
-                            label: description.label,
-                            widget: widget,
-                            scopeName: scopeName
-                        };
-
-                        // Extract options (asynchronously)
-                        field.getOptions(data).then(function(data) {
-
-                            // Re-instate the context
-                            var field = data.field,
-                                fieldName = field.name,
-                                scopeName = data.scopeName,
-                                widget = data.widget;
-
-                            // Label and model-link
-                            var attr = {
-                                'label': data.label || fieldName,
-                                'ng-model': scopeName + '.' + fieldName
-                            };
-                            attr.options = JSON.stringify(data.options);
-
-                            // Replace the placeholder with the widget,
-                            // then recompile it
-                            var widget = data.widget,
-                                optionsWidget = createWidget(field, attr);
-                            widget.replaceWith(optionsWidget);
-                            $compile(optionsWidget)(optionsWidget.scope());
-                        });
-
-                    } else {
-
-                        // Label and model-link
-                        var attr = {
-                            'label': description.label || fieldName,
-                            'ng-model': scopeName + '.' + fieldName
-                        };
-
-                        // Placeholder (for text input)
-                        placeholder = description.placeholder;
-                        if (placeholder) {
-                            attr.placeholder = placeholder;
-                        }
-
-                        // Instantiate the widget
-                        widget = createWidget(field, attr);
+                    // Placeholder (for text input)
+                    placeholder = description.placeholder;
+                    if (placeholder) {
+                        attr.placeholder = placeholder;
                     }
+
+                    // Instantiate the widget
+                    widget = createWidget(resource, field, attr);
 
                     // Append widget to form rows
                     formRows.append(widget);

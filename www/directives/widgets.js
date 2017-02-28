@@ -74,14 +74,14 @@
         function($compile) {
 
             /**
-            * Widget renderer
-            *
-            * @param {object} $scope - reference to the current scope
-            * @param {DOMNode} elem - the angular-enhanced DOM node for
-            *                         the element applying the directive
-            * @param {object} attr - object containing the attributes of
-            *                        the element
-            */
+             * Widget renderer
+             *
+             * @param {object} $scope - reference to the current scope
+             * @param {DOMNode} elem - the angular-enhanced DOM node for
+             *                         the element applying the directive
+             * @param {object} attr - object containing the attributes of
+             *                        the element
+             */
             var renderWidget = function($scope, elem, attr) {
 
                 // Create the label
@@ -134,14 +134,14 @@
         function($compile) {
 
             /**
-            * Widget renderer
-            *
-            * @param {object} $scope - reference to the current scope
-            * @param {DOMNode} elem - the angular-enhanced DOM node for
-            *                         the element applying the directive
-            * @param {object} attr - object containing the attributes of
-            *                        the element
-            */
+             * Widget renderer
+             *
+             * @param {object} $scope - reference to the current scope
+             * @param {DOMNode} elem - the angular-enhanced DOM node for
+             *                         the element applying the directive
+             * @param {object} attr - object containing the attributes of
+             *                        the element
+             */
             var renderWidget = function($scope, elem, attr) {
 
                 // Create the label
@@ -193,14 +193,14 @@
         function($compile) {
 
             /**
-            * Widget renderer
-            *
-            * @param {object} $scope - reference to the current scope
-            * @param {DOMNode} elem - the angular-enhanced DOM node for
-            *                         the element applying the directive
-            * @param {object} attr - object containing the attributes of
-            *                        the element
-            */
+             * Widget renderer
+             *
+             * @param {object} $scope - reference to the current scope
+             * @param {DOMNode} elem - the angular-enhanced DOM node for
+             *                         the element applying the directive
+             * @param {object} attr - object containing the attributes of
+             *                        the element
+             */
             var renderWidget = function($scope, elem, attr) {
 
                 // Create the label
@@ -252,14 +252,14 @@
         function($compile) {
 
             /**
-            * Widget renderer
-            *
-            * @param {object} $scope - reference to the current scope
-            * @param {DOMNode} elem - the angular-enhanced DOM node for
-            *                         the element applying the directive
-            * @param {object} attr - object containing the attributes of
-            *                        the element
-            */
+             * Widget renderer
+             *
+             * @param {object} $scope - reference to the current scope
+             * @param {DOMNode} elem - the angular-enhanced DOM node for
+             *                         the element applying the directive
+             * @param {object} attr - object containing the attributes of
+             *                        the element
+             */
             var renderWidget = function($scope, elem, attr) {
 
                 // Build the widget
@@ -293,25 +293,55 @@
      * @class emOptionsWidget
      * @memberof EdenMobile
      *
-     * @param options - a JSON dict of options
+     * @param resource - the resource name
+     * @param field - the field name
      *
      * @returns {integer} - the selected option
      *
-     * @example <em-options-widget options='{1: "first", 2: "second"}'>
+     * @example <em-options-widget resource="resourceName" field="fieldName">
      */
     EdenMobile.directive('emOptionsWidget', [
-        '$compile',
-        function($compile) {
+        '$compile', 'emResources',
+        function($compile, emResources) {
 
             /**
-            * Widget renderer
-            *
-            * @param {object} $scope - reference to the current scope
-            * @param {DOMNode} elem - the angular-enhanced DOM node for
-            *                         the element applying the directive
-            * @param {object} attr - object containing the attributes of
-            *                        the element
-            */
+             * Options look-up
+             *
+             * @param {string} resourceName - the resource name
+             * @param {string} fieldName - the field name
+             * @param {function} callback - callback function to receive the
+             *                              options (as object), callback(options)
+             */
+            var options = function(resourceName, fieldName, callback) {
+
+                emResources.open(resourceName).then(function(resource) {
+
+                    if (resource) {
+                        var field = resource.fields[fieldName];
+                        if (field) {
+                            field.getOptions().then(function(options) {
+                                if (callback) {
+                                    callback(options);
+                                }
+                            });
+                            return;
+                        }
+                    }
+                    if (callback) {
+                        callback();
+                    }
+                });
+            };
+
+            /**
+             * Widget renderer
+             *
+             * @param {object} $scope - reference to the current scope
+             * @param {DOMNode} elem - the angular-enhanced DOM node for
+             *                         the element applying the directive
+             * @param {object} attr - object containing the attributes of
+             *                        the element
+             */
             var renderWidget = function($scope, elem, attr) {
 
                 // Create the label
@@ -324,38 +354,31 @@
                                     .addClass('item item-input item-stacked-label')
                                     .append(label);
 
-                // Add the options
-                var opts = attr.options,
-                    opt,
-                    input;
+                // Look up the field options
+                options(attr.resource, attr.field, function(opts) {
 
-                if (opts) {
-                    opts = JSON.parse(opts);
-                } else {
-                    opts = {};
-                }
+                    // Append the options to the widget
+                    var input;
+                    for (var opt in opts) {
 
-                for (opt in opts) {
+                        input = angular.element('<ion-radio>')
+                                       .attr('value', opt)
+                                       .html(opts[opt] || '');
 
-                    // Create the input
-                    input = angular.element('<ion-radio>')
-                                   .attr('value', opt)
-                                   .html(opts[opt] || '');
+                        // Input attributes
+                        copyAttr(attr, input, [
+                            'ngModel',
+                            'disabled'
+                        ]);
 
-                    // Input attributes
-                    copyAttr(attr, input, [
-                        'ngModel',
-                        'disabled'
-                    ]);
+                        widget.append(input);
+                    }
 
-                    widget.append(input);
-
-                }
-
-                // Compile the widget against the scope, then
-                // render it in place of the directive
-                var compiled = $compile(widget)($scope);
-                elem.replaceWith(compiled);
+                    // Compile the widget against the scope, then
+                    // render it in place of the directive
+                    var compiled = $compile(widget)($scope);
+                    elem.replaceWith(compiled);
+                });
             };
 
             return {
@@ -380,14 +403,14 @@
         function($compile, emSettings) {
 
             /**
-            * Form renderer
-            *
-            * @param {object} $scope - reference to the current scope
-            * @param {DOMNode} elem - the angular-enhanced DOM node for
-            *                         the element applying the directive
-            * @param {object} attr - object containing the attributes of
-            *                        the element
-            */
+             * Form renderer
+             *
+             * @param {object} $scope - reference to the current scope
+             * @param {DOMNode} elem - the angular-enhanced DOM node for
+             *                         the element applying the directive
+             * @param {object} attr - object containing the attributes of
+             *                        the element
+             */
             var renderForm = function($scope, elem, attr) {
 
                 var sectionName = attr.sectionName,
