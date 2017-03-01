@@ -148,19 +148,18 @@ EdenMobile.factory('emDB', [
                     // Fields to extract
                     // => assumes description.represent is an Array of field names
                     //    @todo: support string templates
-                    var fields = angular.copy(self._description.represent) || [];
-                    if (!fields && resource.fields.hasOwnProperty('name')) {
-                        fields.push('name');
+                    var key = foreignKey.key,
+                        represent = angular.copy(self._description.represent) || [];
+                    if (!represent.length) {
+                        if (resource.fields.hasOwnProperty('name')) {
+                            represent.push('name');
+                        } else {
+                            represent.push(foreignKey.key);
+                        }
                     }
 
-                    // Fields to use for option representation
-                    var represent = [];
-                    fields.forEach(function(fieldName) {
-                        represent.push(fieldName);
-                    });
-
                     // Make sure the key is loaded
-                    var key = foreignKey.key;
+                    var fields = angular.copy(represent);
                     if (fields.indexOf(key) == -1) {
                         fields.push(key);
                     }
@@ -444,7 +443,11 @@ EdenMobile.factory('emDB', [
                 fields = this.fields;
 
             if (tableName != 'em_version' && !fields.hasOwnProperty('id')) {
-                fields.id = new Field('id', {type: 'id'}, true);
+                fields.id = new Field('id', {
+                    type: 'id',
+                    readable: false,
+                    writable: false
+                }, true);
             }
 
             var metaFields = emDefaultSchema.metaFields,
