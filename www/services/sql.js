@@ -116,6 +116,9 @@
             case 'json':
                 sqlType = 'TEXT';
                 break;
+            case 'upload':
+                sqlType = 'TEXT';
+                break;
             default:
                 sqlType = 'TEXT';
                 break;

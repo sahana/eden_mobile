@@ -67,6 +67,9 @@ EdenMobile.factory('emForms', [
                     case 'integer':
                         widgetType = '<em-number-widget>';
                         break;
+                    case 'upload':
+                        widgetType = '<em-photo-widget>';
+                        break;
                     case 'password':
                         widgetType = '<em-text-widget type="password">';
                         break;

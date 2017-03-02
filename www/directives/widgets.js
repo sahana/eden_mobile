@@ -389,6 +389,66 @@
 
     // ========================================================================
     /**
+     * Photo widget (directive)
+     *
+     * @class emPhotoWidget
+     * @memberof EdenMobile
+     *
+     * @returns {string} - the path to the file
+     *
+     * @example <em-photo-widget>
+     */
+    EdenMobile.directive('emPhotoWidget', [
+        '$compile',
+        function($compile) {
+
+            /**
+             * Widget renderer
+             *
+             * @param {object} $scope - reference to the current scope
+             * @param {DOMNode} elem - the angular-enhanced DOM node for
+             *                         the element applying the directive
+             * @param {object} attr - object containing the attributes of
+             *                        the element
+             */
+            var renderWidget = function($scope, elem, attr) {
+
+                // Create the label
+                var label = angular.element('<span>')
+                                   .addClass('input-label')
+                                   .html(attr.label || '');
+
+                // Create the input
+                var input = angular.element('<input>')
+                                   .attr('type', 'text');
+
+                // Input attributes
+                copyAttr(attr, input, [
+                    'ngModel',
+                    'disabled',
+                    'placeholder'
+                ]);
+
+                // Build the widget
+                var widget = angular.element('<label>')
+                                    .addClass('item item-input item-stacked-label')
+                                    .append(label)
+                                    .append(input);
+
+                // Compile the widget against the scope, then
+                // render it in place of the directive
+                var compiled = $compile(widget)($scope);
+                elem.replaceWith(compiled);
+            };
+
+            return {
+                link: renderWidget
+            };
+        }
+    ]);
+
+    // ========================================================================
+    /**
      * Config form section (directive)
      *
      * @class emConfigSection
