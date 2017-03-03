@@ -18,6 +18,9 @@
         },
         "cordova-plugin-camera": {
             "PACKAGE_NAME": "org.sahanafoundation.eden_mobile"
+        },
+        "cordova-plugin-file": {
+            "PACKAGE_NAME": "org.sahanafoundation.eden_mobile"
         }
     },
     "dependent_plugins": {

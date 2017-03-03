@@ -403,6 +403,88 @@
         function($compile) {
 
             /**
+             * Decorator returning an error handler function for file
+             * plugin errors
+             *
+             * @param {string} message - the error message
+             *
+             * @returns {function} - the error handler
+             *
+             * @todo: move into separate service
+             */
+            var fsError = function(message) {
+                return function(error) {
+                    alert('Error ' + error.code + ': ' + (message || 'unknown error'));
+                };
+            };
+
+            /**
+             * Helper function to move the image file to a persistent location
+             *
+             * @param {object} fileEntry - the file entry
+             * @param {function} callback - the callback function, receives
+             *                              the new file URI as parameter
+             *
+             * @todo: move into separate service
+             */
+            var moveFile = function(fileEntry, callback) {
+
+                // File name and target directory
+                // @todo: create "uploads" subfolder
+                var fileName = fileEntry.name,
+                    targetDir = cordova.file.externalApplicationStorageDirectory;
+
+                // Resolve targetDir, then move the file
+                window.resolveLocalFileSystemURL(targetDir, function(dirEntry) {
+                    fileEntry.moveTo(dirEntry, fileName, function(newFileEntry) {
+                        if (callback) {
+                            callback(newFileEntry.nativeURL);
+                        }
+                    }, fsError('failed to move file'));
+                }, fsError('can not access application storage directory'));
+            };
+
+            /**
+             * Helper function to store the picture
+             *
+             * @param {string} imageURI - the image file URI
+             * @param {function} callback - the callback function, receives
+             *                              the new file URI as parameter
+             *
+             * @todo: move into separate service
+             */
+            var storePicture = function(imageURI, callback) {
+
+                window.resolveLocalFileSystemURL(imageURI, function(fileEntry) {
+                    moveFile(fileEntry, callback);
+                }, fsError('file not found'));
+            };
+
+            /**
+             * Helper function to take a picture with the device's camera
+             *
+             * @param {scope} $scope - the scope of the form
+             * @param {string} target - the target scope expression
+             *
+             * @todo: fix image orientation
+             * @todo: remove old file when storing a new picture
+             * @todo: handle shutdown/resume
+             */
+            var getPicture = function($scope, target) {
+
+                navigator.camera.getPicture(
+                    function(imageURI) {
+                        storePicture(imageURI, function(newURI) {
+                            $scope.$apply(target + '="' + newURI + '"');
+                        });
+                    },
+                    function(error) {
+                        alert(error);
+                    }
+                );
+            };
+
+            /**
              * Widget renderer
              *
              * @param {object} $scope - reference to the current scope
@@ -418,22 +500,41 @@
                                    .addClass('input-label')
                                    .html(attr.label || '');
 
-                // Create the input
-                var input = angular.element('<input>')
-                                   .attr('type', 'text');
+                // Empty Message
+                var empty = angular.element('<span>')
+                                   .addClass('empty')
+                                   .attr('ng-show', '!' + attr.ngModel)
+                                   .html('No Picture');
 
-                // Input attributes
-                copyAttr(attr, input, [
-                    'ngModel',
-                    'disabled',
-                    'placeholder'
-                ]);
+                // Image preview
+                var image = angular.element('<img>')
+                                   .addClass('image-preview')
+                                   .attr('ng-src', '{{' + attr.ngModel + '}}')
+                                   .attr('alt', 'File not found')
+                                   .attr('ng-show', '!!' + attr.ngModel);
+
+                // Camera-button ("Take picture")
+                var addButton = angular.element('<button type="button">')
+                                       .attr('value', 'Take Picture')
+                                       .attr('ng-click', 'getPicture("' + attr.ngModel + '")')
+                                       .html('Take Picture');
+
+                // Wrapper for empty-message, preview and buttons
+                var wrapper = angular.element('<div class="item item-thumbnail-left" href="#">')
+                                     .append(image)
+                                     .append(empty)
+                                     .append(addButton);
+
+                // Link getPicture function to scope
+                $scope.getPicture = function(model) {
+                    getPicture($scope, model);
+                };
 
                 // Build the widget
                 var widget = angular.element('<label>')
                                     .addClass('item item-input item-stacked-label')
                                     .append(label)
-                                    .append(input);
+                                    .append(wrapper);
 
                 // Compile the widget against the scope, then
                 // render it in place of the directive
