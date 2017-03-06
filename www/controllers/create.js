@@ -33,8 +33,8 @@
  * @memberof EdenMobile
  */
 EdenMobile.controller('EMDataCreate', [
-    '$scope', '$state', '$stateParams', 'emDialogs', 'emResources',
-    function($scope, $state, $stateParams, emDialogs, emResources) {
+    '$scope', '$state', '$stateParams', 'emDialogs', 'emFiles', 'emResources',
+    function($scope, $state, $stateParams, emDialogs, emFiles, emResources) {
 
         var resourceName = $stateParams.resourceName;
 
@@ -42,9 +42,20 @@ EdenMobile.controller('EMDataCreate', [
 
         var showCreateForm = function() {
 
-
             // Start with empty master (populated asynchronously)
             $scope.master = {};
+            $scope.saved = false;
+
+            // Clean up on exit
+            $scope.$on('$destroy', function() {
+                if ($scope.saved) {
+                    // Record saved => remove orphaned files
+                    emFiles.removeAll($scope.orphanedFiles);
+                } else {
+                    // Record not saved => remove pending files
+                    emFiles.removeAll($scope.pendingFiles);
+                }
+            });
 
             // Read default values from schema
             emResources.open(resourceName).then(function(resource) {
@@ -79,6 +90,10 @@ EdenMobile.controller('EMDataCreate', [
 
             // Confirmation message for successful create
             var confirmCreate = function(recordID) {
+
+                // Mark as saved
+                $scope.saved = true;
+
                 // Show confirmation popup and go back to list
                 emDialogs.confirmation('Record created', function() {
                     $state.go('data.list',
@@ -114,6 +129,8 @@ EdenMobile.controller('EMDataCreate', [
             // @todo: expose reset in UI
             $scope.reset = function() {
                 $scope.form = angular.copy($scope.master);
+                $scope.pendingFiles = [];
+                $scope.orphanedFiles = [];
             };
 
             // Initial reset

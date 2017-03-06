@@ -51,7 +51,8 @@
      */
     var getUploadDirectory = function(onSuccess) {
 
-        var dataDirectory = cordova.file.dataDirectory,
+        var dataDirectory = cordova.file.externalDataDirectory ||
+                            cordova.file.dataDirectory,
             uploadDirectory = 'uploads';
 
         window.resolveLocalFileSystemURL(dataDirectory, function(dataDir) {
@@ -102,6 +103,40 @@
         }, fsError('file not found'));
     };
 
+    // ------------------------------------------------------------------------
+    /**
+     * API function to remove a file
+     *
+     * @param {string} fileURI - the file URI
+     * @param {function} callback - the callback function, receives
+     *                              no arguments
+     */
+    var remove = function(fileURI, callback) {
+
+        window.resolveLocalFileSystemURL(fileURI, function(fileEntry) {
+            fileEntry.remove(function() {
+                if (callback) {
+                    callback();
+                }
+            }, fsError('error deleting the file'));
+        }, fsError('file not found'));
+    };
+
+    // ------------------------------------------------------------------------
+    /**
+     * API function to remove multiple files
+     *
+     * @param {Array} files - array of file URIs
+     */
+    var removeAll = function(files) {
+
+        files.forEach(function(fileURI) {
+            window.resolveLocalFileSystemURL(fileURI, function(fileEntry) {
+                fileEntry.remove();
+            });
+        });
+    };
+
     // ========================================================================
     /**
      * emFiles - Service to handle files for upload-fields
@@ -114,7 +149,9 @@
 
             var api = {
 
-                store: store
+                store: store,
+                remove: remove,
+                removeAll: removeAll
 
             };
             return api;

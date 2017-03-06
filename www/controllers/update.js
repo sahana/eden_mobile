@@ -33,8 +33,8 @@
  * @memberof EdenMobile
  */
 EdenMobile.controller("EMDataUpdate", [
-    '$scope', '$state', '$stateParams', 'emDialogs', 'emResources',
-    function($scope, $state, $stateParams, emDialogs, emResources) {
+    '$scope', '$state', '$stateParams', 'emDialogs', 'emFiles', 'emResources',
+    function($scope, $state, $stateParams, emDialogs, emFiles, emResources) {
 
         var resourceName = $stateParams.resourceName,
             recordID = $stateParams.recordID;
@@ -46,6 +46,18 @@ EdenMobile.controller("EMDataUpdate", [
 
             // Start with empty master (populated asynchronously)
             $scope.master = {};
+            $scope.saved = false;
+
+            // Clean up on exit
+            $scope.$on('$destroy', function() {
+                if ($scope.saved) {
+                    // Record saved => remove orphaned files
+                    emFiles.removeAll($scope.orphanedFiles);
+                } else {
+                    // Record not saved => remove pending files
+                    emFiles.removeAll($scope.pendingFiles);
+                }
+            });
 
             // Read current values from database
             emResources.open(resourceName).then(function(resource) {
@@ -103,6 +115,10 @@ EdenMobile.controller("EMDataUpdate", [
 
             // Confirmation message for successful update
             var confirmUpdate = function(recordID) {
+
+                // Mark as saved
+                $scope.saved = true;
+
                 // Show confirmation popup and go back to list
                 emDialogs.confirmation('Record updated', function() {
                     $state.go('data.list',
@@ -167,6 +183,8 @@ EdenMobile.controller("EMDataUpdate", [
             // @todo: expose reset in UI
             $scope.reset = function() {
                 $scope.form = angular.copy($scope.master);
+                $scope.pendingFiles = [];
+                $scope.orphanedFiles = [];
             };
 
             // Initial reset

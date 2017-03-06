@@ -399,16 +399,38 @@
      * @example <em-photo-widget>
      */
     EdenMobile.directive('emPhotoWidget', [
-        '$compile', 'emFiles',
-        function($compile, emFiles) {
+        '$compile', '$parse', 'emDialogs', 'emFiles',
+        function($compile, $parse, emDialogs, emFiles) {
 
             /**
-             * Helper function to take a picture with the device's camera
+             * Remove the current picture
+             *
+             * @param {scope} $scope - the scope of the form
+             * @param {string} target - the target scope expression
+             */
+            var removePicture = function($scope, target) {
+
+                var fileURI = $scope.$eval(target);
+                if (fileURI) {
+                    emDialogs.confirmAction(
+                        'Remove Picture',
+                        'Are you sure you want to delete this picture?',
+                        function() {
+                            // Mark file as orphaned
+                            $scope.orphanedFiles.push(fileURI);
+                            // Update scope
+                            $parse(target).assign($scope, null);
+                        }
+                    );
+                }
+            };
+
+            /**
+             * Take a picture with the device's camera
              *
              * @param {scope} $scope - the scope of the form
              * @param {string} target - the target scope expression
              *
-             * @todo: remove old file when storing a new picture
              * @todo: handle shutdown/resume
              */
             var getPicture = function($scope, target) {
@@ -422,6 +444,14 @@
                 navigator.camera.getPicture(
                     function(imageURI) {
                         emFiles.store(imageURI, function(newURI) {
+                            // Old file is now orphaned
+                            var oldURI = $scope.$eval(target);
+                            if (oldURI) {
+                                $scope.orphanedFiles.push(oldURI);
+                            }
+                            // New file is still pending until record gets saved
+                            $scope.pendingFiles.push(newURI);
+                            // Update scope
                             $scope.$apply(target + '="' + newURI + '"');
                         });
                     },
@@ -462,7 +492,8 @@
                                           .addClass('button button-small button-positive icon-center ion-camera')
                                           .attr('ng-click', 'getPicture("' + attr.ngModel + '")'),
                     removeButton = angular.element('<button>')
-                                          .addClass('button button-small button-assertive icon-center ion-close-circled'),
+                                          .addClass('button button-small button-assertive icon-center ion-close-circled')
+                                          .attr('ng-click', 'removePicture("' + attr.ngModel + '")'),
                     buttons = angular.element('<div class="photo-widget-controls buttons">')
                                      .append(cameraButton)
                                      .append(removeButton);
@@ -473,15 +504,18 @@
                                       .append(empty)
                                       .append(buttons);
 
-                // Link getPicture function to scope
-                $scope.getPicture = function(model) {
-                    getPicture($scope, model);
-                };
-
                 // Build the widget
                 var widget = angular.element('<div class="item-stacked-label item-input-inset photo-widget">')
                                     .append(label)
                                     .append(controls);
+
+                // Install callbacks
+                $scope.getPicture = function(model) {
+                    getPicture($scope, model);
+                };
+                $scope.removePicture = function(model) {
+                    removePicture($scope, model);
+                };
 
                 // Compile the widget against the scope, then
                 // render it in place of the directive
