@@ -29,3 +29,8 @@ input[type="password"] {
     color: #FF0000;
     padding-top: 5px;
 }
+img.photo-widget-preview {
+    max-width: 100%;
+    max-height: 180px;
+    padding-right: 1rem;
+}

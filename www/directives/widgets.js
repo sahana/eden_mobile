@@ -472,6 +472,10 @@
              */
             var getPicture = function($scope, target) {
 
+                var cameraOptions = {
+                    correctOrientation: true
+                };
+
                 navigator.camera.getPicture(
                     function(imageURI) {
                         storePicture(imageURI, function(newURI) {
@@ -480,7 +484,8 @@
                     },
                     function(error) {
                         alert(error);
-                    }
+                    },
+                    cameraOptions
                 );
             };
 
@@ -495,35 +500,35 @@
              */
             var renderWidget = function($scope, elem, attr) {
 
-                // Create the label
-                var label = angular.element('<span>')
-                                   .addClass('input-label')
+                // The label
+                var label = angular.element('<span class="input-label">')
                                    .html(attr.label || '');
 
-                // Empty Message
-                var empty = angular.element('<span>')
-                                   .addClass('empty')
-                                   .attr('ng-show', '!' + attr.ngModel)
+                // Image preview and empty-message
+                var source = attr.ngModel,
+                    image = angular.element('<img class="photo-widget-preview">')
+                                   .attr('ng-src', '{{' + source + '}}')
+                                   .attr('alt', 'File not found')
+                                   .attr('ng-show', '!!' + source),
+                    empty = angular.element('<span class="empty">')
+                                   .attr('ng-show', '!' + source)
                                    .html('No Picture');
 
-                // Image preview
-                var image = angular.element('<img>')
-                                   .addClass('image-preview')
-                                   .attr('ng-src', '{{' + attr.ngModel + '}}')
-                                   .attr('alt', 'File not found')
-                                   .attr('ng-show', '!!' + attr.ngModel);
+                // Buttons
+                var cameraButton = angular.element('<button>')
+                                          .addClass('button button-small button-positive icon-center ion-camera')
+                                          .attr('ng-click', 'getPicture("' + attr.ngModel + '")'),
+                    removeButton = angular.element('<button>')
+                                          .addClass('button button-small button-assertive icon-center ion-close-circled'),
+                    buttons = angular.element('<div class="photo-widget-controls buttons">')
+                                     .append(cameraButton)
+                                     .append(removeButton);
 
-                // Camera-button ("Take picture")
-                var addButton = angular.element('<button type="button">')
-                                       .attr('value', 'Take Picture')
-                                       .attr('ng-click', 'getPicture("' + attr.ngModel + '")')
-                                       .html('Take Picture');
-
-                // Wrapper for empty-message, preview and buttons
-                var wrapper = angular.element('<div class="item item-thumbnail-left" href="#">')
-                                     .append(image)
-                                     .append(empty)
-                                     .append(addButton);
+                // All controls
+                var controls = angular.element('<div class="item item-button-right photo-widget-preview">')
+                                      .append(image)
+                                      .append(empty)
+                                      .append(buttons);
 
                 // Link getPicture function to scope
                 $scope.getPicture = function(model) {
@@ -531,10 +536,9 @@
                 };
 
                 // Build the widget
-                var widget = angular.element('<label>')
-                                    .addClass('item item-input item-stacked-label')
+                var widget = angular.element('<div class="item-stacked-label item-input-inset photo-widget">')
                                     .append(label)
-                                    .append(wrapper);
+                                    .append(controls);
 
                 // Compile the widget against the scope, then
                 // render it in place of the directive
