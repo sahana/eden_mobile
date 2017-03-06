@@ -399,66 +399,8 @@
      * @example <em-photo-widget>
      */
     EdenMobile.directive('emPhotoWidget', [
-        '$compile',
-        function($compile) {
-
-            /**
-             * Decorator returning an error handler function for file
-             * plugin errors
-             *
-             * @param {string} message - the error message
-             *
-             * @returns {function} - the error handler
-             *
-             * @todo: move into separate service
-             */
-            var fsError = function(message) {
-                return function(error) {
-                    alert('Error ' + error.code + ': ' + (message || 'unknown error'));
-                };
-            };
-
-            /**
-             * Helper function to move the image file to a persistent location
-             *
-             * @param {object} fileEntry - the file entry
-             * @param {function} callback - the callback function, receives
-             *                              the new file URI as parameter
-             *
-             * @todo: move into separate service
-             */
-            var moveFile = function(fileEntry, callback) {
-
-                // File name and target directory
-                // @todo: create "uploads" subfolder
-                var fileName = fileEntry.name,
-                    targetDir = cordova.file.externalApplicationStorageDirectory;
-
-                // Resolve targetDir, then move the file
-                window.resolveLocalFileSystemURL(targetDir, function(dirEntry) {
-                    fileEntry.moveTo(dirEntry, fileName, function(newFileEntry) {
-                        if (callback) {
-                            callback(newFileEntry.nativeURL);
-                        }
-                    }, fsError('failed to move file'));
-                }, fsError('can not access application storage directory'));
-            };
-
-            /**
-             * Helper function to store the picture
-             *
-             * @param {string} imageURI - the image file URI
-             * @param {function} callback - the callback function, receives
-             *                              the new file URI as parameter
-             *
-             * @todo: move into separate service
-             */
-            var storePicture = function(imageURI, callback) {
-
-                window.resolveLocalFileSystemURL(imageURI, function(fileEntry) {
-                    moveFile(fileEntry, callback);
-                }, fsError('file not found'));
-            };
+        '$compile', 'emFiles',
+        function($compile, emFiles) {
 
             /**
              * Helper function to take a picture with the device's camera
@@ -466,19 +408,20 @@
              * @param {scope} $scope - the scope of the form
              * @param {string} target - the target scope expression
              *
-             * @todo: fix image orientation
              * @todo: remove old file when storing a new picture
              * @todo: handle shutdown/resume
              */
             var getPicture = function($scope, target) {
 
                 var cameraOptions = {
-                    correctOrientation: true
+                    correctOrientation: true,
+                    targetHeight: 1280,
+                    targetWidth: 1280
                 };
 
                 navigator.camera.getPicture(
                     function(imageURI) {
-                        storePicture(imageURI, function(newURI) {
+                        emFiles.store(imageURI, function(newURI) {
                             $scope.$apply(target + '="' + newURI + '"');
                         });
                     },
