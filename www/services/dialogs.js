@@ -33,8 +33,8 @@
  * @memberof EdenMobile
  */
 EdenMobile.factory('emDialogs', [
-    '$ionicPopup', '$rootScope', '$timeout',
-    function ($ionicPopup, $rootScope, $timeout) {
+    '$ionicModal', '$ionicPopup', '$rootScope', '$timeout',
+    function ($ionicModal, $ionicPopup, $rootScope, $timeout) {
 
         var dialogs = {
 
@@ -217,7 +217,7 @@ EdenMobile.factory('emDialogs', [
 
                 var authPrompt = $ionicPopup.show({
 
-                    templateUrl: 'views/authform.html',
+                    templateUrl: 'views/dialogs/authform.html',
                     title: msg || 'Authentication required',
                     subTitle: name,
                     scope: scope,
@@ -247,6 +247,39 @@ EdenMobile.factory('emDialogs', [
                     ]
                 });
                 return authPrompt;
+            },
+
+            // ================================================================
+            /**
+             * View a picture in a modal
+             *
+             * @param {string} fileURI - the file URI
+             */
+            viewPicture: function(fileURI) {
+
+                var scope = $rootScope.$new();
+
+                scope.fileURI = fileURI;
+
+                $ionicModal.fromTemplateUrl('views/dialogs/view_picture.html', {
+                    scope: scope,
+                    animation: 'slide-in-up'
+                }).then(function(modal) {
+
+                    scope.modal = modal;
+
+                    scope.openModal = function() {
+                        scope.modal.show();
+                    };
+                    scope.closeModal = function() {
+                        scope.modal.hide();
+                    };
+                    scope.$on('$destroy', function() {
+                        scope.modal.remove();
+                    });
+
+                    scope.openModal();
+                });
             }
         };
         return dialogs;

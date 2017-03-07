@@ -34,3 +34,12 @@ img.photo-widget-preview {
     max-height: 180px;
     padding-right: 1rem;
 }
+.image-modal {
+    width: 100% !important;
+    height: 100%;
+    top: 0 !important;
+    left: 0 !important;
+}
+.image-view {
+    width: 100%;
+}

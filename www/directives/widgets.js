@@ -403,29 +403,6 @@
         function($compile, $parse, emDialogs, emFiles) {
 
             /**
-             * Remove the current picture
-             *
-             * @param {scope} $scope - the scope of the form
-             * @param {string} target - the target scope expression
-             */
-            var removePicture = function($scope, target) {
-
-                var fileURI = $scope.$eval(target);
-                if (fileURI) {
-                    emDialogs.confirmAction(
-                        'Remove Picture',
-                        'Are you sure you want to delete this picture?',
-                        function() {
-                            // Mark file as orphaned
-                            $scope.orphanedFiles.push(fileURI);
-                            // Update scope
-                            $parse(target).assign($scope, null);
-                        }
-                    );
-                }
-            };
-
-            /**
              * Take a picture with the device's camera
              *
              * @param {scope} $scope - the scope of the form
@@ -463,6 +440,43 @@
             };
 
             /**
+             * View the full-resolution picture in a modal
+             *
+             * @param {scope} $scope - the scope of the form
+             * @param {string} target - the target scope expression
+             */
+            var viewPicture = function($scope, target) {
+
+                var fileURI = $scope.$eval(target);
+                if (fileURI) {
+                    emDialogs.viewPicture(fileURI);
+                }
+            };
+
+            /**
+             * Remove the current picture
+             *
+             * @param {scope} $scope - the scope of the form
+             * @param {string} target - the target scope expression
+             */
+            var removePicture = function($scope, target) {
+
+                var fileURI = $scope.$eval(target);
+                if (fileURI) {
+                    emDialogs.confirmAction(
+                        'Remove Picture',
+                        'Are you sure you want to delete this picture?',
+                        function() {
+                            // Mark file as orphaned
+                            $scope.orphanedFiles.push(fileURI);
+                            // Update scope
+                            $parse(target).assign($scope, null);
+                        }
+                    );
+                }
+            };
+
+            /**
              * Widget renderer
              *
              * @param {object} $scope - reference to the current scope
@@ -482,7 +496,8 @@
                     image = angular.element('<img class="photo-widget-preview">')
                                    .attr('ng-src', '{{' + source + '}}')
                                    .attr('alt', 'File not found')
-                                   .attr('ng-show', '!!' + source),
+                                   .attr('ng-show', '!!' + source)
+                                   .attr('ng-click', 'viewPicture("' + source + '")'),
                     empty = angular.element('<span class="empty">')
                                    .attr('ng-show', '!' + source)
                                    .html('No Picture');
@@ -490,10 +505,10 @@
                 // Buttons
                 var cameraButton = angular.element('<button>')
                                           .addClass('button button-small button-positive icon-center ion-camera')
-                                          .attr('ng-click', 'getPicture("' + attr.ngModel + '")'),
+                                          .attr('ng-click', 'getPicture("' + source + '")'),
                     removeButton = angular.element('<button>')
                                           .addClass('button button-small button-assertive icon-center ion-close-circled')
-                                          .attr('ng-click', 'removePicture("' + attr.ngModel + '")'),
+                                          .attr('ng-click', 'removePicture("' + source + '")'),
                     buttons = angular.element('<div class="photo-widget-controls buttons">')
                                      .append(cameraButton)
                                      .append(removeButton);
@@ -512,6 +527,9 @@
                 // Install callbacks
                 $scope.getPicture = function(model) {
                     getPicture($scope, model);
+                };
+                $scope.viewPicture = function(model) {
+                    viewPicture($scope, model);
                 };
                 $scope.removePicture = function(model) {
                     removePicture($scope, model);
