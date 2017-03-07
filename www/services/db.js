@@ -33,8 +33,8 @@
  * @memberof EdenMobile
  */
 EdenMobile.factory('emDB', [
-    '$injector', '$q', 'emDefaultSchema', 'emSQL',
-    function ($injector, $q, emDefaultSchema, emSQL) {
+    '$injector', '$q', 'emDefaultSchema', 'emFiles', 'emSQL',
+    function ($injector, $q, emDefaultSchema, emFiles, emSQL) {
 
         // ====================================================================
 
@@ -730,6 +730,56 @@ EdenMobile.factory('emDB', [
 
         // --------------------------------------------------------------------
         /**
+         * Get all files linked to records in this table
+         *
+         * @param {string} query - SQL WHERE expression
+         * @param {function} callback - callback function, receives an array
+         *                              of file URIs
+         */
+        Table.prototype.getFiles = function(query, callback) {
+
+            var uploadFields = [],
+                fields = this.fields,
+                fieldName,
+                field;
+
+            // Get all upload-type fields
+            for (fieldName in fields) {
+                field = fields[fieldName];
+                if (field.type == 'upload') {
+                    uploadFields.push(fieldName);
+                }
+            }
+
+            var files = [];
+
+            if (uploadFields.length) {
+
+                // Get all file URIs in upload-fields
+                this.select(uploadFields, query, function(records) {
+                    records.forEach(function(record) {
+                        uploadFields.forEach(function(fieldName) {
+                            var fileURI = record[fieldName];
+                            if (fileURI) {
+                                files.push(fileURI);
+                            }
+                        });
+                    });
+                    if (callback) {
+                        callback(files);
+                    }
+                });
+
+            } else {
+
+                if (callback) {
+                    callback(files);
+                }
+            }
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Delete records in this table
          *
          * @param {string} query - SQL WHERE expression
@@ -749,11 +799,21 @@ EdenMobile.factory('emDB', [
 
             var db = this._db,
                 adapter = db._adapter;
-            adapter.executeSql(sql, [], function(result) {
-                if (callback) {
-                    callback(result.rowsAffected);
-                }
-            }, db.sqlError);
+
+            this.getFiles(query, function(orphanedFiles) {
+
+                adapter.executeSql(sql, [], function(result) {
+
+                    // Delete now-orphaned files
+                    emFiles.removeAll(orphanedFiles);
+
+                    // Execute callback
+                    if (callback) {
+                        callback(result.rowsAffected);
+                    }
+
+                }, db.sqlError);
+            });
         };
 
         // --------------------------------------------------------------------
