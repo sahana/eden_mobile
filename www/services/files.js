@@ -33,12 +33,16 @@
      * plugin errors
      *
      * @param {string} message - the error message
+     * @param {function} callback - optional error callback, function(error)
      *
      * @returns {function} - the error handler
      */
-    var fsError = function(message) {
+    var fsError = function(message, callback) {
         return function(error) {
             alert('Error ' + error.code + ': ' + (message || 'unknown error'));
+            if (!!callback) {
+                callback(error);
+            }
         };
     };
 
@@ -61,8 +65,7 @@
                     create: true
                 },
                 onSuccess,
-                fsError('unable to access upload directory')
-            );
+                fsError('unable to access upload directory'));
         });
     };
 
@@ -137,6 +140,47 @@
         });
     };
 
+    // ------------------------------------------------------------------------
+    /**
+     * API function to retrieve a file
+     *
+     * @param {string} fileURI - the file URI
+     * @param {function} onSuccess - success callback, function(fileName, file)
+     * @param {function} onError - error callback, function(error)
+     */
+    var getFile = function(fileURI, onSuccess, onError) {
+
+        window.resolveLocalFileSystemURL(fileURI, function(fileEntry) {
+
+            var fileName = fileEntry.name;
+            fileEntry.file(function(file) {
+                onSuccess(fileName, file);
+            }, fsError('unable to read file', onError));
+        }, fsError('file not found', onError));
+    };
+
+    // ------------------------------------------------------------------------
+    /**
+     * API function to retrieve a file as BLOB
+     * (uses MIME-type "application/octet-stream")
+     *
+     * @param {string} fileURI - the file URI
+     * @param {function} onSuccess - success callback, function(fileName, blob)
+     * @param {function} onError - error callback, function(error)
+     */
+    var getBlob = function(fileURI, onSuccess, onError) {
+
+        getFile(fileURI, function(fileName, file) {
+
+            var reader = new FileReader();
+            reader.onloadend = function(e) {
+                var blob = new Blob([this.result], {type: "application/octet-stream"});
+                onSuccess(fileName, blob);
+            };
+            reader.readAsArrayBuffer(file);
+        }, onError);
+    };
+
     // ========================================================================
     /**
      * emFiles - Service to handle files for upload-fields
@@ -151,8 +195,10 @@
 
                 store: store,
                 remove: remove,
-                removeAll: removeAll
+                removeAll: removeAll,
 
+                getFile: getFile,
+                getBlob: getBlob
             };
             return api;
         }

@@ -315,24 +315,37 @@ EdenMobile.factory('emSync', [
 
                 var query = 'synchronized_on IS NULL OR synchronized_on<modified_on';
 
-                resource.exportJSON(query, function(output) {
+                resource.exportJSON(query, function(dataJSON, files) {
 
-                    if (!output) {
+                    if (!dataJSON) {
                         // Skip if empty
                         self.result(null, 'not modified');
                         return;
                     }
 
-                    var synchronized_on = new Date();
+                    // Data to send
+                    var data;
+                    if (files.length) {
+                        // Use object to send as multipart
+                        data = {
+                            data: dataJSON,
+                            _files: files
+                        };
+                    } else {
+                        // Send as JSON body
+                        data = dataJSON;
+                    }
 
-                    emServer.postData(self.ref, output,
-                        function(data) {
-                            // Success
-                            if (data) {
+                    var synchronized_on = new Date();
+                    emServer.postData(self.ref, data,
+
+                        // Success callback
+                        function(response) {
+                            if (response) {
                                 self.updateSyncDate(
                                     synchronized_on,
-                                    data.created,
-                                    data.updated
+                                    response.created,
+                                    response.updated
                                 ).then(function() {
                                     self.result('success');
                                 });
@@ -340,8 +353,9 @@ EdenMobile.factory('emSync', [
                                 self.result('success');
                             }
                         },
+
+                        // Error callback
                         function(response) {
-                            // Error
                             var message;
                             if (typeof response == 'string') {
                                 message = response;

@@ -323,8 +323,8 @@
      * );
      */
     EdenMobile.factory('emServer', [
-        '$http', '$q', 'emConfig', 'emDialogs',
-        function ($http, $q, emConfig, emDialogs) {
+        '$http', '$q', 'emConfig', 'emFiles', 'emDialogs',
+        function ($http, $q, emConfig, emFiles, emDialogs) {
 
             /**
              * Wrapper for $http that resolves a SahanaURL against the
@@ -507,6 +507,56 @@
             };
 
             /**
+             * Attach files to a request data object
+             *
+             * @param {object} data - the request data object
+             * @param {Array} fileHooks - array of file hooks,
+             *                            format: [[fileName, fileURI], ...]
+             * @param {function} callback - callback function, receives the
+             *                              data object as parameter
+             */
+            var attachFiles = function(data, fileHooks, callback) {
+
+                var pending = {};
+                fileHooks.forEach(function(hook) {
+                    pending[hook[0]] = true;
+                });
+
+                var completed = function(fileName) {
+                    var ready = true;
+                    pending[fileName] = false;
+                    for (var f in pending) {
+                        if (pending[f]) {
+                            ready = false;
+                            break;
+                        }
+                    }
+                    if (ready) {
+                        // All files extracted => run callback
+                        callback(data);
+                    }
+                };
+
+                // Generate the blobs and add them to the data object
+                fileHooks.forEach(function(hook) {
+
+                    var fileName = hook[0];
+
+                    emFiles.getBlob(hook[1],
+                        function(fileName, blob) {
+                            // Add blob to data, with file name as key
+                            data[fileName] = blob;
+                            completed(fileName);
+                        },
+                        function(error) {
+                            // File not found or not readable => skip
+                            completed(fileName);
+                        }
+                    );
+                });
+            };
+
+            /**
              * HTTP POST to the configured Sahana server
              *
              * @param {SahanaURL|string} - the URL to post the data to
@@ -524,6 +574,7 @@
              *                                   function(response), defaults to
              *                                   standard httpError handler
              */
+
             var post = function(url, format, data, successCallback, errorCallback) {
 
                 // Format parameter omitted?
@@ -545,51 +596,77 @@
                     responseType = 'json';
                 }
 
+                var executeRequest = function(config) {
+
+                    // Default to generic httpError handler
+                    if (!errorCallback) {
+                        errorCallback = httpError;
+                    }
+
+                    // Execute the request
+                    http(config).then(
+                        function(response) {
+                            if (successCallback) {
+                                successCallback(response.data);
+                            }
+                        },
+                        function(response) {
+                            if (errorCallback) {
+                                errorCallback(response);
+                            }
+                        }
+                    );
+                };
+
                 // The request config
                 var config = {
                     method: 'POST',
                     url: url,
-                    responseType: responseType,
-                    data: data
+                    responseType: responseType
                 };
-
                 if (typeof data == 'string') {
+
                     // Assume JSON
+                    config.data = data;
                     config.headers = {
                         'Content-Type': 'application/json'
                     };
+                    executeRequest(config);
+
                 } else {
+
                     // Assume multipart
                     config.headers = {
                         'Content-Type': undefined
                     };
+
+                    // transformRequest to build formData object
                     config.transformRequest = function(data, headersGetter) {
                         var formData = new FormData();
                         angular.forEach(data, function(value, key) {
-                            formData.append(key, value);
+                            if (key !== '_files') {
+                                if (value.constructor == Blob) {
+                                    formData.append(key, value, key);
+                                } else {
+                                    formData.append(key, value);
+                                }
+                            }
                         });
                         return formData;
                     };
-                }
 
-                // Default to generic httpError handler
-                if (!errorCallback) {
-                    errorCallback = httpError;
-                }
-
-                // Execute the request
-                http(config).then(
-                    function(response) {
-                        if (successCallback) {
-                            successCallback(response.data);
-                        }
-                    },
-                    function(response) {
-                        if (errorCallback) {
-                            errorCallback(response);
-                        }
+                    if (data.hasOwnProperty('_files')) {
+                        // Attach the files, then execute the request
+                        attachFiles(data, data._files, function(data) {
+                            config.data = data;
+                            executeRequest(config);
+                        });
+                    } else {
+                        // Execute the request as-is
+                        config.data = data;
+                        executeRequest(config);
                     }
-                );
+                }
             };
 
             /**

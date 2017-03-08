@@ -330,25 +330,43 @@ EdenMobile.factory('emResources', [
          *
          * @param {object} record - the record
          *
-         * @returns {object} - the record with values converted to export format
+         * @returns {object} - the record data, object attributes:
+         *                      .data: the record data,
+         *                             as JSON,
+         *                      .files: files attached to this record,
+         *                              as array of [fileName, fileURI]
          */
         Resource.prototype.serialize = function(record) {
 
-            var output = {},
+            var data = {},
                 fields = this.fields,
                 fieldName,
                 field,
+                files = [],
+                fileName,
                 value;
 
             for (fieldName in fields) {
+
                 field = fields[fieldName];
                 value = record[fieldName];
+
                 if (value !== undefined) {
-                    output[fieldName] = field.format(value);
+
+                    if (field.type == 'upload') {
+                        fileName = value.split('/').pop().split('#')[0].split('?')[0];
+                        data[fieldName] = fileName;
+                        files.push([fileName, value]);
+                    } else {
+                        data[fieldName] = field.format(value);
+                    }
                 }
             }
 
-            return output;
+            return {
+                data: data,
+                files: files
+            };
         };
 
         // ------------------------------------------------------------------------
@@ -357,7 +375,7 @@ EdenMobile.factory('emResources', [
          *
          * @param {Array} fields - array of field names (optional)
          * @param {string} query - SQL WHERE expression to select the records
-         * @param {function} callback - callback function: function(output)
+         * @param {function} callback - callback function: function(data, files)
          */
         Resource.prototype.exportJSON = function(fields, query, callback) {
 
@@ -393,20 +411,26 @@ EdenMobile.factory('emResources', [
 
                 var output = {},
                     rows = [],
-                    row;
+                    files = [],
+                    record;
 
                 if (!records.length) {
+                    // No data
                     if (callback) {
                         callback();
                     }
                 } else {
+                    // Collect rows and files
                     for (var i=0, len=records.length; i<len; i++) {
-                        row = self.serialize(records[i]);
-                        rows.push(row);
+                        record = self.serialize(records[i]);
+                        rows.push(record.data);
+                        files = files.concat(record.files);
                     }
+
+                    // Execute callback
                     output[self.tableName] = rows;
                     if (callback) {
-                        callback(JSON.stringify(output));
+                        callback(JSON.stringify(output), files);
                     }
                 }
             });
