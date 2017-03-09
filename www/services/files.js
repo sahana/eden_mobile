@@ -76,14 +76,23 @@
      * @param {object} fileEntry - the file entry
      * @param {function} callback - the callback function, receives
      *                              the new file URI as parameter
+     * @param {string} resourceName - name of the resource the file is linked to
+     * @param {string} fieldName - name of the field the file is linked to
      */
-    var moveFile = function(fileEntry, onSuccess) {
+    var moveFile = function(fileEntry, onSuccess, resourceName, fieldName) {
 
         var fileName = fileEntry.name;
 
         // Resolve targetDir, then move the file
         getUploadDirectory(function(uploadDir) {
-            fileEntry.moveTo(uploadDir, fileName, function(newFileEntry) {
+
+            // Generate new file name
+            var newFileName = fileName;
+            if (!!resourceName && !!fieldName) {
+                newFileName = [resourceName, fieldName, fileName].join('.');
+            }
+
+            fileEntry.moveTo(uploadDir, newFileName, function(newFileEntry) {
                 if (onSuccess) {
                     onSuccess(newFileEntry.nativeURL);
                 }
@@ -98,11 +107,13 @@
      * @param {string} fileURI - the file URI
      * @param {function} callback - the callback function, receives
      *                              the new file URI as parameter
+     * @param {string} resourceName - name of the resource the file is linked to
+     * @param {string} fieldName - name of the field the file is linked to
      */
-    var store = function(fileURI, callback) {
+    var store = function(fileURI, callback, resourceName, fieldName) {
 
         window.resolveLocalFileSystemURL(fileURI, function(fileEntry) {
-            moveFile(fileEntry, callback);
+            moveFile(fileEntry, callback, resourceName, fieldName);
         }, fsError('file not found'));
     };
 

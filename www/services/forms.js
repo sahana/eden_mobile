@@ -53,8 +53,6 @@ EdenMobile.factory('emForms', [
 
             if (field.hasOptions()) {
                 widgetType = '<em-options-widget>';
-                attr.resource = resource.name;
-                attr.field = field.name;
             } else {
                 switch(fieldType) {
                     case 'boolean':
@@ -79,18 +77,24 @@ EdenMobile.factory('emForms', [
                 }
             }
 
-            if (writable === false) {
-                attr.disabled = 'disabled';
-            }
-
             var widget = angular.element(widgetType);
 
-            // Apply widget attributes
+            // Pass resource and field name to widget
+            widget.attr('resource', resource.name);
+            widget.attr('field', field.name);
+
+            // Set disabled when not writable
+            if (writable === false) {
+                widget.attr('disabled', 'disabled');
+            }
+
+            // Apply widget attributes from caller
             if (attr) {
                 for (var a in attr) {
                     widget.attr(a, attr[a]);
                 }
             }
+
             return widget;
         };
 

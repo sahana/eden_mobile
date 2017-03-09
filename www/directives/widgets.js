@@ -402,6 +402,7 @@
         '$compile', '$parse', 'emDialogs', 'emFiles',
         function($compile, $parse, emDialogs, emFiles) {
 
+            // ----------------------------------------------------------------
             /**
              * Take a picture with the device's camera
              *
@@ -410,7 +411,7 @@
              *
              * @todo: handle shutdown/resume
              */
-            var getPicture = function($scope, target) {
+            var getPicture = function($scope, target, resourceName, fieldName) {
 
                 var cameraOptions = {
                     correctOrientation: true,
@@ -430,7 +431,7 @@
                             $scope.pendingFiles.push(newURI);
                             // Update scope
                             $scope.$apply(target + '="' + newURI + '"');
-                        });
+                        }, resourceName, fieldName);
                     },
                     function(error) {
                         alert(error);
@@ -439,6 +440,7 @@
                 );
             };
 
+            // ----------------------------------------------------------------
             /**
              * View the full-resolution picture in a modal
              *
@@ -453,6 +455,7 @@
                 }
             };
 
+            // ----------------------------------------------------------------
             /**
              * Remove the current picture
              *
@@ -476,6 +479,7 @@
                 }
             };
 
+            // ----------------------------------------------------------------
             /**
              * Widget renderer
              *
@@ -486,6 +490,10 @@
              *                        the element
              */
             var renderWidget = function($scope, elem, attr) {
+
+                // Resource and field name
+                var resourceName = attr.resource,
+                    fieldName = attr.field;
 
                 // The label
                 var label = angular.element('<span class="input-label">')
@@ -526,7 +534,7 @@
 
                 // Install callbacks
                 $scope.getPicture = function(model) {
-                    getPicture($scope, model);
+                    getPicture($scope, model, resourceName, fieldName);
                 };
                 $scope.viewPicture = function(model) {
                     viewPicture($scope, model);
