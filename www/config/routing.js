@@ -75,6 +75,33 @@ EdenMobile.config(['$stateProvider', '$urlRouterProvider',
                     }
                 }
             })
+            .state('data.component', {
+                url: '/{resourceName}/{recordID:int}/{componentName}',
+                views: {
+                    'data': {
+                        templateUrl: 'views/data/datalist.html',
+                        controller: "EMDataList"
+                    }
+                }
+            })
+            .state('data.componentCreate', {
+                url: '/{resourceName}/{recordID:int}/{componentName}/create',
+                views: {
+                    'data': {
+                        templateUrl: 'views/data/create.html',
+                        controller: "EMDataCreate"
+                    }
+                }
+            })
+            .state('data.componentUpdate', {
+                url: '/{resourceName}/{recordID:int}/{componentName}/{componentID:int}',
+                views: {
+                    'data': {
+                        templateUrl: 'views/data/update.html',
+                        controller: "EMDataUpdate"
+                    }
+                }
+            })
             .state('sync', {
                 url: '/sync',
                 templateUrl: 'views/sync/index.html',
