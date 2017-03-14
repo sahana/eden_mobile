@@ -48,6 +48,14 @@ EdenMobile.controller("EMDataUpdate", [
             $scope.master = {};
             $scope.saved = false;
 
+            // Initialize Components Menu
+            if ($scope.componentMenu) {
+                $scope.componentMenu.remove();
+                $scope.componentMenu = null;
+            }
+            $scope.hasComponents = false;
+            $scope.openComponents = null;
+
             // Clean up on exit
             $scope.$on('$destroy', function() {
                 if ($scope.saved) {
@@ -61,6 +69,14 @@ EdenMobile.controller("EMDataUpdate", [
 
             // Read current values from database
             emResources.open(resourceName).then(function(resource) {
+
+                // Enable components-menu
+                if (Object.keys(resource.components).length) {
+                    $scope.hasComponents = true;
+                    $scope.openComponents = function($event) {
+                        emDialogs.componentMenu($scope, $event, resource);
+                    }
+                }
 
                 var tableName = resource.tableName,
                     query = tableName + '.id=' + recordID;

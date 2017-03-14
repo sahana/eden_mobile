@@ -97,6 +97,10 @@ EdenMobile.factory('emResources', [
             var settings = angular.extend({}, table.settings, (options.settings || {}));
             this.settings = settings;
 
+
+            // Components
+            this.components = settings.components || {};
+
             // UI Configuration
             this.strings = settings.strings || {};
             this.form = settings.form;

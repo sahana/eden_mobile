@@ -36,56 +36,93 @@ EdenMobile.controller("EMDataList", [
     '$scope', '$stateParams', 'emResources',
     function($scope, $stateParams, emResources) {
 
-        var resourceName = $stateParams.resourceName;
+        /**
+         * Refresh the scope with resource and record data
+         *
+         * @param {Resource} resource - the resource
+         * @param {string} query - SQL where expression to select the
+         *                         records, e.g. a subset linked to a
+         *                         particular master record (components)
+         */
+        var updateDataList = function(resource, query) {
 
-        $scope.resourceName = resourceName;
+            $scope.resourceName = resource.name;
 
-        var updateDataList = function() {
+            // Get strings
+            var strings = resource.strings,
+                listTitle = resource.name;
+            if (strings) {
+                listTitle = strings.namePlural || strings.name || listTitle;
+            }
+            $scope.listTitle = listTitle;
 
-            emResources.open(resourceName).then(function(resource) {
+            // Read card config
+            var cardConfig = resource.card,
+                fields;
+            if (cardConfig) {
+                fields = cardConfig.fields;
+            }
 
-                if (!resource) {
-                    $scope.records = [];
+            // Apply fallbacks
+            if (!fields) {
+                // Get all fields
+                fields = [];
+                for (var fieldName in resource.fields) {
+                    fields.push(fieldName);
                 }
+            }
 
-                // Get strings
-                var strings = resource.strings,
-                    listTitle = resourceName;
-                if (strings) {
-                    listTitle = strings.namePlural || strings.name || listTitle;
-                }
-                $scope.listTitle = listTitle;
+            // Make sure 'id' field is loaded (required by directive)
+            if (fields.indexOf('id') == -1) {
+                fields.push('id');
+            }
 
-                // Read card config
-                var cardConfig = resource.card,
-                    fields;
-                if (cardConfig) {
-                    fields = cardConfig.fields;
-                }
-
-                // Apply fallbacks
-                if (!fields) {
-                    // Get all fields
-                    fields = [];
-                    for (var fieldName in resource.fields) {
-                        fields.push(fieldName);
-                    }
-                }
-
-                // Make sure 'id' field is loaded (required by directive)
-                if (fields.indexOf('id') == -1) {
-                    fields.push('id');
-                }
-
-                // Select all existing records
-                resource.select(fields, function(records, result) {
-                    $scope.records = records;
-                    $scope.$apply();
-                });
+            // Select all existing records
+            resource.select(fields, query, function(records, result) {
+                $scope.records = records;
+                $scope.$apply();
             });
         };
 
-        $scope.$on('$ionicView.enter', updateDataList);
+        // State parameters
+        var resourceName = $stateParams.resourceName,
+            componentName = $stateParams.componentName;
+
+        /**
+         * Open list of records
+         */
+        var openDataList = function() {
+
+            // Open the master resource
+            emResources.open(resourceName).then(function(resource) {
+
+                if (!resource) {
+                    // Undefined resource
+                    $scope.records = [];
+                } else {
+                    // Component access?
+                    if (!!componentName) {
+                        var component = resource.components[componentName];
+                        if (!component || !component.resource) {
+                            // Undefined or invalid component
+                            // => fall back to master
+                            alert('Undefined component: ' + componentName);
+                            updateDataList(resource);
+                        } else {
+                            // Open component
+                            var query = component.joinby + '=' + $stateParams.recordID;
+                            emResources.open(component.resource).then(function(resource) {
+                                updateDataList(resource, query);
+                            });
+                        }
+                    } else {
+                        updateDataList(resource);
+                    }
+                }
+            });
+        };
+
+        $scope.$on('$ionicView.enter', openDataList);
     }
 ]);
 

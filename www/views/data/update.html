@@ -1,6 +1,9 @@
 <ion-view view-title="DataUpdate">
     <div class="bar bar-stable bar-subheader">
-        <a href="#/data/{{resourceName}}" class="button icon-left ion-arrow-left-a"></a>
+        <div class="buttons">
+            <a href="#/data/{{resourceName}}" class="button icon-left ion-arrow-left-a"></a>
+            <button class="button icon-left ion-android-more-vertical button-light" style="margin-left:0.2rem;" ng-if="hasComponents" ng-click="openComponents($event)"></button>
+        </div>
         <h2 class="title" translate="Edit+FORMTITLE" translate-value-formtitle="{{formTitle}}"></h2>
         <div class="buttons">
             <button class="button icon-left ion-trash-b button-assertive" style="margin-right:0.2rem;" ng-click="deleteRecord()"></button>

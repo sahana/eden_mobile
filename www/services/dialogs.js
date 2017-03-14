@@ -1,5 +1,5 @@
 /**
- * Sahana Eden Mobile - Standard Popup Dialogs Service
+ * Sahana Eden Mobile - Common Dialogs Service
  *
  * Copyright (c) 2016-2017: Sahana Software Foundation
  *
@@ -27,261 +27,340 @@
 
 // ============================================================================
 /**
- * emDialogs - Service providing popup dialogs
+ * emDialogs - Service providing common dialogs
  *
  * @class emDialogs
  * @memberof EdenMobile
  */
 EdenMobile.factory('emDialogs', [
-    '$ionicModal', '$ionicPopup', '$rootScope', '$timeout',
-    function ($ionicModal, $ionicPopup, $rootScope, $timeout) {
+    '$ionicModal', '$ionicPopover', '$ionicPopup', '$rootScope', '$timeout',
+    function ($ionicModal, $ionicPopover, $ionicPopup, $rootScope, $timeout) {
 
-        var dialogs = {
+        // ====================================================================
+        /**
+         * A simple, self-closing confirmation message popup
+         *
+         * @param {string} msg - the message to show
+         * @param {function} callback - callback function to execute
+         *                              after closing the popup
+         */
+        var confirmation = function(msg, callback) {
 
-            // ================================================================
-            /**
-             * Show a confirmation popup
-             *
-             * @param {string} msg - the message to show
-             * @param {function} callback - callback function to execute
-             *                              after closing the popup
-             */
-            confirmation: function(msg, callback) {
+            var confirmationPopup = $ionicPopup.show({
+                title: msg
+            });
 
-                var confirmationPopup = $ionicPopup.show({
-                    title: msg
-                });
+            // auto-hide after 800ms
+            $timeout(function() {
+                confirmationPopup.close();
+                if (callback) {
+                    callback();
+                }
+            }, 800);
+        };
 
-                // auto-hide after 800ms
-                $timeout(function() {
-                    confirmationPopup.close();
-                    if (callback) {
-                        callback();
-                    }
-                }, 800);
-            },
+        // ====================================================================
+        /**
+         * An error popup requiring user confirmation
+         *
+         * @param {string} message - the error message to show
+         * @param {string} explanation - an explanation to show
+         * @param {function} callback - callback function to execute
+         *                              after closing the popup
+         */
+        var error = function(message, explanation, callback) {
 
-            // ================================================================
-            /**
-             * Show an error popup with user confirmation
-             *
-             * @param {string} message - the error message to show
-             * @param {string} explanation - an explanation to show
-             * @param {function} callback - callback function to execute
-             *                              after closing the popup
-             */
-            error: function(message, explanation, callback) {
-
-                var errorPopup = $ionicPopup.show({
-                    title: message,
-                    subTitle: explanation,
-                    buttons: [
-                        {
-                            text: '<b>Close</b>',
-                            type: 'button-positive',
-                            onTap: function(e) {
-                                if (callback) {
-                                    callback();
-                                }
+            var errorPopup = $ionicPopup.show({
+                title: message,
+                subTitle: explanation,
+                buttons: [
+                    {
+                        text: '<b>Close</b>',
+                        type: 'button-positive',
+                        onTap: function(e) {
+                            if (callback) {
+                                callback();
                             }
                         }
-                    ]
-                });
-            },
+                    }
+                ]
+            });
+        };
 
-            // ================================================================
-            /**
-             * Show a popup asking for user confirmation
-             *
-             * @param {string} title - title describing the action to confirm
-             * @param {string} question - the question to ask
-             * @param {function} actionCallback - callback function to execute
-             *                                    if the user confirms the action
-             * @param {function} cancelCallback - callback function to execute
-             *                                    if the user cancels the action
-             */
-            confirmAction: function(title, question, actionCallback, cancelCallback) {
+        // ====================================================================
+        /**
+         * A popup asking for user confirmation of a system action
+         *
+         * @param {string} title - title describing the action to confirm
+         * @param {string} question - the question to ask
+         * @param {function} actionCallback - callback function to execute
+         *                                    if the user confirms the action
+         * @param {function} cancelCallback - callback function to execute
+         *                                    if the user cancels the action
+         */
+        var confirmAction = function(title, question, actionCallback, cancelCallback) {
 
-                var confirmPopup = $ionicPopup.confirm({
-                    title: title,
-                    template: question
-                });
+            var confirmPopup = $ionicPopup.confirm({
+                title: title,
+                template: question
+            });
 
-                confirmPopup.then(function(response) {
-                    if (response) {
-                        // User confirmed action
-                        if (actionCallback) {
-                            actionCallback();
-                        }
-                    } else {
-                        // User cancelled action
+            confirmPopup.then(function(response) {
+                if (response) {
+                    // User confirmed action
+                    if (actionCallback) {
+                        actionCallback();
+                    }
+                } else {
+                    // User cancelled action
+                    if (cancelCallback) {
+                        cancelCallback();
+                    }
+                }
+            });
+        };
+
+        // ====================================================================
+        /**
+         * A popup prompting for a single string input
+         *
+         * @param {string} title - title describing the action to confirm
+         * @param {string} question - the question to ask
+         * @param {object} options - options for the input:
+         *                           - inputType: 'text', 'password', ...
+         *                           - inputPlaceholder: placeholder text
+         *                           - defaultText: default value
+         *                           - onValidation: callback function to validate
+         *                                           the input, takes the value as
+         *                                           parameter and returns
+         *                                           valid=[true|false]
+         * @param {function} actionCallback - callback function to execute
+         *                                    if the user submits the input,
+         *                                    function(inputValue)
+         * @param {function} cancelCallback - callback function to execute
+         *                                    if the user cancels the dialog,
+         *                                    takes no parameters
+         */
+        var stringInput = function(title, question, options, actionCallback, cancelCallback) {
+
+            // Use a separate scope for the dialog
+            var scope = $rootScope.$new(),
+                data = {'invalid': false};
+
+            if (options === undefined) {
+                options = {};
+            }
+            if (options.defaultText) {
+                data.input = options.defaultText;
+            }
+            scope.data = data;
+
+            // Input template
+            var inputType = options.inputType || 'text',
+                template = '<input type="' + inputType + '" placeholder="' + options.inputPlaceholder + '" ng-model="data.input"><div class="error" ng-show="data.invalid">Invalid!</div>';
+
+            var stringInput = $ionicPopup.show({
+                scope: scope,
+                template: template,
+                title: title,
+                subTitle: question,
+                buttons: [{
+                    text: 'Cancel',
+                    type: 'button-default',
+                    onTap: function(e) {
                         if (cancelCallback) {
                             cancelCallback();
                         }
                     }
-                });
-            },
+                  }, {
+                    text: 'OK',
+                    type: 'button-positive',
+                    onTap: function(e) {
+                        var inputValue = scope.data.input,
+                            valid = true;
+                        if (options.onValidation) {
+                            valid = options.onValidation(inputValue);
+                        }
+                        if (valid) {
+                            scope.data.invalid = false;
+                            if (actionCallback) {
+                                actionCallback(inputValue);
+                            }
+                            return inputValue;
+                        } else {
+                            scope.data.invalid = true;
+                            e.preventDefault();
+                        }
+                    }
+                }]
+            });
+        };
 
-            // ================================================================
-            /**
-             * Show a popup prompting for a single string input
-             *
-             * @param {string} title - title describing the action to confirm
-             * @param {string} question - the question to ask
-             * @param {object} options - options for the input:
-             *                           - inputType: 'text', 'password', ...
-             *                           - inputPlaceholder: placeholder text
-             *                           - defaultText: default value
-             * @param {function} actionCallback - callback function to execute
-             *                                    if the user submits the input,
-             *                                    function(inputValue)
-             * @param {function} cancelCallback - callback function to execute
-             *                                    if the user cancels the dialog,
-             *                                    takes no parameters
-             */
-            stringInput: function(title, question, options, actionCallback, cancelCallback) {
+        // ====================================================================
+        /**
+         * A popup to enter username and password
+         *
+         * @param {string} name - the server name or URL to indicate to the user
+         * @param {string} msg - reason for the input request
+         * @param {object} credentials - the previous credentials
+         * @param {string} credentials.username - the previous username
+         * @param {string} credentials.password - the previous password
+         * @param {function} actionCallback - callback function to invoke when
+         *                                    new credentials have been entered,
+         *                                    function(username, password)
+         * @param {function} cancelCallback - callback function to invoke when
+         *                                    the user cancels the input
+         */
+        var authPrompt = function(name, msg, credentials, actionCallback, cancelCallback) {
 
-                // Use a separate scope for the dialog
-                var scope = $rootScope.$new(),
-                    data = {'invalid': false};
+            // Use a separate scope for the dialog
+            var scope = $rootScope.$new();
+            scope.login = credentials || {};
 
-                if (options === undefined) {
-                    options = {};
-                }
-                if (options.defaultText) {
-                    data.input = options.defaultText;
-                }
-                scope.data = data;
+            var authPrompt = $ionicPopup.show({
 
-                // Input template
-                var inputType = options.inputType || 'text',
-                    template = '<input type="' + inputType + '" placeholder="' + options.inputPlaceholder + '" ng-model="data.input"><div class="error" ng-show="data.invalid">Invalid!</div>';
-
-                var stringInput = $ionicPopup.show({
-                    scope: scope,
-                    template: template,
-                    title: title,
-                    subTitle: question,
-                    buttons: [{
+                templateUrl: 'views/dialogs/authform.html',
+                title: msg || 'Authentication required',
+                subTitle: name,
+                scope: scope,
+                buttons: [
+                    {
                         text: 'Cancel',
-                        type: 'button-default',
                         onTap: function(e) {
                             if (cancelCallback) {
                                 cancelCallback();
                             }
                         }
-                      }, {
-                        text: 'OK',
+                    },
+                    {
+                        text: '<b>Send</b>',
                         type: 'button-positive',
                         onTap: function(e) {
-                            var inputValue = scope.data.input,
-                                valid = true;
-                            if (options.onValidation) {
-                                valid = options.onValidation(inputValue);
-                            }
-                            if (valid) {
-                                scope.data.invalid = false;
-                                if (actionCallback) {
-                                    actionCallback(inputValue);
-                                }
-                                return inputValue;
-                            } else {
-                                scope.data.invalid = true;
+                            var login = scope.login;
+                            if (!login.username || !login.password) {
                                 e.preventDefault();
-                            }
-                        }
-                    }]
-                });
-            },
-
-            // ================================================================
-            /**
-             * Show a popup to enter username and password
-             *
-             * @param {string} name - the server name or URL to indicate to the user
-             * @param {string} msg - reason for the input request
-             * @param {object} credentials - the previous credentials
-             * @param {string} credentials.username - the previous username
-             * @param {string} credentials.password - the previous password
-             * @param {function} actionCallback - callback function to invoke when
-             *                                    new credentials have been entered,
-             *                                    function(username, password)
-             * @param {function} cancelCallback - callback function to invoke when
-             *                                    the user cancels the input
-             */
-            authPrompt: function(name, msg, credentials, actionCallback, cancelCallback) {
-
-                // Use a separate scope for the dialog
-                var scope = $rootScope.$new();
-                scope.login = credentials || {};
-
-                var authPrompt = $ionicPopup.show({
-
-                    templateUrl: 'views/dialogs/authform.html',
-                    title: msg || 'Authentication required',
-                    subTitle: name,
-                    scope: scope,
-                    buttons: [
-                        {
-                            text: 'Cancel',
-                            onTap: function(e) {
-                                if (cancelCallback) {
-                                    cancelCallback();
-                                }
-                            }
-                        },
-                        {
-                            text: '<b>Send</b>',
-                            type: 'button-positive',
-                            onTap: function(e) {
-                                var login = scope.login;
-                                if (!login.username || !login.password) {
-                                    e.preventDefault();
-                                } else {
-                                    if (actionCallback) {
-                                        actionCallback(login.username, login.password);
-                                    }
+                            } else {
+                                if (actionCallback) {
+                                    actionCallback(login.username, login.password);
                                 }
                             }
                         }
-                    ]
+                    }
+                ]
+            });
+            return authPrompt;
+        };
+
+        // ====================================================================
+        /**
+         * A modal to view a picture (used by emPhotoWidget)
+         *
+         * @param {string} fileURI - the file URI
+         */
+        var viewPicture = function(fileURI) {
+
+            var scope = $rootScope.$new();
+
+            scope.fileURI = fileURI;
+
+            $ionicModal.fromTemplateUrl('views/dialogs/view_picture.html', {
+                scope: scope,
+                animation: 'slide-in-up'
+            }).then(function(modal) {
+
+                scope.modal = modal;
+
+                scope.openModal = function() {
+                    scope.modal.show();
+                };
+                scope.closeModal = function() {
+                    scope.modal.hide();
+                };
+                scope.$on('$destroy', function() {
+                    scope.modal.remove();
                 });
-                return authPrompt;
-            },
 
-            // ================================================================
-            /**
-             * View a picture in a modal
-             *
-             * @param {string} fileURI - the file URI
-             */
-            viewPicture: function(fileURI) {
+                scope.openModal();
+            });
+        };
 
-                var scope = $rootScope.$new();
+        // ====================================================================
+        /**
+         * A drop-down of components, for single-record views
+         *
+         * @param {scope} $scope: the scope of the record view
+         * @param {event} $event: the event triggering the drop-down
+         * @param {Resource} resource: the master resource
+         *
+         * @todo: calculate height of componentMenu (60px per item)
+         */
+        var componentMenu = function($scope, $event, resource) {
 
-                scope.fileURI = fileURI;
+            // => Scope structures used (provided by controller):
+            // $scope.resourceName....the name of the master resource
+            // $scope.recordID........the master record ID
+            // $scope.hasComponents...whether the resource has components
+            //
+            // => Scope structures provided (used by view):
+            // $scope.components......array of component definitions
+            // $scope.componentMenu...the component menu (ionicPopover)
 
-                $ionicModal.fromTemplateUrl('views/dialogs/view_picture.html', {
-                    scope: scope,
-                    animation: 'slide-in-up'
-                }).then(function(modal) {
+            if (!$scope.hasComponents) {
+                return;
+            }
 
-                    scope.modal = modal;
+            var resourceName = $scope.resourceName,
+                recordID = $scope.recordID;
 
-                    scope.openModal = function() {
-                        scope.modal.show();
-                    };
-                    scope.closeModal = function() {
-                        scope.modal.hide();
-                    };
-                    scope.$on('$destroy', function() {
-                        scope.modal.remove();
+            if ($scope.componentMenu) {
+
+                // Already rendered, just show it
+                $scope.componentMenu.show($event);
+
+            } else {
+
+                // Add components to scope
+                var components = [],
+                    component;
+                for (var componentName in resource.components) {
+                    component = resource.components[componentName];
+                    components.push({title: component.title, name: componentName});
+                }
+                $scope.components = components;
+
+                // Render component menu
+                $ionicPopover.fromTemplateUrl('views/dialogs/component_menu.html', {
+                    scope: $scope
+                }).then(function(menu) {
+
+                    // Bring into scope
+                    $scope.componentMenu = menu;
+
+                    // Remove component menu when scope gets destroyed
+                    $scope.$on('$destroy', function() {
+                        $scope.componentMenu.remove();
                     });
 
-                    scope.openModal();
+                    // Show it now
+                    menu.show($event);
                 });
             }
         };
+
+        // ====================================================================
+        // The emDialogs API
+        //
+        var dialogs = {
+
+            confirmation: confirmation,
+            error: error,
+            confirmAction: confirmAction,
+            stringInput: stringInput,
+            authPrompt: authPrompt,
+            viewPicture: viewPicture,
+            componentMenu: componentMenu
+        };
+
         return dialogs;
     }
 ]);

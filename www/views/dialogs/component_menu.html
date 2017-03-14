@@ -1,0 +1,12 @@
+<ion-popover-view style="height: 120px;">
+  <ion-content>
+    <div class="list">
+      <a class="item"
+         ng-repeat="component in components"
+         ng-click="componentMenu.remove()"
+         ui-sref="data.component({resourceName:&quot;{{resourceName}}&quot;,recordID:{{recordID}},componentName:&quot;{{component.name}}&quot;})">
+        {{component.title}}
+      </a>
+    </div>
+  </ion-content>
+</ion-popover-view>
