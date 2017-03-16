@@ -1,7 +1,7 @@
 <ion-view view-title="DataUpdate">
     <div class="bar bar-stable bar-subheader">
         <div class="buttons">
-            <a href="#/data/{{resourceName}}" class="button icon-left ion-arrow-left-a"></a>
+            <a ng-click="returnToList()" class="button icon-left ion-arrow-left-a"></a>
             <button class="button icon-left ion-android-more-vertical button-light" style="margin-left:0.2rem;" ng-if="hasComponents" ng-click="openComponents($event)"></button>
         </div>
         <h2 class="title" translate="Edit+FORMTITLE" translate-value-formtitle="{{formTitle}}"></h2>
@@ -11,6 +11,6 @@
         </div>
     </div>
     <ion-content id="main" class="has-header has-subheader has-footer">
-        <em-data-form resource="{{resourceName}}"></em-data-form>
+        <em-data-form resource="{{resourceName}}" component="{{componentName}}"></em-data-form>
     </ion-content>
 </ion-view>

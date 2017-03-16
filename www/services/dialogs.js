@@ -71,7 +71,7 @@ EdenMobile.factory('emDialogs', [
         var error = function(message, explanation, callback) {
 
             var errorPopup = $ionicPopup.show({
-                title: message,
+                title: message || 'Error',
                 subTitle: explanation,
                 buttons: [
                     {
@@ -186,7 +186,6 @@ EdenMobile.factory('emDialogs', [
                             if (actionCallback) {
                                 actionCallback(inputValue);
                             }
-                            return inputValue;
                         } else {
                             scope.data.invalid = true;
                             e.preventDefault();
@@ -338,7 +337,10 @@ EdenMobile.factory('emDialogs', [
 
                     // Remove component menu when scope gets destroyed
                     $scope.$on('$destroy', function() {
-                        $scope.componentMenu.remove();
+                        if ($scope.componentMenu) {
+                            $scope.componentMenu.remove();
+                            $scope.componentMenu = null;
+                        }
                     });
 
                     // Show it now

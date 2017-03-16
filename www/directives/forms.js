@@ -47,16 +47,29 @@ EdenMobile.directive('emDataForm', [
          */
         var renderForm = function($scope, elem, attr) {
 
-            var resourceName = attr.resource;
+            var resourceName = attr.resource,
+                componentName = attr.component;
 
             emResources.open(resourceName).then(function(resource) {
 
-                var form = emForms.form(resource);
+                if (!resource) {
+                    return;
+                }
 
-                // Compile the form HTML against the scope,
-                // then render it in place of the directive
-                var compiled = $compile(form.render('form'))($scope);
-                elem.replaceWith(compiled);
+                var form,
+                    compiled;
+
+                if (!!componentName) {
+                    resource.openComponent(null, componentName, function(component) {
+                        form = emForms.form(component);
+                        compiled = $compile(form.render('form'))($scope);
+                        elem.replaceWith(compiled);
+                    });
+                } else {
+                    form = emForms.form(resource);
+                    compiled = $compile(form.render('form'))($scope);
+                    elem.replaceWith(compiled);
+                }
             });
         };
 

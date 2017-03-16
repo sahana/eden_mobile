@@ -38,34 +38,50 @@ EdenMobile.directive("emDataCard", [
 
         var renderCard = function($scope, elem, attr) {
 
-            // @todo: attr.resource?
-            var resourceName = $scope.resourceName;
+            // => Scope structures used (provided by controller):
+            // $scope.resourceName: the master resource name
+            // $scope.recordID: the master record ID
+            // $scope.componentName: the component resource name
+            // $scope.record: the target record, {fieldName: value}
+            // $scope.cardConfig: the card config for the target record
 
-            emResources.open(resourceName).then(function(resource) {
-                var cardConfig = resource.card,
-                    titleTemplate,
-                    cardTemplate,
-                    target = 'data.update({resourceName:&quot;{{resourceName}}&quot;,recordID:{{record.id}}})';
+            // Link target
+            var target;
+            if (!!$scope.componentName) {
+                // Link to componentUpdate
+                target = 'data.componentUpdate({' +
+                         'resourceName:&quot;{{resourceName}}&quot;,' +
+                         'recordID:{{recordID}},' +
+                         'componentName:&quot;{{componentName}}&quot;,' +
+                         'componentID:{{record.id}}})';
+            } else {
+                // Link to update
+                target = 'data.update({' +
+                         'resourceName:&quot;{{resourceName}}&quot;,' +
+                         'recordID:{{record.id}}})';
+            }
 
-                // Read the card config
-                if (cardConfig) {
-                    titleTemplate = cardConfig.title;
-                }
-                // Apply fallback
-                if (!titleTemplate) {
-                    titleTemplate = 'Record #{{record.id}}';
-                }
+            // Read the card config
+            var cardConfig = $scope.cardConfig,
+                titleTemplate,
+                cardTemplate;
+            if (cardConfig) {
+                titleTemplate = cardConfig.title;
+            }
+            if (!titleTemplate) {
+                // Fallback
+                titleTemplate = 'Record #{{record.id}}';
+            }
 
-                // Construct the data card template
-                cardTemplate = '<a class="item item-text-wrap" ' +
-                               'ui-sref="' + target + '">' +
-                               titleTemplate + '</a>';
+            // Construct the data card template
+            cardTemplate = '<a class="item item-text-wrap" ' +
+                           'ui-sref="' + target + '">' +
+                           titleTemplate + '</a>';
 
-                // Compile the data card template against the scope,
-                // then render it in place of the directive
-                var compiled = $compile(cardTemplate)($scope);
-                elem.replaceWith(compiled);
-            });
+            // Compile the data card template against the scope,
+            // then render it in place of the directive
+            var compiled = $compile(cardTemplate)($scope);
+            elem.replaceWith(compiled);
         };
 
         return {

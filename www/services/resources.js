@@ -330,6 +330,43 @@ EdenMobile.factory('emResources', [
 
         // ------------------------------------------------------------------------
         /**
+         * Access a component of this resource
+         *
+         * @param {integer} recordID - the master record ID
+         * @param {string} componentName - the component name
+         * @param {function} onSuccess - callback function, receives the
+         *                               component resource and query as
+         *                               parameters
+         * @param {function} onError - error callback, receives the error
+         *                             message as parameter
+         */
+        Resource.prototype.openComponent = function(recordID, componentName, onSuccess, onError) {
+
+            var hook = this.components[componentName];
+
+            if (!hook || !hook.resource) {
+                var error = 'Undefined component: ' + componentName;
+                if (onError) {
+                    onError(error);
+                } else {
+                    alert(error);
+                }
+            } else {
+                resourcesLoaded.then(function() {
+                    var component = resources[hook.resource],
+                        query = null;
+                    if (recordID) {
+                        query = hook.joinby + '=' + recordID;
+                    };
+                    if (onSuccess) {
+                        onSuccess(component, query);
+                    }
+                });
+            }
+        };
+
+        // ------------------------------------------------------------------------
+        /**
          * Serialize a record for JSON export to Sahana server
          *
          * @param {object} record - the record

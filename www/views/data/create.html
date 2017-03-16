@@ -1,12 +1,12 @@
 <ion-view view-title="DataCreate">
     <div class="bar bar-stable bar-subheader">
-        <a href="#/data/{{resourceName}}" class="button icon-left ion-arrow-left-a"></a>
+        <a ng-click="returnToList()" class="button icon-left ion-arrow-left-a"></a>
         <h2 class="title" translate="Add+FORMTITLE" translate-value-formtitle="{{formTitle}}"></h2>
         <div class="buttons">
             <button class="button button-positive icon-left ion-checkmark-round" ng-click="submit(form)"></button>
         </div>
     </div>
     <ion-content id="main" class="has-header has-subheader has-footer">
-        <em-data-form resource="{{resourceName}}"></em-data-form>
+        <em-data-form resource="{{resourceName}}" component="{{componentName}}"></em-data-form>
     </ion-content>
 </ion-view>

@@ -36,108 +36,174 @@ EdenMobile.controller('EMDataCreate', [
     '$scope', '$state', '$stateParams', 'emDialogs', 'emFiles', 'emResources',
     function($scope, $state, $stateParams, emDialogs, emFiles, emResources) {
 
-        var resourceName = $stateParams.resourceName;
+        // --------------------------------------------------------------------
+        // Read state params
+        //
+        var resourceName = $stateParams.resourceName,
+            recordID = $stateParams.recordID,
+            componentName = $stateParams.componentName;
 
         $scope.resourceName = resourceName;
+        $scope.recordID = recordID;
+        $scope.componentName = componentName;
 
-        var showCreateForm = function() {
+        // --------------------------------------------------------------------
+        /**
+         * Redirection after successful create
+         */
+        var confirmCreate = function() {
+
+            // Mark as saved
+            $scope.saved = true;
+
+            // Show confirmation popup and go back to list
+            emDialogs.confirmation('Record created', function() {
+
+                var returnTo,
+                    returnParams = {resourceName: resourceName};
+
+                if (!!componentName) {
+                    // Go back to the component record list
+                    returnTo = 'data.component';
+                    returnParams.recordID = recordID;
+                    returnParams.componentName = componentName;
+                } else {
+                    // Go back to the master record list
+                    returnTo = 'data.list';
+                }
+                $state.go(returnTo, returnParams, {location: 'replace'});
+            });
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Configure the form for the target resource
+         *
+         * @param {Resource} targetResource - the target resource
+         */
+        var configureForm = function(targetResource) {
+
+            var targetName = targetResource.name,
+                tableName = targetResource.tableName;
+
+            // Configure the form title
+            var strings = targetResource.strings,
+                formTitle = targetName;
+            if (strings) {
+                formTitle = strings.name || formTitle;
+            }
+            $scope.formTitle = formTitle;
+
+            // Configure the submit-function
+            $scope.submit = function(form) {
+                // Check if empty (@todo: form onvalidation)
+                var empty = true;
+                for (var field in form) {
+                    if (form[field] !== undefined && form[field] !== null) {
+                        empty = false;
+                        break;
+                    }
+                }
+                if (!empty) {
+                    // Commit to database and confirm
+                    // @todo: set parent link automatically
+                    targetResource.insert(form, confirmCreate);
+                }
+            };
+
+            // Populate scope with default values
+            var master = $scope.master,
+                form = $scope.form,
+                data = targetResource.addDefaults({}, true, false),
+                fieldName,
+                value;
+            for (fieldName in data) {
+                value = data[fieldName];
+                if (value !== undefined) {
+                    if (master[fieldName] === undefined) {
+                        master[fieldName] = value;
+                    }
+                    if (form[fieldName] === undefined) {
+                        form[fieldName] = value;
+                    }
+                }
+            }
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Initialize scope
+         */
+        var initForm = function() {
 
             // Start with empty master (populated asynchronously)
             $scope.master = {};
             $scope.saved = false;
 
-            // Clean up on exit
-            $scope.$on('$destroy', function() {
-                if ($scope.saved) {
-                    // Record saved => remove orphaned files
-                    emFiles.removeAll($scope.orphanedFiles);
-                } else {
-                    // Record not saved => remove pending files
-                    emFiles.removeAll($scope.pendingFiles);
-                }
-            });
-
-            // Read default values from schema
-            emResources.open(resourceName).then(function(resource) {
-
-                var master = $scope.master,
-                    form = $scope.form;
-
-                // Set the form title
-                var strings = resource.strings,
-                    formTitle = resourceName;
-                if (strings) {
-                    formTitle = strings.name || formTitle;
-                }
-                $scope.formTitle = formTitle;
-
-                // Set default values in form
-                var data = resource.addDefaults({}, true, false),
-                    fieldName,
-                    value;
-                for (fieldName in data) {
-                    value = data[fieldName];
-                    if (value !== undefined) {
-                        if (master[fieldName] === undefined) {
-                            master[fieldName] = value;
-                        }
-                        if (form[fieldName] === undefined) {
-                            form[fieldName] = value;
-                        }
-                    }
-                }
-            });
-
-            // Confirmation message for successful create
-            var confirmCreate = function(recordID) {
-
-                // Mark as saved
-                $scope.saved = true;
-
-                // Show confirmation popup and go back to list
-                emDialogs.confirmation('Record created', function() {
-                    $state.go('data.list',
-                        {resourceName: $scope.resourceName},
-                        {location: 'replace', reload: true}
-                    );
-                });
-            };
-
-            // Submit-function
-            $scope.submit = function(form) {
-
-                emResources.open(resourceName).then(function(resource) {
-
-                    // @todo: validate
-                    var empty = true;
-                    for (var field in form) {
-                        if (form[field] !== undefined && form[field] !== null) {
-                            empty = false;
-                            break;
-                        }
-                    }
-                    if (!empty) {
-                        // Copy to master (only useful if not changing state)
-                        //$scope.master = angular.copy(form);
-
-                        // Commit to database and confirm
-                        resource.insert(form, confirmCreate);
-                    }
-                });
-            };
-
-            // @todo: expose reset in UI
+            // Reset the form (@todo: expose reset in UI?)
             $scope.reset = function() {
                 $scope.form = angular.copy($scope.master);
                 $scope.pendingFiles = [];
                 $scope.orphanedFiles = [];
             };
-
-            // Initial reset
             $scope.reset();
+
+            // Click-handler for return-to-list button
+            $scope.returnToList = function() {
+
+                var returnTo,
+                    returnParams = {resourceName: resourceName};
+
+                if (componentName) {
+                    // Go back to the component record list
+                    returnTo = 'data.component';
+                    returnParams.recordID = recordID;
+                    returnParams.componentName = componentName;
+                } else {
+                    // Go back to the master record list
+                    returnTo = 'data.list';
+                }
+                $state.go(returnTo, returnParams, {location: 'replace'});
+            };
+
+            // Access the resource, then populate the form
+            emResources.open(resourceName).then(function(resource) {
+                if (!!componentName) {
+                    resource.openComponent(recordID, componentName,
+                        function(component) {
+                            // Configure for component-create
+                            configureForm(component);
+                        },
+                        function(error) {
+                            // Undefined component
+                            emDialogs.error(error, null, function() {
+                                // Go back to master record
+                                $state.go('data.update',
+                                    {resourceName: resourceName, recordID: recordID},
+                                    {location: 'replace', reload: true});
+                            });
+                        });
+                } else {
+                    // Configure for master-create
+                    configureForm(resource);
+                }
+            });
         };
 
-        $scope.$on('$ionicView.enter', showCreateForm);
+        // --------------------------------------------------------------------
+        // Init on enter
+        $scope.$on('$ionicView.enter', initForm);
+
+        // Clean up on exit
+        $scope.$on('$destroy', function() {
+            if ($scope.saved) {
+                // Record saved => remove orphaned files
+                emFiles.removeAll($scope.orphanedFiles);
+            } else {
+                // Record not saved => remove pending files
+                emFiles.removeAll($scope.pendingFiles);
+            }
+        });
     }
 ]);
 

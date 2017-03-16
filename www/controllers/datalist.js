@@ -33,8 +33,17 @@
  * @memberof EdenMobile
  */
 EdenMobile.controller("EMDataList", [
-    '$scope', '$stateParams', 'emResources',
-    function($scope, $stateParams, emResources) {
+    '$scope', '$state', '$stateParams', 'emDialogs', 'emResources',
+    function($scope, $state, $stateParams, emDialogs, emResources) {
+
+        // State parameters
+        var resourceName = $stateParams.resourceName,
+            recordID = $stateParams.recordID,
+            componentName = $stateParams.componentName;
+
+        $scope.resourceName = resourceName;
+        $scope.recordID = recordID;
+        $scope.componentName = componentName;
 
         /**
          * Refresh the scope with resource and record data
@@ -46,8 +55,6 @@ EdenMobile.controller("EMDataList", [
          */
         var updateDataList = function(resource, query) {
 
-            $scope.resourceName = resource.name;
-
             // Get strings
             var strings = resource.strings,
                 listTitle = resource.name;
@@ -56,12 +63,13 @@ EdenMobile.controller("EMDataList", [
             }
             $scope.listTitle = listTitle;
 
-            // Read card config
+            // Get card config, determine fields to extract
             var cardConfig = resource.card,
                 fields;
             if (cardConfig) {
                 fields = cardConfig.fields;
             }
+            $scope.cardConfig = cardConfig;
 
             // Apply fallbacks
             if (!fields) {
@@ -84,10 +92,6 @@ EdenMobile.controller("EMDataList", [
             });
         };
 
-        // State parameters
-        var resourceName = $stateParams.resourceName,
-            componentName = $stateParams.componentName;
-
         /**
          * Open list of records
          */
@@ -98,24 +102,46 @@ EdenMobile.controller("EMDataList", [
 
                 if (!resource) {
                     // Undefined resource
+                    emDialogs.error('Error', 'Undefined Resource',
+                        function() {
+                            $state.go('data.resources',
+                                {location: 'replace', reload: true});
+                        });
                     $scope.records = [];
                 } else {
-                    // Component access?
+
+                    // Link parameters for CRUD actions
+                    var linkParams = {
+                            resourceName: resourceName,
+                            recordID: recordID
+                        };
+
                     if (!!componentName) {
-                        var component = resource.components[componentName];
-                        if (!component || !component.resource) {
-                            // Undefined or invalid component
-                            // => fall back to master
-                            alert('Undefined component: ' + componentName);
-                            updateDataList(resource);
-                        } else {
-                            // Open component
-                            var query = component.joinby + '=' + $stateParams.recordID;
-                            emResources.open(component.resource).then(function(resource) {
-                                updateDataList(resource, query);
+
+                        // Component action links
+                        linkParams.componentName = componentName;
+                        $scope.parentView = $state.href('data.update', linkParams);
+                        $scope.createView = $state.href('data.componentCreate', linkParams);
+
+                        // Open component
+                        resource.openComponent(recordID, componentName,
+                            function(component, query) {
+                                updateDataList(component, query);
+                            },
+                            function(error) {
+                                emDialogs.error('Error', error, function() {
+                                    $state.go('data.list',
+                                        {resourceName: resourceName},
+                                        {location: 'replace', reload: true});
+                                });
                             });
-                        }
                     } else {
+
+                        // Master action links
+                        $scope.parentView = $state.href('data.resources');
+                        $scope.createView = $state.href('data.create', linkParams);
+
+                        // Open master
                         updateDataList(resource);
                     }
                 }
