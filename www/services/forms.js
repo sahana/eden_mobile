@@ -104,12 +104,17 @@ EdenMobile.factory('emForms', [
          * Form constructor - class to generate form HTML
          *
          * @param {Resource} resource - the resource the form is for
+         * @param {string} componentKey - the component key (if form is
+         *                                for a component context, will
+         *                                be hidden)
          * @param {Array} fieldNames - list of field names to render in
-         *                             the form (in order of appearance)
+         *                             the form (in order of appearance),
+         *                             defaults to all readable fields
          */
-        function Form(resource, fieldNames) {
+        function Form(resource, componentKey, fieldNames) {
 
             this.resource = resource;
+            this.componentKey = componentKey;
 
             if (fieldNames) {
                 this.fieldNames = fieldNames;
@@ -134,6 +139,7 @@ EdenMobile.factory('emForms', [
 
             var resource = this.resource,
                 fieldNames = this.fieldNames,
+                componentKey = this.componentKey,
                 form = angular.element('<form>')
                               .attr('name', 'data')
                               .attr('novalidate', 'novalidate'),
@@ -153,15 +159,17 @@ EdenMobile.factory('emForms', [
                 }
             }
 
-            var description,
-                options,
-                placeholder,
-                widget;
             fieldNames.forEach(function(fieldName) {
+
+                // Skip component key
+                if (componentKey && fieldName == componentKey) {
+                    return;
+                }
 
                 field = resource.fields[fieldName];
                 if (field) {
 
+                    // Field must be readable
                     if (!field.readable) {
                         return;
                     }
@@ -169,41 +177,47 @@ EdenMobile.factory('emForms', [
                     description = field._description;
 
                     // Label and model-link
-                    var attr = {
-                        'label': description.label || fieldName,
-                        'ng-model': scopeName + '.' + fieldName
-                    };
+                    var description = field._description,
+                        attr = {
+                            'label': description.label || fieldName,
+                            'ng-model': scopeName + '.' + fieldName
+                        };
 
                     // Placeholder (for text input)
-                    placeholder = description.placeholder;
+                    var placeholder = description.placeholder;
                     if (placeholder) {
                         attr.placeholder = placeholder;
                     }
 
-                    // Instantiate the widget
-                    widget = createWidget(resource, field, attr);
-
-                    // Append widget to form rows
+                    // Instantiate the widget and append it to the form rows
+                    var widget = createWidget(resource, field, attr);
                     formRows.append(widget);
                 }
             });
 
+            // Add form rows to form
             return form.append(formRows);
         };
 
         // ====================================================================
+        // The API
+        //
         var api = {
 
             /**
              * Form API
              *
-             * @param {object} schema - the table schema for the form
+             * @param {Resource} resource - the resource
+             * @param {string} componentKey - the component key (if form is
+             *                                for a component context, will
+             *                                be hidden)
              * @param {Array} fields - list of field names to render in
              *                         the form (in order of appearance)
+             *
              * @returns {instance} - a Form instance
              */
-            form: function(schema, fields) {
-                return new Form(schema, fields);
+            form: function(resource, componentKey, fields) {
+                return new Form(resource, componentKey, fields);
             },
 
             /**
@@ -211,11 +225,14 @@ EdenMobile.factory('emForms', [
              *
              * @param {object} field - the field definition
              * @param {object} attr - the widget attributes
+             *
+             * @returns {DOMNode} - angular-enhanced DOM node (=the widget)
              */
             widget: function(field, attr) {
                 return createWidget(field, attr);
             }
         };
+
         return api;
     }
 ]);

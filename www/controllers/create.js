@@ -81,7 +81,7 @@ EdenMobile.controller('EMDataCreate', [
          *
          * @param {Resource} targetResource - the target resource
          */
-        var configureForm = function(targetResource) {
+        var configureForm = function(targetResource, componentKey) {
 
             var targetName = targetResource.name,
                 tableName = targetResource.tableName;
@@ -105,8 +105,11 @@ EdenMobile.controller('EMDataCreate', [
                     }
                 }
                 if (!empty) {
-                    // Commit to database and confirm
-                    // @todo: set parent link automatically
+                    // Add component parent link
+                    if (!!componentKey) {
+                        form[componentKey] = recordID;
+                    }
+                    // Commit to database and redirect to list
                     targetResource.insert(form, confirmCreate);
                 }
             };
@@ -169,10 +172,12 @@ EdenMobile.controller('EMDataCreate', [
             // Access the resource, then populate the form
             emResources.open(resourceName).then(function(resource) {
                 if (!!componentName) {
+                    var hook = resource.components[componentName],
+                        componentKey = hook.joinby;
                     resource.openComponent(recordID, componentName,
                         function(component) {
                             // Configure for component-create
-                            configureForm(component);
+                            configureForm(component, componentKey);
                         },
                         function(error) {
                             // Undefined component

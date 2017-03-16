@@ -55,17 +55,23 @@ EdenMobile.directive('emDataForm', [
                 if (!resource) {
                     return;
                 }
-
                 var form,
                     compiled;
 
                 if (!!componentName) {
+
+                    // Render form for component resource
                     resource.openComponent(null, componentName, function(component) {
-                        form = emForms.form(component);
+                        var hook = resource.components[componentName],
+                            componentKey = hook.joinby;
+                        form = emForms.form(component, componentKey);
                         compiled = $compile(form.render('form'))($scope);
                         elem.replaceWith(compiled);
                     });
+
                 } else {
+
+                    // Render form for master resource
                     form = emForms.form(resource);
                     compiled = $compile(form.render('form'))($scope);
                     elem.replaceWith(compiled);
