@@ -266,40 +266,34 @@ EdenMobile.factory('emSync', [
 
         // --------------------------------------------------------------------
         /**
-         * @todo: docstring
+         * Download resource data from the server
          */
-        SyncJob.prototype.updateSyncDate = function(synchronized_on, created, updated) {
+        SyncJob.prototype.downloadData = function() {
 
-            var deferred = $q.defer();
+            emServer.getData(this.ref,
+                function(data) {
 
-            var uuids = [],
-                add = function(uuid) {
-                    uuids.push("'" + uuid + "'");
-                };
-            if (created) {
-                created.forEach(add);
-            }
-            if (updated) {
-                updated.forEach(add);
-            }
+                    // @todo: implement import of downloaded data
+                    self.result('success');
 
-            if (uuids.length) {
-                emResources.open(this.resourceName).then(function(resource) {
-                    var query = 'uuid IN (' + uuids.join(',') + ')',
-                        data = {
-                            'synchronized_on': synchronized_on,
-                            // don't change modified_on:
-                            'modified_on': undefined
-                        };
-                    resource.update(data, query, function() {
-                        deferred.resolve();
-                    });
-                });
-            } else {
-                deferred.resolve();
-            }
+                },
+                function(response) {
+                    var message;
+                    if (typeof response == 'string') {
+                        message = response;
+                    } else if (response.status) {
+                        if (response.data) {
+                            message = response.data.message;
+                        }
+                        if (!message) {
+                            message = response.statusText;
+                        }
+                        message = response.status + ' ' + message;
+                    }
+                    self.result('error', message);
+                }
+            );
 
-            return deferred.promise;
         };
 
         // --------------------------------------------------------------------
@@ -373,6 +367,44 @@ EdenMobile.factory('emSync', [
                     );
                 });
             });
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * @todo: docstring
+         */
+        SyncJob.prototype.updateSyncDate = function(synchronized_on, created, updated) {
+
+            var deferred = $q.defer();
+
+            var uuids = [],
+                add = function(uuid) {
+                    uuids.push("'" + uuid + "'");
+                };
+            if (created) {
+                created.forEach(add);
+            }
+            if (updated) {
+                updated.forEach(add);
+            }
+
+            if (uuids.length) {
+                emResources.open(this.resourceName).then(function(resource) {
+                    var query = 'uuid IN (' + uuids.join(',') + ')',
+                        data = {
+                            'synchronized_on': synchronized_on,
+                            // don't change modified_on:
+                            'modified_on': undefined
+                        };
+                    resource.update(data, query, function() {
+                        deferred.resolve();
+                    });
+                });
+            } else {
+                deferred.resolve();
+            }
+
+            return deferred.promise;
         };
 
         // ====================================================================
@@ -621,7 +653,7 @@ EdenMobile.factory('emSync', [
                     );
                     if (jobsScheduled) {
                         synchronize(
-                            pending.formlist,
+                            pending.formList,
                             pending.resourceList
                         );
                     } else {

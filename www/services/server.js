@@ -724,6 +724,27 @@
                 },
 
                 /**
+                 * Download resource data
+                 *
+                 * @param {string} ref - reference details to construct the download URL,
+                 *                       object {c:controller, f:function, vars:vars}
+                 * @param {object|string} data - the data to upload
+                 * @param {function} successCallback: success callback, function(data)
+                 * @param {function} errorCallback: error callback, function(response)
+                 */
+                getData: function(ref, successCallback, errorCallback) {
+
+                    var url = new SahanaURL({
+                        c: ref.c,
+                        f: ref.f,
+                        args: ['mdata'],
+                        vars: ref.v,
+                        extension: 'json'
+                    });
+                    get(url, 'json', successCallback, errorCallback);
+                },
+
+                /**
                  * Upload resource data
                  *
                  * @param {string} ref - reference details to construct the download URL,
