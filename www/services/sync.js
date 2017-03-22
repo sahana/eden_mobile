@@ -151,6 +151,7 @@ EdenMobile.factory('emSync', [
          */
         function SyncJob(type, mode, resourceName, tableName, ref) {
 
+
             this.type = type;
             this.mode = mode;
 
@@ -158,8 +159,14 @@ EdenMobile.factory('emSync', [
             this.tableName = tableName;
             this.ref = ref;
 
+            this.parent = null;
+
             this.status = 'pending';
             this.error = null;
+
+            // Deferred action and completed-promise
+            this.action = $q.defer();
+            this.completed = this.action.promise;
         }
 
         // --------------------------------------------------------------------
@@ -168,21 +175,45 @@ EdenMobile.factory('emSync', [
          */
         SyncJob.prototype.run = function() {
 
-            var self = this,
-                tableName = self.tableName;
-
-            if (self.status != 'pending') {
+            if (this.status != 'pending') {
                 // Do not re-run
                 return;
             }
-            self.status = 'active';
 
-            if (self.type == 'form') {
-                self.downloadForm();
-            } else {
-                if (self.mode == 'push') {
-                    self.uploadData();
+            var self = this,
+                run = function() {
+
+                // Update status
+                var status = 'active';
+                self.status = status;
+                self.action.notify(status);
+
+                // Execute
+                if (self.type == 'form') {
+                    self.downloadForm();
+                } else {
+                    switch(self.mode) {
+                        case 'push':
+                            self.uploadData();
+                            break;
+                        case 'pull':
+                            self.downloadData();
+                            break;
+                        default:
+                            self.result('error', 'invalid mode');
+                            break;
+                    }
                 }
+            };
+
+            if (!!this.parent) {
+                // Wait for parent job to complete
+                this.parent.completed.then(run, function(result) {
+                    // Parent job failed => fail this job too
+                    self.result(result, this.parent.error);
+                });
+            } else {
+                run();
             }
         };
 
@@ -195,9 +226,13 @@ EdenMobile.factory('emSync', [
          */
         SyncJob.prototype.result = function(status, message) {
 
+            // Update status
             this.status = status;
+            this.action.notify(status);
+
             this.error = message || null;
 
+            // Log the result
             var result = null;
             switch(status) {
                 case 'success':
@@ -208,9 +243,17 @@ EdenMobile.factory('emSync', [
                 default:
                     break;
             }
-
             emSyncLog.log(this, result, this.error);
+
+            // Update global sync status
             updateSyncStatus();
+
+            // Resolve (or reject) completed-promise
+            if (result == 'success') {
+                this.action.resolve(result);
+            } else {
+                this.action.reject(result);
+            }
         };
 
         // --------------------------------------------------------------------
@@ -269,6 +312,8 @@ EdenMobile.factory('emSync', [
          * Download resource data from the server
          */
         SyncJob.prototype.downloadData = function() {
+
+            var self = this;
 
             emServer.getData(this.ref,
                 function(data) {
@@ -427,6 +472,7 @@ EdenMobile.factory('emSync', [
                 name,
                 installed,
                 download,
+                downloadData,
                 item,
                 entry;
 
@@ -441,12 +487,19 @@ EdenMobile.factory('emSync', [
                 }
 
                 // @todo: check autoInstall/autoUpdate option for default
-                download = !installed; // true;
+                download = !installed;
 
                 // Retain previous download status
                 item = items[name];
                 if (item !== undefined) {
                     download = item.download;
+                }
+
+                if (formData.d) {
+                    // @todo: make user-selectable
+                    downloadData = true;
+                } else {
+                    downloadData = false;
                 }
 
                 entry = {
@@ -455,7 +508,8 @@ EdenMobile.factory('emSync', [
                     'tableName': formData.t,
                     'ref': formData.r,
                     'installed': installed,
-                    'download': download
+                    'download': download,
+                    'downloadData': downloadData
                 };
                 formList.push(entry);
             });
@@ -578,24 +632,45 @@ EdenMobile.factory('emSync', [
          */
         var generateSyncJobs = function(formList, resourceList) {
 
-            var jobsScheduled = 0,
-                job;
+            var jobsScheduled = 0;
 
             formList.forEach(function(form) {
+
+                var formJob = null,
+                    dataJob = null;
+
                 if (form.download) {
-                    job = new SyncJob(
+                    formJob = new SyncJob(
                         'form',
                         'pull',
                         form.resourceName,
                         form.tableName,
                         form.ref
                     );
-                    syncJobs.push(job);
+                    syncJobs.push(formJob);
+                    jobsScheduled++;
+                }
+                if (form.downloadData) {
+                    dataJob = new SyncJob(
+                        'data',
+                        'pull',
+                        form.resourceName,
+                        form.tableName,
+                        form.ref
+                    );
+                    if (formJob) {
+                        // Wait for form download before downloading data
+                        dataJob.parent = formJob;
+                    }
+                    syncJobs.push(dataJob)
                     jobsScheduled++;
                 }
             });
 
             resourceList.forEach(function(resource) {
+
+                var job = null;
+
                 if (resource.upload) {
                     var ref = resource.ref;
                     if (ref.c && ref.f) {
