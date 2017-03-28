@@ -40,7 +40,7 @@ EdenMobile.factory('emResources', [
             status = $q.defer(),
             resourcesLoaded = status.promise;
 
-        // ========================================================================
+        // ====================================================================
         /**
          * Resource constructor
          *
@@ -107,7 +107,7 @@ EdenMobile.factory('emResources', [
             this.card = settings.card;
         }
 
-        // ------------------------------------------------------------------------
+        // --------------------------------------------------------------------
         /**
          * Save the schema for this resource in the em_resource table
          */
@@ -152,7 +152,7 @@ EdenMobile.factory('emResources', [
             });
         };
 
-        // ------------------------------------------------------------------------
+        // --------------------------------------------------------------------
         /**
          * Extend a query with the resource query
          *
@@ -174,7 +174,7 @@ EdenMobile.factory('emResources', [
             return q;
         };
 
-        // ------------------------------------------------------------------------
+        // --------------------------------------------------------------------
         /**
          * Add field defaults to a record before write
          *
@@ -192,7 +192,7 @@ EdenMobile.factory('emResources', [
             return this.table._addDefaults(this.fields, data, visible, update);
         };
 
-        // ------------------------------------------------------------------------
+        // --------------------------------------------------------------------
         /**
          * Get a label for the resource
          *
@@ -218,7 +218,7 @@ EdenMobile.factory('emResources', [
             return label;
         };
 
-        // ------------------------------------------------------------------------
+        // --------------------------------------------------------------------
         /**
          * Add a new record to this resource
          *
@@ -232,7 +232,7 @@ EdenMobile.factory('emResources', [
             this.table.insert(record, callback);
         };
 
-        // ------------------------------------------------------------------------
+        // --------------------------------------------------------------------
         /**
          * Update records in this resource
          *
@@ -252,7 +252,7 @@ EdenMobile.factory('emResources', [
             this.table.update(data, this.extendQuery(query), callback);
         };
 
-        // ------------------------------------------------------------------------
+        // --------------------------------------------------------------------
         /**
          * Select records from this resource
          *
@@ -286,7 +286,7 @@ EdenMobile.factory('emResources', [
             this.table.select(fields, query, callback);
         };
 
-        // ------------------------------------------------------------------------
+        // --------------------------------------------------------------------
         /**
          * Count records in this resource
          *
@@ -311,7 +311,7 @@ EdenMobile.factory('emResources', [
             );
         };
 
-        // ------------------------------------------------------------------------
+        // --------------------------------------------------------------------
         /**
          * Delete records in this resource
          *
@@ -328,7 +328,47 @@ EdenMobile.factory('emResources', [
             this.table.deleteRecords(this.extendQuery(query), callback);
         };
 
-        // ------------------------------------------------------------------------
+        // --------------------------------------------------------------------
+        /**
+         * Identify a record, use like:
+         *      - resource.identify(record).then(function(recordID){});
+         *
+         * @param {object} record - the record
+         *
+         * @returns {promise} - a promise that resolves into the record ID
+         */
+        Resource.prototype.identify = function(record) {
+
+            var deferred = $q.defer(),
+                recordID = record.id;
+
+            if (!!recordID) {
+                // We already have a record ID
+                deferred.resolve(recordID);
+            } else {
+                // Try looking it up from the UUID
+                var uuid = record.uuid;
+                if (!!uuid) {
+                    // Look it up
+                    var query = 'uuid=' + uuid;
+                    this.select(['id'], query, function(records) {
+                        if (records.length) {
+                            recordID = records[0].id;
+                        }
+                        deferred.resolve(recordID);
+                    });
+                } else {
+                    // No way to identify the record (yet)
+                    // @todo: try unique fields
+                    deferred.resolve(recordID);
+                }
+            }
+
+            // Return the promise
+            return deferred.promise;
+        };
+
+        // --------------------------------------------------------------------
         /**
          * Access a component of this resource
          *
@@ -365,7 +405,7 @@ EdenMobile.factory('emResources', [
             }
         };
 
-        // ------------------------------------------------------------------------
+        // --------------------------------------------------------------------
         /**
          * Serialize a record for JSON export to Sahana server
          *
@@ -410,7 +450,35 @@ EdenMobile.factory('emResources', [
             };
         };
 
-        // ------------------------------------------------------------------------
+        // --------------------------------------------------------------------
+        /**
+         * Deserialize a record from JSON import from Sahana server
+         *
+         * @param {Array} row - the record data as array of
+         *                      tuples in the format [fieldName, value]
+         *
+         * @returns {object} - the record as object
+         */
+        Resource.prototype.deserialize = function(row) {
+
+            var record = {},
+                fields = this.fields;
+
+            row.forEach(function(column) {
+
+                var name = column[0],
+                    value = column[1],
+                    field = fields[name];
+
+                if (!!field && value !== undefined) {
+                    record[name] = field.parse(value);
+                }
+            });
+
+            return record;
+        };
+
+        // --------------------------------------------------------------------
         /**
          * Export records from this resource for upload to Sahana server
          *
@@ -475,6 +543,38 @@ EdenMobile.factory('emResources', [
                     }
                 }
             });
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Import data from the Sahana server (WIP)
+         *
+         * @param {object} data - the JSON data from the server
+         */
+        Resource.prototype.importJSON = function(data) {
+
+            var rows = data[this.tableName];
+            if (rows) {
+
+                var self = this,
+                    now = new Date();
+                rows.forEach(function(row) {
+
+                    var record = self.deserialize(row);
+                    self.identify(record).then(function(recordID) {
+
+                        record.synchronized_on = now;
+                        if (!!recordID) {
+                            // Update this record
+                            var query = 'id=' + recordID;
+                            self.update(record, query);
+                        } else {
+                            // Create a new record
+                            self.insert(record);
+                        }
+                    });
+                });
+            }
         };
 
         // ====================================================================

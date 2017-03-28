@@ -416,16 +416,26 @@ EdenMobile.factory('emSync', [
 
         // --------------------------------------------------------------------
         /**
-         * @todo: docstring
+         * Update synchronized_on for all imported records
+         *
+         * @param {Date} synchronized_on - the synchronization date/time
+         * @param {Array} created - list of UUIDs of newly created records
+         * @param {Array} updated - list of UUIDs of updated records
+         *
+         * @returns {promise} - a promise that gets resolved when all
+         *                      records have been updated
          */
         SyncJob.prototype.updateSyncDate = function(synchronized_on, created, updated) {
 
-            var deferred = $q.defer();
+            var deferred = $q.defer(),
+                uuids = [];
 
-            var uuids = [],
-                add = function(uuid) {
-                    uuids.push("'" + uuid + "'");
-                };
+            // Helper function to create an Array of quoted UUIDs
+            var add = function(uuid) {
+                uuids.push("'" + uuid + "'");
+            };
+
+            // Collect the UUIDs
             if (created) {
                 created.forEach(add);
             }
@@ -433,6 +443,7 @@ EdenMobile.factory('emSync', [
                 updated.forEach(add);
             }
 
+            // Update synchronized_on for all matching records
             if (uuids.length) {
                 emResources.open(this.resourceName).then(function(resource) {
                     var query = 'uuid IN (' + uuids.join(',') + ')',
@@ -468,51 +479,47 @@ EdenMobile.factory('emSync', [
                 items[item.resourceName] = item;
             });
 
-            var formList = [],
-                name,
-                installed,
-                download,
-                downloadData,
-                item,
-                entry;
-
+            var formList = [];
             data.forEach(function(formData) {
 
                 // Check if already installed
-                name = formData.n;
-                if (resourceNames.indexOf(name) == -1) {
+                var resourceName = formData.n,
                     installed = false;
-                } else {
+                if (resourceNames.indexOf(resourceName) != -1) {
                     installed = true;
                 }
 
-                // @todo: check autoInstall/autoUpdate option for default
-                download = !installed;
-
-                // Retain previous download status
-                item = items[name];
-                if (item !== undefined) {
-                    download = item.download;
-                }
-
+                // Does the resource provide data for download?
+                var hasData = false;
                 if (formData.d) {
-                    // @todo: make user-selectable
-                    downloadData = true;
-                } else {
-                    downloadData = false;
+                    hasData = true;
                 }
 
-                entry = {
+                // Shall the resource be downloaded?
+                var item = items[resourceName],
+                    download = false;
+                if (item !== undefined) {
+                    // Retain previous selection
+                    download = item.download;
+                } else if (!installed || hasData) {
+                    // Automatically select for download
+                    // @todo: have a setting to enable/disable this?
+                    download = true;
+                }
+
+                // Create an entry and add it to the formList
+                var entry = {
                     'label': formData.l,
-                    'resourceName': name,
+                    'resourceName': resourceName,
                     'tableName': formData.t,
                     'ref': formData.r,
                     'installed': installed,
                     'download': download,
-                    'downloadData': downloadData
+                    'hasData': hasData
                 };
                 formList.push(entry);
             });
+
             return formList;
         };
 
@@ -650,7 +657,7 @@ EdenMobile.factory('emSync', [
                     syncJobs.push(formJob);
                     jobsScheduled++;
                 }
-                if (form.downloadData) {
+                if (form.hasData) {
                     dataJob = new SyncJob(
                         'data',
                         'pull',
