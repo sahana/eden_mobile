@@ -206,11 +206,12 @@ EdenMobile.factory('emSync', [
                 }
             };
 
-            if (!!this.parent) {
+            var parentJob = this.parent;
+            if (!!parentJob) {
                 // Wait for parent job to complete
-                this.parent.completed.then(run, function(result) {
+                parentJob.completed.then(run, function(result) {
                     // Parent job failed => fail this job too
-                    self.result(result, this.parent.error);
+                    self.result(result, parentJob.error);
                 });
             } else {
                 run();
@@ -258,6 +259,44 @@ EdenMobile.factory('emSync', [
 
         // --------------------------------------------------------------------
         /**
+         * Convert server error responses into a human-readable log message
+         *
+         * @param {object} response - the server response
+         *
+         * @returns {string} - the log message
+         */
+        SyncJob.prototype.parseServerError = function(response) {
+
+            var message;
+
+            if (typeof response == 'string') {
+                message = response;
+            } else {
+                var status = response.status;
+                if (status) {
+                    if (response.data) {
+                        message = response.data.message;
+                    }
+                    if (!message) {
+                        message = response.statusText;
+                    }
+                    if (!message) {
+                        if (status == -1) {
+                            message = 'connection failed';
+                        } else {
+                            message = 'unknown error ' + status;
+                        }
+                    } else {
+                        message = status + ' ' + message;
+                    }
+                }
+            }
+
+            return message;
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Download form definition from server
          */
         SyncJob.prototype.downloadForm = function() {
@@ -289,20 +328,7 @@ EdenMobile.factory('emSync', [
                     );
                 },
                 function(response) {
-                    // Error
-                    var message;
-                    if (typeof response == 'string') {
-                        message = response;
-                    } else if (response.status) {
-                        if (response.data) {
-                            message = response.data.message;
-                        }
-                        if (!message) {
-                            message = response.statusText;
-                        }
-                        message = response.status + ' ' + message;
-                    }
-                    self.result('error', message);
+                    self.result('error', self.parseServerError(response));
                 }
             );
         };
@@ -313,32 +339,22 @@ EdenMobile.factory('emSync', [
          */
         SyncJob.prototype.downloadData = function() {
 
-            var self = this;
+            var self = this,
+                resourceName = self.resourceName;
 
             emServer.getData(this.ref,
                 function(data) {
 
-                    // @todo: implement import of downloaded data
+                    // @todo: error handling, logging
+                    emResources.open(resourceName).then(function(resource) {
+                        resource.importJSON(data);
+                    });
                     self.result('success');
-
                 },
                 function(response) {
-                    var message;
-                    if (typeof response == 'string') {
-                        message = response;
-                    } else if (response.status) {
-                        if (response.data) {
-                            message = response.data.message;
-                        }
-                        if (!message) {
-                            message = response.statusText;
-                        }
-                        message = response.status + ' ' + message;
-                    }
-                    self.result('error', message);
+                    self.result('error', self.parseServerError(response));
                 }
             );
-
         };
 
         // --------------------------------------------------------------------
@@ -377,7 +393,6 @@ EdenMobile.factory('emSync', [
 
                     var synchronized_on = new Date();
                     emServer.postData(self.ref, data,
-
                         // Success callback
                         function(response) {
                             if (response) {
@@ -392,22 +407,8 @@ EdenMobile.factory('emSync', [
                                 self.result('success');
                             }
                         },
-
-                        // Error callback
                         function(response) {
-                            var message;
-                            if (typeof response == 'string') {
-                                message = response;
-                            } else if (response.status) {
-                                if (response.data) {
-                                    message = response.data.message;
-                                }
-                                if (!message) {
-                                    message = response.statusText;
-                                }
-                                message = response.status + ' ' + message;
-                            }
-                            self.result('error', message);
+                            self.result('error', self.parseServerError(response));
                         }
                     );
                 });

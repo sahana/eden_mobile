@@ -350,7 +350,7 @@ EdenMobile.factory('emResources', [
                 var uuid = record.uuid;
                 if (!!uuid) {
                     // Look it up
-                    var query = 'uuid=' + uuid;
+                    var query = 'uuid="' + uuid + '"';
                     this.select(['id'], query, function(records) {
                         if (records.length) {
                             recordID = records[0].id;
