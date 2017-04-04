@@ -645,8 +645,7 @@ EdenMobile.factory('emResources', [
 
             if (rows) {
 
-                var now = new Date(),
-                    importQueue = [];
+                var importQueue = [];
 
                 // Queue handler
                 var checkQueue = function(item) {
@@ -686,8 +685,9 @@ EdenMobile.factory('emResources', [
                 });
 
                 // Run the queue
+                var now = new Date();
                 importQueue.forEach(function(item) {
-                    item.commit().then(checkQueue);
+                    item.commit(now).then(checkQueue);
                 });
 
             } else {
