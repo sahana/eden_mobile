@@ -42,6 +42,81 @@ EdenMobile.factory('emResources', [
 
         // ====================================================================
         /**
+         * ImportItem Constructor
+         *
+         * @param {object} data - the record data to import
+         */
+        function ImportItem(resource, data) {
+
+            this.resource = resource;
+
+            this.data = data;
+            this.recordID = null;
+
+            this.status = null;
+        }
+
+        // --------------------------------------------------------------------
+        /**
+         * Commit this import item
+         *
+         * @param {Date} syncDate - the synchronization date/time
+         * @returns {promise} - a promise that is resolved with this
+         *                      item when its processing is complete
+         *                      (for queue handling)
+         */
+        ImportItem.prototype.commit = function(syncDate) {
+
+            var resource = this.resource,
+                record = resource.deserialize(this.data),
+                self = this,
+                committed = $q.defer();
+
+            if (syncDate === undefined) {
+                syncDate = new Date();
+            }
+
+            resource.identify(record).then(function(recordID) {
+
+                record.synchronized_on = syncDate;
+                record.modified_on = syncDate;
+
+                if (!!recordID) {
+                    // Update existing record
+                    var query = 'id=' + recordID;
+
+                    self.recordID = recordID;
+
+                    resource.update(record, query, function(numRowsAffected) {
+                        if (!!numRowsAffected) {
+                            self.status = 'updated';
+                        } else {
+                            self.status = 'failed';
+                        }
+                        committed.resolve(self);
+                    });
+
+                } else {
+                    // Create new record
+                    record.created_on = syncDate;
+
+                    resource.insert(record, function(insertID) {
+                        if (!!insertID) {
+                            self.recordID = insertID;
+                            self.status = 'created';
+                        } else {
+                            self.status = 'failed';
+                        }
+                        committed.resolve(self);
+                    });
+                }
+            });
+
+            return committed.promise;
+        };
+
+        // ====================================================================
+        /**
          * Resource constructor
          *
          * @param {Table} table - the database table for this resource
@@ -550,30 +625,77 @@ EdenMobile.factory('emResources', [
          * Import data from the Sahana server (WIP)
          *
          * @param {object} data - the JSON data from the server
+         * @param {function} callback - callback function that is invoked
+         *                              when the import has completed,
+         *                              receives a result counter object as
+         *                              parameter:
+         *                                  {created: number,
+         *                                   updated: number,
+         *                                   failed: number
+         *                                   }
          */
-        Resource.prototype.importJSON = function(data) {
+        Resource.prototype.importJSON = function(data, callback) {
 
-            var rows = data[this.tableName];
+            var rows = data[this.tableName],
+                result = {
+                    updated: 0,
+                    created: 0,
+                    failed: 0
+                };
+
             if (rows) {
 
-                var self = this,
-                    now = new Date();
-                rows.forEach(function(row) {
+                var now = new Date(),
+                    importQueue = [];
 
-                    var record = self.deserialize(row);
-                    self.identify(record).then(function(recordID) {
+                // Queue handler
+                var checkQueue = function(item) {
 
-                        record.synchronized_on = now;
-                        if (!!recordID) {
-                            // Update this record
-                            var query = 'id=' + recordID;
-                            self.update(record, query);
-                        } else {
-                            // Create a new record
-                            self.insert(record);
+                    // Update counters
+                    switch(item.status) {
+                        case 'updated':
+                            result.updated++;
+                            break;
+                        case 'created':
+                            result.created++;
+                            break;
+                        default:
+                            result.failed++
+                            break;
+                    };
+
+                    // Check queue status
+                    var ready = true;
+                    for (var i=importQueue.length; --i;) {
+                        if (!importQueue[i].status) {
+                            ready = false;
+                            break;
                         }
-                    });
+                    }
+
+                    // Run callback when done
+                    if (ready && !!callback) {
+                        callback(result);
+                    }
+                };
+
+                // Schedule all rows
+                var self = this;
+                rows.forEach(function(row) {
+                    importQueue.push(new ImportItem(self, row));
                 });
+
+                // Run the queue
+                importQueue.forEach(function(item) {
+                    item.commit().then(checkQueue);
+                });
+
+            } else {
+
+                // Nothing to import => run callback immediately
+                if (!!callback) {
+                    callback(result);
+                }
             }
         };
 

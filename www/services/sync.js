@@ -344,12 +344,25 @@ EdenMobile.factory('emSync', [
 
             emServer.getData(this.ref,
                 function(data) {
-
-                    // @todo: error handling, logging
                     emResources.open(resourceName).then(function(resource) {
-                        resource.importJSON(data);
+                        resource.importJSON(data, function(result) {
+                            var messages = [],
+                                status = 'success';
+                            if (result.created) {
+                                messages.push(result.created + ' created');
+                            }
+                            if (result.updated) {
+                                messages.push(result.updated + ' updated');
+                            }
+                            if (result.failed) {
+                                messages.push(result.failed + ' failed');
+                                if (!result.created && !result.updated) {
+                                    status = 'error';
+                                }
+                            }
+                            self.result(status, messages.join(', '));
+                        });
                     });
-                    self.result('success');
                 },
                 function(response) {
                     self.result('error', self.parseServerError(response));
