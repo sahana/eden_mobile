@@ -69,6 +69,7 @@
             sqlType = null,
             tableConstraints = [];
 
+        refPattern.lastIndex = 0;
         var reference = refPattern.exec(fieldType);
         if (reference) {
             // @todo: ondelete-setting

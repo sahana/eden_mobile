@@ -27,6 +27,7 @@
 
 (function() {
 
+    // ========================================================================
     /**
      * Constructor representing a Sahana URL
      *
@@ -45,6 +46,7 @@
         this.options = options;
     }
 
+    // ------------------------------------------------------------------------
     /**
      * Extend base URL with URL parameters
      *
@@ -107,6 +109,7 @@
         return url;
     };
 
+    // ------------------------------------------------------------------------
     /**
      * Get the request format extension
      *
@@ -123,11 +126,13 @@
         return extension;
     };
 
+    // ========================================================================
     /**
      * RegExp to parse URLs
      */
     var urlPattern = /((\w+):\/\/)?([\w.:]+)(\/(\S*))?/;
 
+    // ------------------------------------------------------------------------
     /**
      * Helper function to check whether two URLs address the same host
      */
@@ -153,6 +158,7 @@
         }
     };
 
+    // ========================================================================
     /**
      * HTTP 401 Recovery Service
      *
@@ -253,6 +259,7 @@
         }
     ]);
 
+    // ========================================================================
     /**
      * Interceptor to handle 401 challenge
      */
@@ -296,6 +303,7 @@
         }
     ]);
 
+    // ========================================================================
     /**
      * emServer - Service providing access to the Sahana server
      *
@@ -379,6 +387,7 @@
                 }
             };
 
+            // ================================================================
             /**
              * Generic error dialog for Sahana server requests, shows
              * error message and explanation in a popup (modal)
@@ -443,6 +452,7 @@
                 emDialogs.error(message, explanation);
             };
 
+            // ================================================================
             /**
              * HTTP GET to the configured Sahana server
              *
@@ -556,6 +566,7 @@
                 });
             };
 
+            // ================================================================
             /**
              * HTTP POST to the configured Sahana server
              *
@@ -669,6 +680,7 @@
                 }
             };
 
+            // ================================================================
             /**
              * The emServer API
              */
@@ -687,6 +699,7 @@
                 get: get,
                 post: post,
 
+                // ------------------------------------------------------------
                 /**
                  * Download a list of available mobile forms
                  *
@@ -703,6 +716,7 @@
                     get(url, 'json', successCallback, errorCallback);
                 },
 
+                // ------------------------------------------------------------
                 /**
                  * Download a mobile form
                  *
@@ -723,6 +737,7 @@
                     get(url, 'json', successCallback, errorCallback);
                 },
 
+                // ------------------------------------------------------------
                 /**
                  * Download resource data
                  *
@@ -737,13 +752,14 @@
                     var url = new SahanaURL({
                         c: ref.c,
                         f: ref.f,
-                        args: ['mdata'],
+                        //args: ['mdata'],
                         vars: ref.v,
-                        extension: 'json'
+                        extension: 's3json'
                     });
                     get(url, 'json', successCallback, errorCallback);
                 },
 
+                // ------------------------------------------------------------
                 /**
                  * Upload resource data
                  *
@@ -763,7 +779,45 @@
                         extension: 'json'
                     });
                     post(url, 'json', data, successCallback, errorCallback);
+                },
+
+                // ------------------------------------------------------------
+                /**
+                 * Convert server error response into human-readable error message
+                 *
+                 * @param {object} response - the server response
+                 *
+                 * @returns {string} - the error message
+                 */
+                parseServerError: function(response) {
+
+                    var message;
+
+                    if (typeof response == 'string') {
+                        message = response;
+                    } else {
+                        var status = response.status;
+                        if (status) {
+                            if (response.data) {
+                                message = response.data.message;
+                            }
+                            if (!message) {
+                                message = response.statusText;
+                            }
+                            if (!message) {
+                                if (status == -1) {
+                                    message = 'connection failed';
+                                } else {
+                                    message = 'unknown error ' + status;
+                                }
+                            } else {
+                                message = status + ' ' + message;
+                            }
+                        }
+                    }
+                    return message;
                 }
+
             };
             return api;
         }

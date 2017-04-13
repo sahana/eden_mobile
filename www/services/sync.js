@@ -108,36 +108,833 @@ EdenMobile.factory('emSyncLog', [
  * @memberof EdenMobile.Services
  */
 EdenMobile.factory('emSync', [
-    '$q', '$rootScope', '$timeout', 'emResources', 'emServer', 'emSyncLog',
-    function ($q, $rootScope, $timeout, emResources, emServer, emSyncLog) {
+    '$q', '$rootScope', '$timeout', 'emDB', 'emResources', 'emServer', 'emSyncLog', 'emUtils',
+    function ($q, $rootScope, $timeout, emDB, emResources, emServer, emSyncLog, emUtils) {
 
-        // Current job queue and flags
-        var syncJobs = [],
-            statusUpdate = false;
+        $rootScope.syncStage = null;
+        $rootScope.syncProgress = null;
 
         // ====================================================================
+        // Synchronization task base class
+        // ====================================================================
         /**
-         * Check the job queue and update the global status
+         * Generic class to represent a synchronization task; provides common
+         * attributes and methods
          */
-        var updateSyncStatus = function() {
+        function SyncTask(job) {
 
-            if (statusUpdate) {
-                $timeout(updateSyncStatus, 100);
-            } else {
-                statusUpdate = true;
-                var openJobs = syncJobs.filter(function(job) {
-                    return (job.status == 'pending' || job.status == 'active');
-                });
-                syncJobs = openJobs;
-                if (openJobs.length > 0) {
-                    $rootScope.syncInProgress = true;
-                } else {
-                    $rootScope.syncInProgress = false;
-                }
-                statusUpdate = false;
+            this.job = job;
+
+            this.$result = null;
+            this.$promise = null;
+
+        }
+
+        // --------------------------------------------------------------------
+        /**
+         * Method for clients (dependants) to acquire a promise for the
+         * completion of the task; for dependency management
+         *
+         * @returns {promise} - a promise that is resolved when the task
+         *                      is done, or rejected when it has failed
+         */
+        SyncTask.prototype.done = function() {
+
+            if (!this.$promise) {
+                this.$promise = $q.defer();
+            }
+            return this.$promise.promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Method subclasses can use to notify clients about progress
+         *
+         * @param {mixed} value - status to send to the clients
+         */
+        SyncTask.prototype.notify = function(value) {
+
+            if (!!this.$promise) {
+                this.$promise.notify(value);
             }
         };
 
+        // --------------------------------------------------------------------
+        /**
+         * Method subclasses must call upon successful completion of the task
+         *
+         * @param {mixed} value - the task output to report to clients
+         */
+        SyncTask.prototype.resolve = function(value) {
+
+            this.$result = 'success';
+            if (!!this.$promise) {
+                this.$promise.resolve(value);
+            }
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Method subclasses must call upon failure
+         *
+         * @param {string} reason - the reason for the failure (=error message)
+         */
+        SyncTask.prototype.reject = function(reason) {
+
+            this.$result = 'error';
+            if (!!this.$promise) {
+                this.$promise.reject(reason);
+            }
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Helper function to check the status of a SyncTask queue
+         *
+         * @param {Array} queue - the task queue
+         * @param {deferred} deferred - a deferred object that shall be
+         *                              resolved when all tasks in the
+         *                              queue have reached a result status
+         *                              (optional)
+         * @param {mixed} value - value to resolve the deferred object with
+         *
+         * @returns {boolean} - true if all tasks in the queue have
+         *                      reached a result status, otherwise false
+         */
+        var checkQueue = function(queue, deferred, value) {
+
+            var completed = true;
+            if (queue.length) {
+                for (var i = queue.length; --i;) {
+                    if (queue[i].$result === null) {
+                        completed = false;
+                    }
+                }
+            }
+            if (completed && !!deferred) {
+                deferred.resolve(value);
+            }
+            return completed;
+        };
+
+        // ====================================================================
+        // Progress Reporting
+        // ====================================================================
+
+        var currentQueue = null;
+
+        // --------------------------------------------------------------------
+        /**
+         * Check progress with the current task queue, and report
+         * it to the rootScope for visualization in the UI
+         */
+        var checkProgress = function() {
+
+            if (currentQueue === null || currentQueue === undefined) {
+                $rootScope.syncProgress = null;
+            } else {
+                var total = currentQueue.length;
+                if (total) {
+                    var completed = currentQueue.filter(function(task) {
+                        return !!task.$result;
+                    });
+                    $rootScope.syncProgress = [completed.length, total];
+                } else {
+                    $rootScope.syncProgress = [0, 0];
+                }
+            }
+            if ($rootScope.syncStage) {
+                // Check again after an interval
+                $timeout(checkProgress, 250);
+            }
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Set the current stage and task queue
+         *
+         * @param {string} title: the title of the current stage in
+         *                        the sync process
+         * @param {Array} taskQueue: the array of task objects for this
+         *                           stage (to report progress)
+         *
+         * Task objects in the queue must implement a 'result' property
+         * that is null while the task is running, a true-ish when done
+         */
+        var currentStage = function(title, taskQueue) {
+
+            // if this is the initial stage => start checkProgress
+            var initial = false;
+            if ($rootScope.syncStage === null) {
+                initial = true;
+            }
+
+            // Update stage
+            if ($rootScope.syncStage != title) {
+                $rootScope.syncProgress = null;
+            }
+            $rootScope.syncStage = title;
+
+            // Set new task queue and start reporting progress
+            currentQueue = taskQueue;
+            if (initial) {
+                checkProgress();
+            }
+        };
+
+        // ====================================================================
+        // Dependency Management
+        // ====================================================================
+        /**
+         * An import dependency
+         *
+         * Import tasks can depend on:
+         * - a certain table to be installed (tableName)
+         * - a certain record to be installed (tableName + uuid)
+         * - a certain file to be downloaded (url)
+         *
+         * @param {string} tableName: the table name
+         * @param {string} uuid: the record UUID
+         * @param {string} url: the download URL of a file
+         */
+        function Dependency(tableName, uuid, url) {
+
+            // Requirement specification
+            this.tableName = tableName;
+            this.uuid = uuid;
+            this.url = url;
+
+            // Available object references
+            this.tableCreated = null;
+            this.recordID = null;
+            this.fileURI = null;
+
+            // Provider array
+            // - providers are import tasks that create the required object
+            this.providers = [];
+
+            // Deferred objects
+            this.completion = null;
+            this.resolution = null;
+
+            // Flags
+            this.isResolved = false;
+            this.isComplete = false;
+        }
+
+        // --------------------------------------------------------------------
+        /**
+         * Register a provider for the dependency
+         *
+         * A provider object must implement:
+         * - a '$result' property that holds the result status: null while
+         *   pending, otherwise "success"|"error"
+         * - a done() method that returns a promise which will be resolved
+         *   when the provider succeeds and rejected when the provider fails
+         */
+        Dependency.prototype.registerProvider = function(provider) {
+
+            if (this.isCompleted && !this.isResolved) {
+                alert('Error: dependency failed due to unregistered provider');
+                return;
+            }
+
+            this.providers.push(provider);
+
+            var self = this;
+            provider.done().then(
+                function(value) {
+                    // Provider has succeeded
+                    if (!!value) {
+                        // Provider has returned a value
+                        self.resolve(value);
+                        self.checkComplete();
+                    } else {
+                        // Provider has not produced a result
+                        self.checkResolvable();
+                    }
+                },
+                function() {
+                    // Provider has failed
+                    self.checkResolvable();
+                }
+            );
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Resolution promise
+         *
+         * @returns {promise} - a promise that is resolved when the required
+         *                      table|record|file is available; or rejected
+         *                      when all providers have failed
+         */
+        Dependency.prototype.resolved = function() {
+
+            if (this.isResolved) {
+                return $q.resolve(this);
+            } else if (this.isComplete) {
+                return $q.reject('all providers failed for ' + this.represent());
+            }
+
+            if (!this.resolution) {
+                this.resolution = $q.defer();
+            }
+            return this.resolution.promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Completion promise
+         *
+         * @returns {promise} - a promise that is resolved when all providers
+         *                      of the requested table|record|file have
+         *                      completed (regardless whether they have
+         *                      succeeded or failed)
+         */
+        Dependency.prototype.complete = function() {
+
+            if (this.isComplete) {
+                return $q.resolve(this);
+            }
+
+            if (!this.completion) {
+                this.completion = $q.defer();
+            }
+            return this.completion.promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Check completion; resolves the completion promise when all
+         * registered providers have a result-status
+         */
+        Dependency.prototype.checkComplete = function() {
+
+            if (this.isComplete) {
+                return;
+            }
+
+            var completed = true,
+                providers = this.providers;
+
+            if (providers.length) {
+                for (var i = providers.length; --i;) {
+                    if (providers[i].$result === null) {
+                        // Provider task still pending
+                        completed = false;
+                        break;
+                    }
+                }
+            }
+
+            if (completed) {
+                this.isComplete = true;
+                if (this.completion) {
+                    this.completion.resolve(this);
+                }
+            }
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * @todo: docstring
+         */
+        Dependency.prototype.represent = function() {
+
+            var represent;
+            if (this.uuid) {
+                represent = this.tableName + '[' + this.uuid + ']';
+            } else if (this.tableName) {
+                represent = this.tableName;
+            } else if (this.url) {
+                represent = this.url;
+            } else {
+                represent = 'unknown';
+            }
+            return represent;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Check whether there is at least one more provider available
+         * to resolve this dependency; otherwise reject the resolution
+         * promise
+         */
+        Dependency.prototype.checkResolvable = function() {
+
+            if (this.isResolved) {
+                return;
+            }
+
+            var resolvable = false,
+                providers = this.providers;
+            if (providers.length) {
+                for (var i = providers.length; --i;) {
+                    if (providers[i].$result === null) {
+                        // Provider task still pending
+                        resolvable = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!resolvable) {
+                this.isComplete = true;
+                if (this.completion) {
+                    this.completion.resolve(this);
+                }
+                if (this.resolution) {
+                    this.resolution.reject('all providers failed for ' +
+                                           this.represent());
+                }
+            }
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Resolve this dependency; resolves the resolution promise
+         *
+         * @param {mixed} ref - the reference to expected result (i.e. the
+         *                      table name, or record ID, or file URI)
+         */
+        Dependency.prototype.resolve = function(ref) {
+
+            // Store the result reference
+            if (this.uuid) {
+                this.tableCreated = true;
+                this.recordID = ref;
+            } else if (self.tableName) {
+                this.tableCreated = true;
+            } else if (self.url) {
+                this.fileURI = ref;
+            }
+
+            // Resolve the resolution promise
+            this.isResolved = true;
+            if (this.resolution) {
+                this.resolution.resolve(this);
+            }
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * All current dependencies
+         */
+        var dependencies;
+
+        var resetDependencies = function() {
+
+            // @todo: reject all unresolved dependencies when called?
+
+            dependencies = {
+                schemas: {
+                    // tableName: dependency
+                },
+                records: {
+                    // tableName: {
+                    //    uuid: dependency
+                    // }
+                },
+                files: {
+                    // downloadURL: dependency
+                }
+            };
+        };
+
+        // Initial call
+        resetDependencies();
+
+        // --------------------------------------------------------------------
+        /**
+         * Get a dependency for a table, record or file
+         *
+         * @param {string} tableName - the table name
+         * @param {string} uuid - the record UUID
+         * @param {string} url - the URL to download the file
+         *
+         * @returns {Dependency} - a Dependency instance
+         */
+        var require = function(tableName, uuid, url) {
+
+            var dependency;
+
+            if (tableName) {
+
+                if (uuid) {
+                    // Record dependency
+                    var recordDependencies = dependencies.records,
+                        records;
+
+                    // Find or create the record dependencies for this table
+                    if (recordDependencies.hasOwnProperty(tableName)) {
+                        records = allRecords[tableName];
+                    } else {
+                        records = {};
+                        recordDependencies[tableName] = records;
+                    }
+
+                    // Find or create the dependency for this record
+                    if (records.hasOwnProperty(uuid)) {
+                        dependency = records[uuid];
+                    } else {
+                        dependency = new Dependency(tableName, uuid);
+                        records[uuid] = dependency;
+                    }
+
+                } else {
+                    // Schema dependency
+                    var schemas = dependencies.schemas;
+                    if (schemas.hasOwnProperty(tableName)) {
+                        dependency = schemas[tableName];
+                    } else {
+                        dependency = new Dependency(tableName);
+                        schemas[tableName] = dependency;
+                    }
+                }
+
+            } else if (url) {
+                // File dependency
+                files = dependencies.files;
+                if (files.hasOwnProperty(url)) {
+                    dependency = files[url];
+                } else {
+                    dependency = new Dependency(null, null, url);
+                    files[url] = dependency;
+                }
+            }
+
+            return dependency;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Register a provider for a dependency; shorthand for
+         * require().registerProvider()
+         *
+         * @param {SyncTask} provider - the SyncTask providing the required
+         *                              resource
+         * @param {string} tableName - the table name
+         * @param {string} uuid - the record UUID
+         * @param {string} url - the URL to download the file
+         */
+        var provide = function(provider, tableName, recordID, resourceURI) {
+
+            // Get or create the dependency
+            var dependency = require(tableName, recordID, resourceURI);
+
+            // Register the provider
+            if (!!dependency) {
+                dependency.registerProvider(provider);
+            }
+        };
+
+        // ====================================================================
+        // Synchronization Tasks
+        // ====================================================================
+        /**
+         * SyncTask to import a table schema
+         *
+         * @param {SyncJob} job - the SyncJob that generated this task
+         * @param {string} tableName - the name of the table to install
+         * @param {object} schemaData - the schema data from the Sahana
+         *                              server for the table
+         */
+        function SchemaImport(job, tableName, schemaData) {
+
+            SyncTask.apply(this, [job]);
+
+            this.tableName = tableName;
+
+            // The name of the table this task will import
+            this.provides = tableName;
+            // The names of the tables this task requires
+            this.requires = [];
+
+            // Decode the schemaData and collect Dependencies
+            var schema = this.decode(schemaData),
+                dependencies = [];
+            if (schema) {
+                this.requires.forEach(function(requirement) {
+                    dependencies.push(require(requirement));
+                });
+            }
+            this.schema = schema;
+            this.dependencies = dependencies;
+        }
+        SchemaImport.prototype = Object.create(SyncTask.prototype);
+        SchemaImport.prototype.constructor = SchemaImport;
+
+        /**
+         * Execute this schema import (async); installs or updates
+         * the Resource, also installing or updating the database
+         * table as necessary
+         */
+        SchemaImport.prototype.execute = function() {
+
+            console.log('Execute SchemaImport for ' + this.tableName);
+
+            // Collect the promises for all acquired dependencies
+            var dependencies = this.dependencies,
+                resolved = [];
+
+            dependencies.forEach(function(dependency) {
+                resolved.push(dependency.resolved());
+            });
+
+            var self = this;
+            $q.all(resolved).then(
+                function() {
+                    // all dependencies resolved => go ahead
+                    console.log('Importing schema for ' + self.tableName);
+                    emResources.install(self.tableName, self.schema).then(
+                        function() {
+                            // Schema installation successful
+                            self.resolve(self.tableName);
+                        },
+                        function(error) {
+                            // Schema installation failed
+                            self.reject(error);
+                        });
+                },
+                function(error) {
+                    // A dependency failed
+                    self.reject(error);
+                });
+        };
+
+        /**
+         * Convert Sahana schema data to internal format
+         *
+         * @param {object} schemaData - the schema data received from
+         *                              the Sahana server
+         *
+         * @returns {object} - the schema specification in
+         *                     internal format
+         */
+        SchemaImport.prototype.decode = function(schemaData) {
+
+            var job = this.job,
+                requires = this.requires;
+
+            var schema = {},
+                fieldName,
+                fieldSpec,
+                fieldType,
+                reference,
+                lookupTable;
+
+            // Field specs
+            var fieldDescriptions = schemaData.schema;
+            for (fieldName in fieldDescriptions) {
+
+                // Decode field description and add spec to schema
+                fieldSpec = this.decodeField(fieldDescriptions[fieldName]);
+                if (!!fieldSpec) {
+                    schema[fieldName] = fieldSpec;
+                }
+
+                // Add look-up table to requires if foreign key
+                fieldType = fieldSpec.type;
+                reference = emUtils.getReference(fieldType);
+                if (reference) {
+                    lookupTable = reference[1];
+                    if (lookupTable && requires.indexOf(lookupTable) == -1) {
+                        requires.push(lookupTable);
+                    }
+                }
+            }
+
+            // Table settings
+            // @todo: component declarations, data card format...
+            if (schemaData.form) {
+                schema._form = schemaData.form;
+            }
+            if (schemaData.strings) {
+                schema._strings = schemaData.strings;
+            }
+
+            var ref = job.ref;
+            if (this.provides == job.tableName) {
+                // Main schema => store server-side resource
+                schema._controller = schemaData.controller || ref.c;
+                schema._function = schemaData.function || ref.f;
+            } else {
+                // Reference or component schema => name after table
+                schema._name = this.provides;
+            }
+
+            return schema;
+
+        };
+
+        /**
+         * Convert a Sahana field description to internal format
+         *
+         * @param {object} FieldDescription - the field description from
+         *                                    the Sahana server
+         *
+         * @returns {object} - the field specification in internal format
+         */
+        SchemaImport.prototype.decodeField = function(fieldDescription) {
+
+            var spec = {
+                type: fieldDescription.type || 'string',
+            };
+
+            if (!!fieldDescription.label) {
+                spec.label = fieldDescription.label;
+            }
+            if (!!fieldDescription.options) {
+                spec.options = fieldDescription.options;
+            }
+            if (fieldDescription.hasOwnProperty('default')) {
+                spec.defaultValue = fieldDescription.default;
+            }
+
+            var settings = fieldDescription.settings;
+            for (var keyword in fieldDescription.settings) {
+                if (!spec.hasOwnProperty(keyword)) {
+                    spec[keyword] = settings[keyword];
+                }
+            }
+
+            return spec;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Sync Task to:
+         * - download a mobile form from the server
+         * - generate an array of SchemaImport tasks for it
+         */
+        function FormDownload(job) {
+
+            SyncTask.apply(this, [job]);
+        }
+        FormDownload.prototype = Object.create(SyncTask.prototype);
+        FormDownload.prototype.constructor = FormDownload;
+
+        /**
+         * Execute the form download; parses the downloaded form and
+         * creates SchemaImport tasks for both the main schema and any
+         * dependencies of the main schema if available in the form data.
+         */
+        FormDownload.prototype.execute = function() {
+
+            var job = this.job,
+                self = this;
+
+            console.log('Downloading ' + job.ref.c + '/' + job.ref.f);
+
+            emServer.getForm(job.ref,
+                function(data) {
+
+                    var schemaImports = [],
+                        main = data.main,
+                        references = data.references,
+                        tableName = main.tablename,
+                        schemaImport = new SchemaImport(job, tableName, main),
+                        referenceImport,
+                        requirements = schemaImport.requires.slice(0),
+                        requirement,
+                        provided = [tableName];
+
+                    if (!!references) {
+                        while(requirements.length) {
+
+                            requirement = requirements.shift();
+
+                            // Have we already provided a SchemaImport for
+                            // this requirement?
+                            if (provided.indexOf(requirement) != -1) {
+                                continue;
+                            }
+
+                            // Do we have a reference schema in the download
+                            // data?
+                            if (references.hasOwnProperty(requirement)) {
+
+                                // Create a SchemaImport for the referenced table
+                                referenceImport = new SchemaImport(job,
+                                                            requirement,
+                                                            references[requirement]);
+                                schemaImports.push(referenceImport);
+
+                                // Note as provided
+                                provided.push(requirement);
+
+                                // Capture new requirements of the reference import
+                                referenceImport.requires.forEach(function(name) {
+                                    if (provided.indexOf(name) == -1) {
+                                        requirements.push(name);
+                                    }
+                                });
+
+                            }
+                        }
+                    }
+
+                    // Append the main schema import
+                    schemaImports.push(schemaImport);
+
+                    // Resolved
+                    self.resolve(schemaImports);
+                },
+                function(response) {
+
+                    // Download failed
+                    self.reject(emServer.parseServerError(response));
+                });
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * @todo: docstring
+         *
+         * - deprecate SyncJob.downloadData when implemented
+         */
+        function DataDownload(job) {
+
+            SyncTask.apply(this, [job]);
+        }
+        DataDownload.prototype = Object.create(SyncTask.prototype);
+        DataDownload.prototype.constructor = DataDownload;
+
+        DataDownload.prototype.execute = function() {
+
+            var job = this.job,
+                self = this;
+
+            console.log('Downloading ' + job.ref.c + '/' + job.ref.f);
+
+            // @todo: msince, limit components (job has resource?)
+            emServer.getData(job.ref,
+                function(data) {
+
+                    self.reject('not implemented');
+
+                    // @todo: complete as follows:
+
+                    //      => data=S3JSON
+                    //          => decode with emS3JSON
+
+                    //      => for each record in the map
+                    //          => generate a DataImport task
+                    //                  - DataImport claims record dependencies
+                    //                  - DataImport registers as provider
+                    //          => collect file URLs (=filesRequired)
+                    //      => when complete:
+                    //          => resolve promise with list of DataImports and file URLs
+                },
+                function(response) {
+                    // Download failed
+                    self.reject(emServer.parseServerError(response));
+                });
+        };
+
+        // ====================================================================
+        // Synchronization Jobs
         // ====================================================================
         /**
          * Synchronization job prototype
@@ -151,9 +948,9 @@ EdenMobile.factory('emSync', [
          */
         function SyncJob(type, mode, resourceName, tableName, ref) {
 
-
-            this.type = type;
-            this.mode = mode;
+            // @todo: cleanup
+            this.type = type;   // form || data
+            this.mode = mode;   // pull || push
 
             this.resourceName = resourceName;
             this.tableName = tableName;
@@ -164,14 +961,40 @@ EdenMobile.factory('emSync', [
             this.status = 'pending';
             this.error = null;
 
+            this.$result = null;    // result flag, required by downloadForms
+
             // Deferred action and completed-promise
             this.action = $q.defer();
-            this.completed = this.action.promise;
+            this.completed = this.action.promise; // @todo: deprecate together with run
         }
 
         // --------------------------------------------------------------------
         /**
+         * Generate a download task for this job
+         *
+         * @returns {SyncTask} - the download task
+         */
+        SyncJob.prototype.download = function() {
+
+            var task;
+            if (this.mode == 'pull') {
+                var jobType = this.type;
+                if (jobType == 'form') {
+                    // Produce a FormDownload task and return it
+                    task = new FormDownload(this);
+                } else if (jobType == 'data') {
+                    // Produce a DataDownload task and return it
+                    task = new DataDownload(this);
+                }
+            }
+            return task;
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Run synchronization job
+         *
+         * @todo: deprecate
          */
         SyncJob.prototype.run = function() {
 
@@ -190,19 +1013,20 @@ EdenMobile.factory('emSync', [
 
                 // Execute
                 if (self.type == 'form') {
-                    self.downloadForm();
+                   // deprecated
                 } else {
-                    switch(self.mode) {
-                        case 'push':
-                            self.uploadData();
-                            break;
-                        case 'pull':
-                            self.downloadData();
-                            break;
-                        default:
-                            self.result('error', 'invalid mode');
-                            break;
-                    }
+                    self.result('error', 'Not Implemented');
+//                     switch(self.mode) {
+//                         case 'push':
+//                             self.uploadData();
+//                             break;
+//                         case 'pull':
+//                             self.downloadData();
+//                             break;
+//                         default:
+//                             self.result('error', 'invalid mode');
+//                             break;
+//                     }
                 }
             };
 
@@ -224,6 +1048,8 @@ EdenMobile.factory('emSync', [
          *
          * @param {string} status: the final status success|error|cancelled
          * @param {string} message: the error message (if any)
+         *
+         * @todo: rewrite (e.g. completed-promise no longer relevant)
          */
         SyncJob.prototype.result = function(status, message) {
 
@@ -246,186 +1072,120 @@ EdenMobile.factory('emSync', [
             }
             emSyncLog.log(this, result, this.error);
 
-            // Update global sync status
-            updateSyncStatus();
+            if (result) {
 
-            // Resolve (or reject) completed-promise
-            if (result == 'success') {
-                this.action.resolve(result);
-            } else {
-                this.action.reject(result);
-            }
-        };
+                this.$result = result;
+                this.complete = true; // @todo: deprecate in favor of $result
 
-        // --------------------------------------------------------------------
-        /**
-         * Convert server error responses into a human-readable log message
-         *
-         * @param {object} response - the server response
-         *
-         * @returns {string} - the log message
-         */
-        SyncJob.prototype.parseServerError = function(response) {
+                // Update global sync status
+                updateSyncStatus();
 
-            var message;
-
-            if (typeof response == 'string') {
-                message = response;
-            } else {
-                var status = response.status;
-                if (status) {
-                    if (response.data) {
-                        message = response.data.message;
-                    }
-                    if (!message) {
-                        message = response.statusText;
-                    }
-                    if (!message) {
-                        if (status == -1) {
-                            message = 'connection failed';
-                        } else {
-                            message = 'unknown error ' + status;
-                        }
-                    } else {
-                        message = status + ' ' + message;
-                    }
+                // Resolve (or reject) completed-promise
+                if (result == 'success') {
+                    this.action.resolve(result);
+                } else {
+                    this.action.reject(result);
                 }
             }
-
-            return message;
-        };
-
-        // --------------------------------------------------------------------
-        /**
-         * Download form definition from server
-         */
-        SyncJob.prototype.downloadForm = function() {
-
-            var self = this,
-                tableName = self.tableName;
-
-            emServer.getForm(self.ref,
-                function(data) {
-
-                    // Process form definition
-                    var schemaData = data[tableName];
-                    if (schemaData === undefined) {
-                        self.result('error', 'No schema definition received for ' + tableName);
-                        return;
-                    }
-                    schemaData._name = self.resourceName;
-
-                    // Install resource
-                    emResources.install(tableName, schemaData).then(
-                        function(resource) {
-                            // Success
-                            self.result('success');
-                        },
-                        function(error) {
-                            // Error
-                            self.result('error', error);
-                        }
-                    );
-                },
-                function(response) {
-                    self.result('error', self.parseServerError(response));
-                }
-            );
         };
 
         // --------------------------------------------------------------------
         /**
          * Download resource data from the server
+         *
+         * @todo: deprecate
          */
         SyncJob.prototype.downloadData = function() {
 
             var self = this,
                 resourceName = self.resourceName;
 
-            emServer.getData(this.ref,
-                function(data) {
-                    emResources.open(resourceName).then(function(resource) {
-                        resource.importJSON(data, function(result) {
-                            var messages = [],
-                                status = 'success';
-                            if (result.created) {
-                                messages.push(result.created + ' created');
-                            }
-                            if (result.updated) {
-                                messages.push(result.updated + ' updated');
-                            }
-                            if (result.failed) {
-                                messages.push(result.failed + ' failed');
-                                if (!result.created && !result.updated) {
-                                    status = 'error';
-                                }
-                            }
-                            self.result(status, messages.join(', '));
-                        });
-                    });
-                },
-                function(response) {
-                    self.result('error', self.parseServerError(response));
-                }
-            );
+//             emServer.getData(this.ref,
+//                 function(data) {
+//                     emResources.open(resourceName).then(function(resource) {
+//                         resource.importJSON(data, function(result) {
+//                             var messages = [],
+//                                 status = 'success';
+//                             if (result.created) {
+//                                 messages.push(result.created + ' created');
+//                             }
+//                             if (result.updated) {
+//                                 messages.push(result.updated + ' updated');
+//                             }
+//                             if (result.failed) {
+//                                 messages.push(result.failed + ' failed');
+//                                 if (!result.created && !result.updated) {
+//                                     status = 'error';
+//                                 }
+//                             }
+//                             self.result(status, messages.join(', '));
+//                         });
+//                     });
+//                 },
+//                 function(response) {
+//                     self.result('error', emServer.parseServerError(response));
+//                 }
+//             );
         };
 
         // --------------------------------------------------------------------
         /**
          * Upload resource data to the server
+         *
+         * @todo: deprecate
          */
         SyncJob.prototype.uploadData = function() {
 
             var self = this,
                 resourceName = self.resourceName;
 
-            emResources.open(resourceName).then(function(resource) {
-
-                var query = 'synchronized_on IS NULL OR synchronized_on<modified_on';
-
-                resource.exportJSON(query, function(dataJSON, files) {
-
-                    if (!dataJSON) {
-                        // Skip if empty
-                        self.result(null, 'not modified');
-                        return;
-                    }
-
-                    // Data to send
-                    var data;
-                    if (files.length) {
-                        // Use object to send as multipart
-                        data = {
-                            data: dataJSON,
-                            _files: files
-                        };
-                    } else {
-                        // Send as JSON body
-                        data = dataJSON;
-                    }
-
-                    var synchronized_on = new Date();
-                    emServer.postData(self.ref, data,
-                        // Success callback
-                        function(response) {
-                            if (response) {
-                                self.updateSyncDate(
-                                    synchronized_on,
-                                    response.created,
-                                    response.updated
-                                ).then(function() {
-                                    self.result('success');
-                                });
-                            } else {
-                                self.result('success');
-                            }
-                        },
-                        function(response) {
-                            self.result('error', self.parseServerError(response));
-                        }
-                    );
-                });
-            });
+//             emResources.open(resourceName).then(function(resource) {
+//
+//                 var query = 'synchronized_on IS NULL OR synchronized_on<modified_on';
+//
+//                 resource.exportJSON(query, function(dataJSON, files) {
+//
+//                     if (!dataJSON) {
+//                         // Skip if empty
+//                         self.result(null, 'not modified');
+//                         return;
+//                     }
+//
+//                     // Data to send
+//                     var data;
+//                     if (files.length) {
+//                         // Use object to send as multipart
+//                         data = {
+//                             data: dataJSON,
+//                             _files: files
+//                         };
+//                     } else {
+//                         // Send as JSON body
+//                         data = dataJSON;
+//                     }
+//
+//                     var synchronized_on = new Date();
+//                     emServer.postData(self.ref, data,
+//                         // Success callback
+//                         function(response) {
+//                             if (response) {
+//                                 self.updateSyncDate(
+//                                     synchronized_on,
+//                                     response.created,
+//                                     response.updated
+//                                 ).then(function() {
+//                                     self.result('success');
+//                                 });
+//                             } else {
+//                                 self.result('success');
+//                             }
+//                         },
+//                         function(response) {
+//                             self.result('error', emServer.parseServerError(response));
+//                         }
+//                     );
+//                 });
+//             });
         };
 
         // --------------------------------------------------------------------
@@ -450,10 +1210,10 @@ EdenMobile.factory('emSync', [
             };
 
             // Collect the UUIDs
-            if (created) {
+            if (created.length) {
                 created.forEach(add);
             }
-            if (updated) {
+            if (updated.length) {
                 updated.forEach(add);
             }
 
@@ -478,171 +1238,13 @@ EdenMobile.factory('emSync', [
         };
 
         // ====================================================================
-        /**
-         * Update the list of available/selected forms
-         *
-         * @param {Array} currentList - the current list of available/selected forms
-         * @param {Array} resourceNames - names of currently installed resources
-         * @param {Array} data - the list of available forms from the server
-         */
-        var updateFormList = function(currentList, resourceNames, data) {
-
-            // Build dict from current form list
-            var items = {};
-            currentList.forEach(function(item) {
-                items[item.resourceName] = item;
-            });
-
-            var formList = [];
-            data.forEach(function(formData) {
-
-                // Check if already installed
-                var resourceName = formData.n,
-                    installed = false;
-                if (resourceNames.indexOf(resourceName) != -1) {
-                    installed = true;
-                }
-
-                // Does the resource provide data for download?
-                var hasData = false;
-                if (formData.d) {
-                    hasData = true;
-                }
-
-                // Shall the resource be downloaded?
-                var item = items[resourceName],
-                    download = false;
-                if (item !== undefined) {
-                    // Retain previous selection
-                    download = item.download;
-                } else if (!installed || hasData) {
-                    // Automatically select for download
-                    // @todo: have a setting to enable/disable this?
-                    download = true;
-                }
-
-                // Create an entry and add it to the formList
-                var entry = {
-                    'label': formData.l,
-                    'resourceName': resourceName,
-                    'tableName': formData.t,
-                    'ref': formData.r,
-                    'installed': installed,
-                    'download': download,
-                    'hasData': hasData
-                };
-                formList.push(entry);
-            });
-
-            return formList;
-        };
-
+        // SyncJob Queue
         // ====================================================================
-        /**
-         * Get a list of forms that are to be installed, fetch a fresh list
-         * from server if no list is loaded and select automatically
-         *
-         * @param {Array} formList - the current list of available/selected forms
-         *
-         * @returns {promise} - a promise that resolves into the form list
-         */
-        var getFormList = function(formList) {
 
-            var deferred = $q.defer();
+        // Current job queue and flags
+        var syncJobs = [];
 
-            if (formList && formList.length) {
-                // Use this list
-                deferred.resolve(formList);
-            } else {
-                // Fetch new form list from server and select automatically
-                emServer.formList(
-                    function(data) {
-                        emResources.names().then(function(resourceNames) {
-                            formList = updateFormList([], resourceNames, data);
-                            deferred.resolve(formList);
-                        });
-                    },
-                    function(response) {
-                        updateSyncStatus();
-                        emServer.httpError(response);
-                        deferred.reject(response);
-                    }
-                );
-            }
-            return deferred.promise;
-        };
-
-        // ====================================================================
-        /**
-         * Update the list of available/selected resources
-         */
-        var updateResourceList = function(currentList, resources) {
-
-            // Build dict from current form list
-            var items = {};
-            currentList.forEach(function(item) {
-                items[item.resourceName] = item;
-            });
-
-            var resourceList = [],
-                resource,
-                numRows,
-                upload,
-                item,
-                entry;
-
-            resources.forEach(function(resourceData) {
-
-                resource = resourceData.resource;
-                numRows = resourceData.numRows;
-
-                // @todo: check autoUpload option for default
-                upload = true;
-
-                item = items[resource.name];
-                if (item !== undefined) {
-                    upload = item.upload;
-                }
-
-                entry = {
-                    'label': resource.getLabel(true),
-                    'resourceName': resource.name,
-                    'tableName': resource.tableName,
-                    'ref': {
-                        'c': resource.controller,
-                        'f': resource.function
-                    },
-                    'updated': numRows,
-                    'upload': upload
-                };
-                resourceList.push(entry);
-            });
-
-            return resourceList;
-        };
-
-        // ====================================================================
-        /**
-         * Get an updated list of available resources
-         *
-         * @param {Array} currentList - the current list of available resources
-         *
-         * @returns {promise} - a promise that resolves into the updated
-         *                      resource list
-         */
-        var getResourceList = function(currentList) {
-
-            var deferred = $q.defer();
-
-            emResources.resourceList(function(resourceList) {
-                resourceList = updateResourceList(currentList, resourceList);
-                deferred.resolve(resourceList);
-            });
-
-            return deferred.promise;
-        };
-
-        // ====================================================================
+        // --------------------------------------------------------------------
         /**
          * Generate synchronization jobs
          *
@@ -711,14 +1313,638 @@ EdenMobile.factory('emSync', [
             return jobsScheduled;
         };
 
+        // --------------------------------------------------------------------
+        /**
+         * @todo: docstring
+         */
+        var cleanupJobs = function() {
+
+            // @todo: review concept
+
+            syncJobs.forEach(function(job) {
+                if (!job.$result) {
+                    job.result('error', 'not implemented');
+                }
+            });
+            resetDependencies();
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Check the job queue and update the global status
+         */
+        var statusUpdate = false;
+
+        // --------------------------------------------------------------------
+        /**
+         * @todo: docstring
+         */
+        var updateSyncStatus = function() {
+
+            if (statusUpdate) {
+                $timeout(updateSyncStatus, 100);
+            } else {
+                statusUpdate = true;
+                var openJobs = syncJobs.filter(function(job) {
+                    return (!job.$result);
+                });
+                if (openJobs.length) {
+                    $rootScope.syncInProgress = true;
+                } else {
+                    syncJobs = [];
+                    currentStage(null);
+                    $rootScope.syncInProgress = false;
+                }
+                statusUpdate = false;
+            }
+        };
+
+        // ====================================================================
+        // FormList Management
         // ====================================================================
         /**
-         * Run synchronization jobs
+         * Update the list of available/selected forms
          *
-         * @param {Array} forms - the current list of available/selected forms for
-         *                        synchronization
-         * @param {Array} resource - the current list of available/selected resources
-         *                           for synchronization
+         * @param {Array} currentList - the current list of available/selected forms
+         * @param {Array} resourceNames - names of currently installed resources
+         * @param {Array} data - the list of available forms from the server
+         */
+        var updateFormList = function(currentList, resourceNames, data) {
+
+            // Build dict from current form list
+            var items = {};
+            currentList.forEach(function(item) {
+                items[item.resourceName] = item;
+            });
+
+            var formList = [];
+            data.forEach(function(formData) {
+
+                // Check if already installed
+                var resourceName = formData.n,
+                    installed = false;
+                if (resourceNames.indexOf(resourceName) != -1) {
+                    installed = true;
+                }
+
+                // Does the resource provide data for download?
+                var hasData = false;
+                if (formData.d) {
+                    hasData = true;
+                }
+
+                // Shall the resource be downloaded?
+                var item = items[resourceName],
+                    download = false;
+                if (item !== undefined) {
+                    // Retain previous selection
+                    download = item.download;
+                } else if (!installed || hasData) {
+                    // Automatically select for download
+                    // @todo: have a setting to enable/disable this?
+                    download = true;
+                }
+
+                // Create an entry and add it to the formList
+                var entry = {
+                    'label': formData.l,
+                    'resourceName': resourceName,
+                    'tableName': formData.t,
+                    'ref': formData.r,
+                    'installed': installed,
+                    'download': download,
+                    'hasData': hasData
+                };
+                formList.push(entry);
+            });
+
+            return formList;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Get a list of forms that are to be installed, fetch a fresh list
+         * from server if no list is loaded and select automatically
+         *
+         * @param {Array} formList - the current list of available/selected forms
+         *
+         * @returns {promise} - a promise that resolves into the form list
+         */
+        var getFormList = function(formList) {
+
+            var deferred = $q.defer();
+
+            if (formList && formList.length) {
+                // Use this list
+                deferred.resolve(formList);
+            } else {
+                // Fetch new form list from server and select automatically
+                emServer.formList(
+                    function(data) {
+                        emResources.names().then(function(resourceNames) {
+                            formList = updateFormList([], resourceNames, data);
+                            deferred.resolve(formList);
+                        });
+                    },
+                    function(response) {
+                        updateSyncStatus();
+                        emServer.httpError(response);
+                        deferred.reject(response);
+                    }
+                );
+            }
+            return deferred.promise;
+        };
+
+        // ====================================================================
+        // ResourceList Management
+        // ====================================================================
+
+        /**
+         * Update the list of available/selected resources
+         */
+        var updateResourceList = function(currentList, resources) {
+
+            // Build dict from current form list
+            var items = {};
+            currentList.forEach(function(item) {
+                items[item.resourceName] = item;
+            });
+
+            var resourceList = [],
+                resource,
+                numRows,
+                upload,
+                item,
+                entry;
+
+            resources.forEach(function(resourceData) {
+
+                resource = resourceData.resource;
+                numRows = resourceData.numRows;
+
+                // @todo: check autoUpload option for default
+                upload = true;
+
+                item = items[resource.name];
+                if (item !== undefined) {
+                    upload = item.upload;
+                }
+
+                entry = {
+                    'label': resource.getLabel(true),
+                    'resourceName': resource.name,
+                    'tableName': resource.tableName,
+                    'ref': {
+                        'c': resource.controller,
+                        'f': resource.function
+                    },
+                    'updated': numRows,
+                    'upload': upload
+                };
+                resourceList.push(entry);
+            });
+
+            return resourceList;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Get an updated list of available resources
+         *
+         * @param {Array} currentList - the current list of available resources
+         *
+         * @returns {promise} - a promise that resolves into the updated
+         *                      resource list
+         */
+        var getResourceList = function(currentList) {
+
+            var deferred = $q.defer();
+
+            emResources.resourceList(function(resourceList) {
+                resourceList = updateResourceList(currentList, resourceList);
+                deferred.resolve(resourceList);
+            });
+
+            return deferred.promise;
+        };
+
+        // ====================================================================
+        // Synchronization Process
+        // ====================================================================
+        /**
+         * Sub-process to download forms
+         *
+         * @param {Array} jobs - the SyncJob queue
+         *
+         * @returns {promise} - a promise that is resolved with an Array of
+         *                      import tasks when the sub-process has
+         *                      completed
+         */
+        var downloadForms = function(jobs) {
+
+            var deferred = $q.defer(),
+                downloads = [];
+
+            // Generate download-queue
+            jobs.forEach(function(job) {
+                if (!job.$result && job.type == 'form' && job.mode == 'pull') {
+
+                    console.log('Creating download task for ' + job.resourceName + ' form');
+
+                    var downloadTask = job.download();
+                    if (downloadTask) {
+                        downloads.push(downloadTask);
+                    }
+                }
+            });
+
+            currentStage('Downloading forms', downloads);
+
+            // Process download-queue
+            var imports = [];
+            if (downloads.length) {
+
+                downloads.forEach(function(download) {
+                    download.done().then(
+                        function(importTasks) {
+                            // Download was successful
+                            if (importTasks.length) {
+                                imports = imports.concat(importTasks);
+                            }
+                            checkQueue(downloads, deferred, imports);
+                        },
+                        function(reason) {
+                            // Download failed => fail the corresponding job
+                            download.job.result('error', reason);
+                            checkQueue(downloads, deferred, imports);
+                        });
+                    download.execute();
+                });
+            } else {
+                deferred.resolve(imports);
+            }
+
+            return deferred.promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Resolve dependencies of SchemaImports (synchronously); registers
+         * all resolvable SchemaImports as providers for their respective
+         * tables
+         *
+         * @param {Array} schemaImports - array of SchemaImports
+         * @param {Array} tableNames - array of all known tables
+         *
+         * @returns {boolean} - true if dependencies can be resolved,
+         *                      otherwise false
+         */
+        var resolveDependencies = function(schemaImports, tableNames) {
+
+            currentStage('Resolving dependencies');
+
+            var unresolved = [],
+                knownTables = tableNames.slice(0),
+                unknownTables = [];
+
+            // Create an array of pending, unresolved schemaImports,
+            // and generate array of unknown tables from their requires
+            schemaImports.forEach(function(schemaImport) {
+                if (!schemaImport.$result) {
+                    unresolved.push(schemaImport);
+                    schemaImport.requires.forEach(function(tableName) {
+                        if (knownTables.indexOf(tableName) == -1) {
+                            if (unknownTables.indexOf(tableName) == -1) {
+                                unknownTables.push(tableName);
+                            }
+                        }
+                    });
+                }
+            });
+
+            var check,
+                resolved,
+                index;
+
+            while(unknownTables.length) {
+
+                resolved = 0;
+
+                check = unresolved;
+                unresolved = [];
+
+                // Check which schemaImports can be resolved with the
+                // currently known tables
+                check.forEach(function(schemaImport) {
+
+                    var resolvable = true,
+                        requires = schemaImport.requires,
+                        provides = schemaImport.provides;
+
+                    if (requires.length) {
+                        for (var i=requires.length; --i;) {
+                            if (knownTables.indexOf(requires[i]) == -1) {
+                                resolvable = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (resolvable) {
+                        // Register as provider
+                        provide(schemaImport, provides);
+
+                        // Add provides to knownTables
+                        knownTables.push(provides);
+
+                        // Remove provides from unknownTables
+                        index = unknownTables.indexOf(provides);
+                        if (index !== -1) {
+                            resolved++;
+                            unknownTables.splice(index, 1);
+                        }
+                    } else {
+                        // Retain for next iteration
+                        unresolved.push(schemaImport);
+                    }
+                });
+
+                if (!resolved && unknownTables.length) {
+                    // ERROR: unresolvable dependencies
+                    // => fail all related jobs
+                    unresolved.forEach(function(schemaImport) {
+                        // @todo: modify to report which dependencies
+                        //        were unresolvable for each job
+                        var job = schemaImport.job;
+                        if (!job.$result) {
+                            job.result('error', 'Unresolvable schema dependency');
+                        }
+                    });
+                    return false;
+                }
+            }
+
+            // SUCCESS:
+            // => register remaining unresolved schemaImports
+            //    as providers for their respective tables
+            unresolved.forEach(function(schemaImport) {
+                provide(schemaImport, schemaImport.provides);
+            });
+
+            return true;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Sub-process to import schemas
+         *
+         * @param {Array} schemaImports - array of pending schema imports
+         */
+        var importSchemas = function(schemaImports) {
+
+            var deferred = $q.defer();
+
+            currentStage('Importing Schemas', schemaImports);
+
+            if (schemaImports.length) {
+                schemaImports.forEach(function(schemaImport) {
+                    if (!schemaImport.$result) {
+                        schemaImport.done().then(
+                            function() {
+                                // Schema import succeeded
+                                checkQueue(schemaImports, deferred);
+                            },
+                            function(error) {
+                                // Schema import failed; if this was the
+                                // job's main schema, then fail the job
+                                var job = schemaImport.job;
+                                if (schemaImport.provides == job.tableName) {
+                                    job.result('error', error);
+                                }
+                                // Check queue
+                                checkQueue(schemaImports, deferred);
+                            });
+                        schemaImport.execute();
+                    }
+                });
+            } else {
+                deferred.resolve();
+            }
+
+            return deferred.promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Sub-process to download data
+         *
+         * @param {Array} jobs - the SyncJob queue
+         */
+        var downloadData = function(jobs) {
+
+            var deferred = $q.defer(),
+                downloads = [];
+
+            // Generate download-queue
+            jobs.forEach(function(job) {
+                if (!job.$result && job.type == 'data' && job.mode == 'pull') {
+
+                    console.log('Creating download task for ' + job.resourceName + ' data');
+
+                    var downloadTask = job.download();
+                    if (downloadTask) {
+                        downloads.push(downloadTask);
+                    }
+                }
+            });
+
+            currentStage('Downloading data', downloads);
+
+            var imports = [],
+                filesRequired = [];
+            if (downloads.length) {
+                downloads.forEach(function(download) {
+                    download.done().then(
+                        function(importTasks, filesRequired) {
+                            // Download was successful
+                            if (importTasks.length) {
+                                imports = imports.concat(importTasks);
+                            }
+                            if (filesRequired && filesRequired.length) {
+                                filesRequired = filesRequired.concat(filesRequired);
+                            }
+                            checkQueue(downloads, deferred, [imports, filesRequired]);
+                        },
+                        function(reason) {
+                            // Download failed => fail the corresponding job
+                            download.job.result('error', reason);
+                            checkQueue(downloads, deferred, [imports, filesRequired]);
+                        });
+                    download.execute();
+                });
+            }
+
+            return deferred.promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * @todo: docstring
+         */
+        var resolveRecordDependencies = function() {
+
+            // @todo: implement as follows:
+
+            // Rename "resolveDependencies" into "resolveSchemaDependencies"
+
+            // Set stage "Resolving record dependencies"
+            // Go through the record dependencies
+            //    => collect UUIDs per table
+            //    => try to identify records
+            //    => resolve those which are identifiable
+
+            // then,
+            // Go through the record dependencies
+            //    => reject those which are not identifiable and have no provider
+
+            // @todo for later: resolve circular dependencies (may not be necessary
+            //                  with S3JSON)
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * @todo: docstring
+         */
+        var importData = function() {
+
+            // deferred function to import all downloaded data
+
+            // @todo: implement as follows:
+
+            // resolveRecordDependencies
+            // Then,
+            // Set stage "Importing data", watch DataImport queue
+            //    => when queue complete: resolve promise
+            // Execute all DataImports
+
+            // return promise
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * @todo: docstring
+         */
+        var push = function() {
+
+            // @todo: concept
+            // @todo: implement this
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * @todo: docstring
+         */
+        var downloadFiles = function() {
+
+            // @todo: concept
+            // @todo: implement this
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Sub-process to synchronize forms
+         *
+         * @returns {promise} - a promise that will be resolved when
+         *                      all forms have been synchronized
+         */
+        var synchronizeForms = function() {
+
+            // Get a list of form/pull jobs
+            var jobs = syncJobs.filter(function(syncJob) {
+                return (syncJob.mode == 'pull' && syncJob.type == 'form');
+            });
+            if (!jobs.length) {
+                // Nothing to do
+                return $q.resolve();
+            }
+
+            var deferred = $q.defer();
+
+            emDB.tables().then(function(tableNames) {
+
+                downloadForms(jobs).then(function(schemaImports) {
+
+                    var resolvable = resolveDependencies(schemaImports, tableNames);
+                    if (resolvable) {
+
+                        importSchemas(schemaImports).then(function() {
+                            jobs.forEach(function(job) {
+                                if (!job.$result) {
+                                    job.result('success');
+                                }
+                            });
+                            deferred.resolve();
+                        });
+                    } else {
+
+                        // Form synchronization failed due to unresolvable
+                        // dependencies => resolve anyway to let any
+                        // resolvable data imports go ahead
+                        deferred.resolve();
+                    }
+                });
+            });
+
+            return deferred.promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Process to synchronize data
+         *
+         * @returns {promise} - a promise that will be resolved when
+         *                      all data have been synchronized
+         */
+        var synchronizeData = function() {
+
+            // Get a list of form/pull jobs
+            var jobs = syncJobs.filter(function(syncJob) {
+                return (syncJob.mode == 'pull' && syncJob.type == 'data');
+            });
+            if (!jobs.length) {
+                // Nothing to do
+                return $q.resolve();
+            }
+
+            var deferred = $q.defer();
+
+            emDB.tables().then(function(tableNames) {
+
+                downloadData(jobs).then(function(importItems, filesRequired) {
+
+                    deferred.resolve();
+
+                    // @todo: resolveRecordDependencies
+                    // @todo: implement as follows:
+
+//                     importData(importItems).then(function() {
+//                         push().then(function() {
+//                             // @todo: mark all pending jobs as successful
+//                             deferred.resolve();
+//                         });
+//                     });
+//
+//                     downloadFiles(filesRequired);
+                });
+            });
+
+            return deferred.promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * @todo: docstring
          */
         var synchronize = function(forms, resources) {
 
@@ -726,14 +1952,15 @@ EdenMobile.factory('emSync', [
 
             if (syncJobs.length) {
 
-                // Run all pending jobs
-                syncJobs.forEach(function(job) {
-                    if (job.status == 'pending') {
-                        job.run();
-                    }
+                synchronizeForms().then(function() {
+                    synchronizeData().then(function() {
+                        cleanupJobs();
+                    });
                 });
 
             } else {
+
+                currentStage('Preparing');
 
                 emSyncLog.obsolete();
 
@@ -743,10 +1970,12 @@ EdenMobile.factory('emSync', [
                 };
 
                 $q.all(lists).then(function(pending) {
+
                     var jobsScheduled = generateSyncJobs(
                         pending.formList,
                         pending.resourceList
                     );
+
                     if (jobsScheduled) {
                         synchronize(
                             pending.formList,
