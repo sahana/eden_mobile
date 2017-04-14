@@ -804,6 +804,136 @@ EdenMobile.factory('emSync', [
 
         // --------------------------------------------------------------------
         /**
+         * SyncTask to import a record
+         */
+        function DataImport(job, tableName, record) {
+
+            SyncTask.apply(this, [job]);
+
+            this.tableName = tableName;
+            this.record = record;
+            this.resolved = false;
+
+            // Register as provider for the record
+            provide(this, tableName, record.uuid);
+
+            // Check for dependencies
+            var dependencies;
+            if (this.isResolved()) {
+                dependencies = null;
+                this.actionable = $q.resolve();
+            } else {
+                dependencies = $q.defer();
+                this.actionable = dependencies.promise;
+            }
+            this.dependencies = dependencies;
+
+            var fieldName,
+                dependency,
+                references = record.references,
+                reference,
+                files = record.files,
+                downloadURL;
+
+            // Register record dependencies
+            for (fieldName in references) {
+                reference = references[fieldName];
+                dependency = require(reference[0], reference[1]);
+                dependency.complete().then(function(dependency) {
+                    if (dependency.isResolved) {
+                        record.data[fieldName] = dependency.recordID;
+                    }
+                    delete record.references[fieldName];
+                    if (!!this.dependencies && this.isResolved()) {
+                        this.dependencies.resolve();
+                    }
+                });
+            }
+
+            // Register file dependencies
+            for (fieldName in files) {
+                downloadURL = files[fieldName];
+                dependency = require(null, null, downloadURL);
+                dependency.complete().then(function(dependency) {
+                    if (dependency.isResolved) {
+                        record.data[fieldName] = dependency.fileURI;
+                    }
+                    delete record.files[fieldName];
+                    if (!!this.dependencies && this.isResolved()) {
+                        this.dependencies.resolve();
+                    }
+                });
+            }
+        }
+        DataImport.prototype = Object.create(SyncTask.prototype);
+        DataImport.prototype.constructor = DataImport;
+
+        /**
+         * Execute the data import; creates the local record
+         */
+        DataImport.prototype.execute = function() {
+
+            var job = this.job,
+                self = this,
+                resourceName = job.resourceName;
+
+            this.actionable.then(function() {
+                emResources.open(resourceName).then(function(resource) {
+                    if (!resource) {
+                        self.reject('resource not found: ' + resourceName);
+                    } else {
+                        var record = self.record;
+                        resource.identify(record.data).then(function(recordID) {
+                            if (recordID) {
+                                // Update existing record
+                                // @todo: implement NEWER policy
+                                var query = 'id=' + recordID;
+                                resource.update(record.data, query,
+                                    function(numRowsAffected) {
+                                        if (numRowsAffected) {
+                                            self.resolve(recordID);
+                                        } else {
+                                            self.reject('error updating record');
+                                        }
+                                    });
+
+                            } else {
+                                // Create new record
+                                resource.insert(self.record.data,
+                                    function(insertID) {
+                                        if (insertID) {
+                                            self.resolve(insertID);
+                                        } else {
+                                            self.reject('error creating record');
+                                        }
+                                    });
+                            }
+                        });
+                    }
+                });
+            });
+        };
+
+        /**
+         * Check whether all record dependencies have been processed
+         *
+         * @returns {boolean} - true if dependency processing is complete
+         */
+        DataImport.prototype.isResolved = function() {
+
+            if (!this.resolved) {
+                if (Object.keys(this.record.references).length) {
+                    return false;
+                }
+                if (Object.keys(this.record.files).length) {
+                    return false;
+                }
+            }
+            return this.resolved = true;
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Sync Task to:
          * - download a mobile form from the server
          * - generate an array of SchemaImport tasks for it
@@ -890,9 +1020,10 @@ EdenMobile.factory('emSync', [
 
         // --------------------------------------------------------------------
         /**
-         * @todo: docstring
-         *
-         * - deprecate SyncJob.downloadData when implemented
+         * SyncTask to:
+         * - download resource data from the server (S3JSON)
+         * - decode the S3JSON data and generate DataImport jobs
+         * - collect the download URLs for all required files
          */
         function DataDownload(job) {
 
@@ -901,6 +1032,10 @@ EdenMobile.factory('emSync', [
         DataDownload.prototype = Object.create(SyncTask.prototype);
         DataDownload.prototype.constructor = DataDownload;
 
+        /**
+         * Execute the data download; decodes the S3JSON data received
+         * and creates DataImport tasks for all relevant items
+         */
         DataDownload.prototype.execute = function() {
 
             var job = this.job,
@@ -911,21 +1046,41 @@ EdenMobile.factory('emSync', [
             // @todo: msince, limit components (job has resource?)
             emServer.getData(job.ref,
                 function(data) {
+                    // Download successful
+                    emDB.tables().then(function(tables) {
 
-                    emDB.allTables().then(function(allTables) {
+                        var dataImports = [],
+                            filesRequired = [];
 
-                        var map = emS3JSON.decode(allTables, job.tableName, data);
+                        // Decode the S3JSON data
+                        var map = emS3JSON.decode(tables, job.tableName, data);
 
-                        self.reject('not implemented');
+                        for (var tableName in map) {
 
-                        // @todo: complete as follows:
-                        //      => for each record in the map
-                        //          => generate a DataImport task
-                        //                  - DataImport claims record dependencies
-                        //                  - DataImport registers as provider
-                        //          => collect file URLs (=filesRequired)
-                        //      => when complete:
-                        //          => resolve promise with list of DataImports and file URLs
+                            var records = map[tableName],
+                                record,
+                                files,
+                                downloadURL,
+                                fieldName,
+                                dataImport;
+
+                            for (var uuid in records) {
+
+                                // Generate a DataImport task
+                                record = records[uuid];
+                                dataImport = new DataImport(job, tableName, record);
+                                dataImports.push(dataImport);
+
+                                // Collect the download URLs of the required files
+                                files = record.files;
+                                for (fieldName in files) {
+                                    downloadURL = files[fieldName];
+                                    filesRequired.push(downloadURL);
+                                }
+                            }
+                        }
+
+                        self.resolve([dataImports, filesRequired]);
                     });
                 },
                 function(response) {
@@ -1767,7 +1922,9 @@ EdenMobile.factory('emSync', [
             if (downloads.length) {
                 downloads.forEach(function(download) {
                     download.done().then(
-                        function(importTasks, filesRequired) {
+                        function(result) {
+                            var imports = result[0],
+                                filesRequired = result[1];
                             // Download was successful
                             if (importTasks.length) {
                                 imports = imports.concat(importTasks);
@@ -1872,7 +2029,7 @@ EdenMobile.factory('emSync', [
 
             var deferred = $q.defer();
 
-            emDB.tables().then(function(tableNames) {
+            emDB.tableNames().then(function(tableNames) {
 
                 downloadForms(jobs).then(function(schemaImports) {
 
@@ -1920,7 +2077,7 @@ EdenMobile.factory('emSync', [
 
             var deferred = $q.defer();
 
-            emDB.tables().then(function(tableNames) {
+            emDB.tableNames().then(function(tableNames) {
 
                 downloadData(jobs).then(function(importItems, filesRequired) {
 

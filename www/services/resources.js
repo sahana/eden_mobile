@@ -738,7 +738,7 @@ EdenMobile.factory('emResources', [
                 }
             };
 
-            emDB.tables().then(function(tableNames) {
+            emDB.tableNames().then(function(tableNames) {
                 tableNames.forEach(function(tableName) {
                     pending[tableName] = true;
                     setupDefaultResource(tableName, resolve);

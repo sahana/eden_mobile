@@ -1092,11 +1092,12 @@ EdenMobile.factory('emDB', [
             parseSchema: parseSchema,
 
             /**
-             * Get a list of all user tables
+             * Get an array of known tables (names only)
              *
-             * @returns {promise} - a promise that resolves into an Array of table names
+             * @returns {promise} - a promise that resolves into an Array of
+             *                      table names
              */
-            tables: function() {
+            tableNames: function() {
                 return db.ready.then(function() {
                     var tableNames = [];
                     for (var tableName in db.tables) {
@@ -1109,18 +1110,21 @@ EdenMobile.factory('emDB', [
             },
 
             /**
-             * @todo: docstring
+             * Get an array of known tables
+             *
+             * @returns {promise} - a promise that resolves into an object
+             *                      with the format {tableName: Table}
              */
-            allTables: function() {
+            tables: function() {
 
                 return db.ready.then(function() {
-                    var allTables = {};
+                    var tables = {};
                     for (var tableName in db.tables) {
                         if (tableName.slice(0, 3) != 'em_') {
-                            allTables[tableName] = db.tables[tableName];
+                            tables[tableName] = db.tables[tableName];
                         }
                     }
-                    return allTables;
+                    return tables;
                 }, apiNotReady);
             },
 
