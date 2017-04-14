@@ -519,6 +519,24 @@ EdenMobile.factory('emSync', [
 
         // --------------------------------------------------------------------
         /**
+         * Reject this dependency (e.g. when the table doesn't exist)
+         *
+         * @param {string} reason - reason for the rejection to report
+         *                          to any client tasks
+         */
+        Dependency.prototype.reject = function(reason) {
+
+            this.isComplete = true;
+            if (this.completion) {
+                this.completion.resolve(this);
+            }
+            if (this.resolution) {
+                this.resolution.reject(this.represent() + ': ' + reason);
+            }
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * All current dependencies
          */
         var dependencies;
@@ -1756,7 +1774,7 @@ EdenMobile.factory('emSync', [
          * @returns {boolean} - true if dependencies can be resolved,
          *                      otherwise false
          */
-        var resolveDependencies = function(schemaImports, tableNames) {
+        var resolveSchemaDependencies = function(schemaImports, tableNames) {
 
             currentStage('Resolving dependencies');
 
@@ -1948,26 +1966,77 @@ EdenMobile.factory('emSync', [
 
         // --------------------------------------------------------------------
         /**
-         * @todo: docstring
+         * Sub-process to resolve record dependencies before import
+         *
+         * @returns {promise} - a promise that is resolved when all
+         *                      dependencies have been checked
          */
         var resolveRecordDependencies = function() {
 
-            // @todo: implement as follows:
+            currentStage('Resolving dependencies');
 
-            // Rename "resolveDependencies" into "resolveSchemaDependencies"
+            var deferred = $q.defer(),
+                recordDependencies = dependencies.records,
+                tableNames = Object.keys(recordDependencies);
 
-            // Set stage "Resolving record dependencies"
-            // Go through the record dependencies
-            //    => collect UUIDs per table
-            //    => try to identify records
-            //    => resolve those which are identifiable
+            tableNames.forEach(function(tableName) {
 
-            // then,
-            // Go through the record dependencies
-            //    => reject those which are not identifiable and have no provider
+                // Get all UUIDs required for this table
 
-            // @todo for later: resolve circular dependencies (may not be necessary
-            //                  with S3JSON)
+                emDB.table(tableName).then(function(table) {
+
+                    var deps = recordDependencies[tableName],
+                        dependency;
+
+                    if (!table) {
+
+                        // Reject all dependencies for this tableName
+                        for (uuid in deps) {
+                            deps[uuid].reject('table not found');
+                        }
+
+                        // Check for completion
+                        tableNames.splice(tableNames.indexOf(tableName), 1);
+                        if (!tableNames.length) {
+                            deferred.resolve();
+                        }
+
+                    } else {
+
+                        var uuids = Object.keys(deps),
+                            query = 'uuid IN ' + uuids.map(function(uuid) {
+                            return "'" + uuid + "'";
+                        }).join(',');
+
+                        table.select(['uuid', 'id'], query, function(records) {
+
+                            // Resolve the dependency for each record found
+                            if (records.length) {
+                                records.forEach(function(record) {
+                                    deps[record.uuid].resolve(record.id);
+                                });
+                            }
+
+                            // Check that all dependencies for this table
+                            // are now resolved, or have a provider
+                            for (uuid in deps) {
+                                deps[uuid].checkResolvable();
+                            }
+
+                            // @todo: resolve circular dependencies?
+                            //        (shouldn't occur with S3JSON)
+
+                            // Check for completion
+                            tableNames.splice(tableNames.indexOf(tableName), 1);
+                            if (!tableNames.length) {
+                                deferred.resolve();
+                            }
+                        });
+                    }
+                });
+            });
+
+            return deferred.promise;
         };
 
         // --------------------------------------------------------------------
@@ -2033,7 +2102,9 @@ EdenMobile.factory('emSync', [
 
                 downloadForms(jobs).then(function(schemaImports) {
 
-                    var resolvable = resolveDependencies(schemaImports, tableNames);
+                    var resolvable = resolveSchemaDependencies(
+                                        schemaImports,
+                                        tableNames);
                     if (resolvable) {
 
                         importSchemas(schemaImports).then(function() {
