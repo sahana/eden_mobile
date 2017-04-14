@@ -26,51 +26,78 @@
 "use strict";
 
 /**
- * @todo: docstring
- * @todo: add separators
- * @todo: include in index.html
+ * Service to convert S3JSON <=> Internal Data Format
+ *
+ * @class emS3JSON
+ * @memberof EdenMobile.Services
  */
 EdenMobile.factory('emS3JSON', [
     '$q', 'emDB', 'emUtils',
     function ($q, emDB, emUtils) {
 
+        // ====================================================================
         /**
-         * @todo: docstring
+         * Helper class to decode S3JSON record representations
+         *
+         * @param {Table} table - the emDB Table
+         * @param {object} jsonData - the S3JSON representation of the record
          */
         function Record(table, jsonData) {
 
-            this.data = {} // {fieldName: value}
-            this.references = {} // {fieldName: [tableName, uuid]}
-            this.files = {} // {fieldName: downloadURL}
+            this.data = {};         // {fieldName: value}
+            this.references = {};   // {fieldName: [tableName, uuid]}
+            this.files = {};        // {fieldName: downloadURL}
 
+            this.tableName = table.tableName;
             this.uuid = null;
 
-            // @todo: implement as follows:
+            var key,
+                value;
 
-            // Go through the properties of the jsonData
+            for (key in jsonData) {
 
-            // if startswith $_ => component
+                value = jsonData[key];
 
-                // this part can come later => leave a @todo:
-                // skip for now
+                if (key.slice(0, 2) == '$_') {
 
-            // if startswith @ => S3XML attribute
+                    // Component record => skip
+                    // @todo: handle component records
+                    continue;
+                }
 
-                // get field name
-                // relevant attributes: uuid, created_on, modified_on
-                // => decode right here
+                if (key.slice(0, 3) == '$k_') {
 
-            // if startswith $k_ => S3XML reference
+                    // Foreign key
+                    this.decode(table, key.slice(3), value);
 
-                // get field name => then decode()
+                } else if (key[0] == '@') {
 
-            // everything else => field
+                    // Meta-field
+                    var fieldName = key.slice(1);
+                    switch(fieldName) {
+                        case 'uuid':
+                            this.data[fieldName] = this.uuid = value;
+                            break;
+                        case 'created_on':
+                        case 'modified_on':
+                            this.data[fieldName] = new Date(value);
+                            break;
+                        default:
+                            break;
+                    }
 
-                // => decode()
+                } else {
 
-            // if not has a uuid
-            //    => generate one (emDB.uuid()), and add to data
+                    // Other field
+                    this.decode(table, key, value);
+                }
+            }
 
+            // If no UUID in the source => generate one now
+            if (!this.uuid) {
+                this.uuid = emDB.uuid();
+                this.data['uuid'] = this.uuid;
+            }
         }
 
         // --------------------------------------------------------------------
@@ -120,10 +147,12 @@ EdenMobile.factory('emS3JSON', [
             }
 
             // Decode @value|$ attributes if present
-            if (value.hasOwnProperty('@value')) {
-                value = value['@value'];
-            } else if (value.hasOwnProperty('$')) {
-                value = value['$'];
+            if (value) {
+                if (value.hasOwnProperty('@value')) {
+                    value = value['@value'];
+                } else if (value.hasOwnProperty('$')) {
+                    value = value['$'];
+                }
             }
 
             // Handle all other field types
@@ -162,59 +191,139 @@ EdenMobile.factory('emS3JSON', [
             }
         };
 
+        // ====================================================================
         /**
-         * @todo: docstring
+         * Map new dependencies of a Record
+         *
+         * @param {object} map - array of known Records, format:
+         *                       {tableName: {uuid: Record}}
+         * @param {array} dependencies - array of known dependencies,
+         *                               format: [[tableName, uuid], ...]
+         * @param {object} references - the reference map of the record,
+         *                              format: {fieldName: [tableName, uuid]}
          */
-        var decode = function(tableName, data) {
+        var mapDependencies = function(map, dependencies, references) {
 
-            // @todo: implement as follows:
+            var dependency,
+                tableName,
+                uuid;
 
-            // Receive a tableName and S3JSON data
+            for (var fieldName in references) {
 
-                // Get all tables as {tableName: table} (from emDB)
+                dependency = references[fieldName];
 
-                // => find the corresponding $_ attribute
-                // for each element in the array:
-                //      => generate a record, add to map
-                //      for each reference in the record: collect in dependency list
+                tableName = dependency[0];
+                uuid = dependency[1];
 
-                //  This part can come later: => leave a todo
-                //      for each component in record:
-                //          - if component is known:
-                //              => generate a Record, add to map
-                //              => add parent-link
-                //              for each reference in the component record:
-                //                   collect in dependency list
-
-                // while dependencies:
-                //      take first dependency:
-                //         if record is in map:
-                //             skip (we already import this record)
-                //         if record in unknown:
-                //             skip (we already know that the record isn't present)
-                //         find the record in the S3JSON
-                //            if present:
-                //               => generate a Record, add to map
-                //               for each reference in record:
-                //                   => if not in map and not in unknown:
-                //                       add dependency
-                //            else:
-                //               add to unknown
-
-            // Return an object like:
-
-//             {
-//                 <tableName>: {
-//
-//                     <uuid>: <record>, ...
-//
-//                 }, ...
-//             }
-
-            // ...with all relevant records for that tableName (Record instances)
-
+                if (map.hasOwnProperty(tableName)) {
+                    if (map[tableName].hasOwnProperty(uuid)) {
+                        continue;
+                    }
+                }
+                dependencies.push(dependency);
+            }
         };
 
+        // --------------------------------------------------------------------
+        /**
+         * Resolve a dependency
+         *
+         * @param {object} data - the S3JSON data
+         * @param {object} map - array of known Records, format:
+         *                       {tableName: {uuid: Record}}
+         * @param {array} dependencies - array of known dependencies,
+         *                               format: [[tableName, uuid], ...]
+         * @param {object} unknown - map of records known to /not/ be in the data
+         *                           source, format: {tableName {uuid: true}}
+         * @param {array} dependency - the dependency to resolve, format:
+         *                             [tableName, uuid]
+         */
+        var resolveDependency = function(tables, data, map, dependencies, unknown, dependency) {
+
+            var tableName = dependency[0],
+                table = tables[tableName],
+                uuid = dependency[1];
+
+            if (unknown.hasOwnProperty(tableName)) {
+                if (unknown[tableName].hasOwnProperty(uuid)) {
+                    return;
+                }
+            }
+
+            // Search through the S3JSON for the record
+            var tableKey = '$_' + tableName;
+            if (data.hasOwnProperty(tableKey)) {
+
+                var items = data[tableKey],
+                    item,
+                    record;
+
+                for (var i = items.length; i--;) {
+
+                    item = items[i];
+                    if (item['@uuid'] == uuid) {
+
+                        // Generate a Record, add it to the map
+                        record = new Record(table, item);
+                        if (!map.hasOwnProperty(tableName)) {
+                            map[tableName] = {};
+                        }
+                        map[tableName][record.uuid] = record;
+                        mapDependencies(map, dependencies, record.references);
+                        return;
+                    }
+                }
+            }
+
+            if (!unknown.hasOwnProperty(tableName)) {
+                unknown[tableName] = {};
+            }
+            unknown[tableName][uuid] = true;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Decode an S3JSON resource representation and produce a map of
+         * Record objects for import
+         *
+         * @param {object} tables - array of all known tables, format:
+         *                          {tableName: Table}
+         * @param {string} tableName - the name of the target table
+         * @param {object} data - the S3JSON resource representation
+         *
+         * @returns {object} - a map of records, format:
+         *                     {tableName: {uuid: Record, ...}, ...}
+         */
+        var decode = function(tables, tableName, data) {
+
+            var map = {},
+                unknown = {},
+                dependencies = [];
+
+            var key = '$_' + tableName,
+                items = data[key],
+                table = tables[tableName];
+
+            if (items) {
+
+                map[tableName] = {};
+
+                items.forEach(function(item) {
+
+                    var record = new Record(table, item);
+                    map[tableName][record.uuid] = record;
+                    mapDependencies(map, dependencies, record.references);
+                });
+            }
+
+            while(dependencies.length) {
+                resolveDependency(tables, data, map, dependencies, unknown, dependencies.shift());
+            }
+
+            return map;
+        };
+
+        // ====================================================================
         /**
          * @todo: docstring
          */
@@ -223,6 +332,7 @@ EdenMobile.factory('emS3JSON', [
             // this part can come later => @todo
         };
 
+        // ====================================================================
         /**
          * @todo: docstring
          */

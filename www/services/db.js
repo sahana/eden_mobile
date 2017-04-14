@@ -1099,12 +1099,28 @@ EdenMobile.factory('emDB', [
             tables: function() {
                 return db.ready.then(function() {
                     var tableNames = [];
-                    for (var tn in db.tables) {
-                        if (tn.slice(0, 3) != 'em_') {
-                            tableNames.push(tn);
+                    for (var tableName in db.tables) {
+                        if (tableName.slice(0, 3) != 'em_') {
+                            tableNames.push(tableName);
                         }
                     }
                     return tableNames;
+                }, apiNotReady);
+            },
+
+            /**
+             * @todo: docstring
+             */
+            allTables: function() {
+
+                return db.ready.then(function() {
+                    var allTables = {};
+                    for (var tableName in db.tables) {
+                        if (tableName.slice(0, 3) != 'em_') {
+                            allTables[tableName] = db.tables[tableName];
+                        }
+                    }
+                    return allTables;
                 }, apiNotReady);
             },
 

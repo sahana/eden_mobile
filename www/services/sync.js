@@ -108,8 +108,8 @@ EdenMobile.factory('emSyncLog', [
  * @memberof EdenMobile.Services
  */
 EdenMobile.factory('emSync', [
-    '$q', '$rootScope', '$timeout', 'emDB', 'emResources', 'emServer', 'emSyncLog', 'emUtils',
-    function ($q, $rootScope, $timeout, emDB, emResources, emServer, emSyncLog, emUtils) {
+    '$q', '$rootScope', '$timeout', 'emDB', 'emResources', 'emS3JSON', 'emServer', 'emSyncLog', 'emUtils',
+    function ($q, $rootScope, $timeout, emDB, emResources, emS3JSON, emServer, emSyncLog, emUtils) {
 
         $rootScope.syncStage = null;
         $rootScope.syncProgress = null;
@@ -205,7 +205,7 @@ EdenMobile.factory('emSync', [
 
             var completed = true;
             if (queue.length) {
-                for (var i = queue.length; --i;) {
+                for (var i = queue.length; i--;) {
                     if (queue[i].$result === null) {
                         completed = false;
                     }
@@ -419,7 +419,7 @@ EdenMobile.factory('emSync', [
                 providers = this.providers;
 
             if (providers.length) {
-                for (var i = providers.length; --i;) {
+                for (var i = providers.length; i--;) {
                     if (providers[i].$result === null) {
                         // Provider task still pending
                         completed = false;
@@ -470,7 +470,7 @@ EdenMobile.factory('emSync', [
             var resolvable = false,
                 providers = this.providers;
             if (providers.length) {
-                for (var i = providers.length; --i;) {
+                for (var i = providers.length; i--;) {
                     if (providers[i].$result === null) {
                         // Provider task still pending
                         resolvable = true;
@@ -912,20 +912,21 @@ EdenMobile.factory('emSync', [
             emServer.getData(job.ref,
                 function(data) {
 
-                    self.reject('not implemented');
+                    emDB.allTables().then(function(allTables) {
 
-                    // @todo: complete as follows:
+                        var map = emS3JSON.decode(allTables, job.tableName, data);
 
-                    //      => data=S3JSON
-                    //          => decode with emS3JSON
+                        self.reject('not implemented');
 
-                    //      => for each record in the map
-                    //          => generate a DataImport task
-                    //                  - DataImport claims record dependencies
-                    //                  - DataImport registers as provider
-                    //          => collect file URLs (=filesRequired)
-                    //      => when complete:
-                    //          => resolve promise with list of DataImports and file URLs
+                        // @todo: complete as follows:
+                        //      => for each record in the map
+                        //          => generate a DataImport task
+                        //                  - DataImport claims record dependencies
+                        //                  - DataImport registers as provider
+                        //          => collect file URLs (=filesRequired)
+                        //      => when complete:
+                        //          => resolve promise with list of DataImports and file URLs
+                    });
                 },
                 function(response) {
                     // Download failed
@@ -1643,7 +1644,7 @@ EdenMobile.factory('emSync', [
                         provides = schemaImport.provides;
 
                     if (requires.length) {
-                        for (var i=requires.length; --i;) {
+                        for (var i=requires.length; i--;) {
                             if (knownTables.indexOf(requires[i]) == -1) {
                                 resolvable = false;
                                 break;
