@@ -845,6 +845,46 @@ EdenMobile.factory('emDB', [
 
         // --------------------------------------------------------------------
         /**
+         * Identify a record, use like:
+         *      - table.identify(record).then(function(recordID){});
+         *
+         * @param {object} record - the record
+         *
+         * @returns {promise} - a promise that resolves into the record ID
+         */
+        Table.prototype.identify = function(record) {
+
+            var deferred = $q.defer(),
+                recordID = record.id;
+
+            if (!!recordID) {
+                // We already have a record ID
+                deferred.resolve(recordID);
+            } else {
+                // Try looking it up from the UUID
+                var uuid = record.uuid;
+                if (!!uuid) {
+                    // Look it up
+                    var query = 'uuid="' + uuid + '"';
+                    this.select(['id'], query, function(records) {
+                        if (records.length) {
+                            recordID = records[0].id;
+                        }
+                        deferred.resolve(recordID);
+                    });
+                } else {
+                    // No way to identify the record (yet)
+                    // @todo: try unique fields
+                    deferred.resolve(recordID);
+                }
+            }
+
+            // Return the promise
+            return deferred.promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Count records in this table
          *
          * @param {string} query - SQL WHERE expression

@@ -127,7 +127,6 @@ EdenMobile.factory('emSync', [
 
             this.$result = null;
             this.$promise = null;
-
         }
 
         // --------------------------------------------------------------------
@@ -339,6 +338,8 @@ EdenMobile.factory('emSync', [
                 return;
             }
 
+            console.log('Register provider for ' + this);
+
             this.providers.push(provider);
 
             var self = this;
@@ -374,7 +375,7 @@ EdenMobile.factory('emSync', [
             if (this.isResolved) {
                 return $q.resolve(this);
             } else if (this.isComplete) {
-                return $q.reject('all providers failed for ' + this.represent());
+                return $q.reject('all providers failed for ' + this);
             }
 
             if (!this.resolution) {
@@ -438,9 +439,11 @@ EdenMobile.factory('emSync', [
 
         // --------------------------------------------------------------------
         /**
-         * @todo: docstring
+         * String-conversion of this dependency
+         *
+         * @returns {string} - a string representation of this dependency
          */
-        Dependency.prototype.represent = function() {
+        Dependency.prototype.toString = function() {
 
             var represent;
             if (this.uuid) {
@@ -485,8 +488,7 @@ EdenMobile.factory('emSync', [
                     this.completion.resolve(this);
                 }
                 if (this.resolution) {
-                    this.resolution.reject('all providers failed for ' +
-                                           this.represent());
+                    this.resolution.reject('all providers failed for ' + this);
                 }
             }
         };
@@ -531,7 +533,7 @@ EdenMobile.factory('emSync', [
                 this.completion.resolve(this);
             }
             if (this.resolution) {
-                this.resolution.reject(this.represent() + ': ' + reason);
+                this.resolution.reject(this + ': ' + reason);
             }
         };
 
@@ -539,13 +541,13 @@ EdenMobile.factory('emSync', [
         /**
          * All current dependencies
          */
-        var dependencies;
+        var currentDependencies;
 
         var resetDependencies = function() {
 
             // @todo: reject all unresolved dependencies when called?
 
-            dependencies = {
+            currentDependencies = {
                 schemas: {
                     // tableName: dependency
                 },
@@ -581,12 +583,12 @@ EdenMobile.factory('emSync', [
 
                 if (uuid) {
                     // Record dependency
-                    var recordDependencies = dependencies.records,
+                    var recordDependencies = currentDependencies.records,
                         records;
 
                     // Find or create the record dependencies for this table
                     if (recordDependencies.hasOwnProperty(tableName)) {
-                        records = allRecords[tableName];
+                        records = recordDependencies[tableName];
                     } else {
                         records = {};
                         recordDependencies[tableName] = records;
@@ -602,7 +604,7 @@ EdenMobile.factory('emSync', [
 
                 } else {
                     // Schema dependency
-                    var schemas = dependencies.schemas;
+                    var schemas = currentDependencies.schemas;
                     if (schemas.hasOwnProperty(tableName)) {
                         dependency = schemas[tableName];
                     } else {
@@ -613,7 +615,7 @@ EdenMobile.factory('emSync', [
 
             } else if (url) {
                 // File dependency
-                files = dependencies.files;
+                files = currentDependencies.files;
                 if (files.hasOwnProperty(url)) {
                     dependency = files[url];
                 } else {
@@ -783,7 +785,6 @@ EdenMobile.factory('emSync', [
             }
 
             return schema;
-
         };
 
         /**
@@ -851,19 +852,17 @@ EdenMobile.factory('emSync', [
                 references = record.references,
                 reference,
                 files = record.files,
-                downloadURL;
+                downloadURL,
+                self = this;
 
             // Register record dependencies
             for (fieldName in references) {
                 reference = references[fieldName];
                 dependency = require(reference[0], reference[1]);
                 dependency.complete().then(function(dependency) {
-                    if (dependency.isResolved) {
-                        record.data[fieldName] = dependency.recordID;
-                    }
-                    delete record.references[fieldName];
-                    if (!!this.dependencies && this.isResolved()) {
-                        this.dependencies.resolve();
+                    self.addForeignKey(record, dependency);
+                    if (!!self.dependencies && self.isResolved()) {
+                        self.dependencies.resolve();
                     }
                 });
             }
@@ -873,12 +872,9 @@ EdenMobile.factory('emSync', [
                 downloadURL = files[fieldName];
                 dependency = require(null, null, downloadURL);
                 dependency.complete().then(function(dependency) {
-                    if (dependency.isResolved) {
-                        record.data[fieldName] = dependency.fileURI;
-                    }
-                    delete record.files[fieldName];
-                    if (!!this.dependencies && this.isResolved()) {
-                        this.dependencies.resolve();
+                    self.addFileURI(record, dependency);
+                    if (!!self.dependencies && self.isResolved()) {
+                        self.dependencies.resolve();
                     }
                 });
             }
@@ -891,45 +887,96 @@ EdenMobile.factory('emSync', [
          */
         DataImport.prototype.execute = function() {
 
-            var job = this.job,
-                self = this,
-                resourceName = job.resourceName;
+            var self = this,
+                tableName = this.tableName;
 
             this.actionable.then(function() {
-                emResources.open(resourceName).then(function(resource) {
-                    if (!resource) {
-                        self.reject('resource not found: ' + resourceName);
-                    } else {
-                        var record = self.record;
-                        resource.identify(record.data).then(function(recordID) {
-                            if (recordID) {
-                                // Update existing record
-                                // @todo: implement NEWER policy
-                                var query = 'id=' + recordID;
-                                resource.update(record.data, query,
-                                    function(numRowsAffected) {
-                                        if (numRowsAffected) {
-                                            self.resolve(recordID);
-                                        } else {
-                                            self.reject('error updating record');
-                                        }
-                                    });
+                emDB.table(tableName).then(function(table) {
 
-                            } else {
-                                // Create new record
-                                resource.insert(self.record.data,
-                                    function(insertID) {
-                                        if (insertID) {
-                                            self.resolve(insertID);
-                                        } else {
-                                            self.reject('error creating record');
-                                        }
-                                    });
-                            }
-                        });
+                    if (!table) {
+                        self.reject('table not found: ' + tableName);
+                        return;
                     }
+
+                    var record = self.record;
+                    table.identify(record.data).then(function(recordID) {
+                        if (recordID) {
+
+                            // Update existing record
+                            // @todo: implement NEWER policy
+                            var query = 'id=' + recordID;
+                            table.update(record.data, query,
+                                function(numRowsAffected) {
+                                    if (numRowsAffected) {
+                                        self.resolve(recordID);
+                                    } else {
+                                        self.reject('error updating record');
+                                    }
+                                });
+
+                        } else {
+
+                            // Create new record
+                            table.insert(self.record.data,
+                                function(insertID) {
+                                    if (insertID) {
+                                        self.resolve(insertID);
+                                    } else {
+                                        self.reject('error creating record');
+                                    }
+                                });
+                        }
+                    });
                 });
             });
+        };
+
+        /**
+         * Add a pending foreign key
+         *
+         * @param {Record} record - the target Record
+         * @param {Dependency} dependency - the dependency
+         */
+        DataImport.prototype.addForeignKey = function(record, dependency) {
+
+            var references = record.references,
+                reference,
+                fieldName;
+
+            // Resolve all pending references that match the dependency
+            for (fieldName in references) {
+                reference = references[fieldName];
+                if (reference[0] == dependency.tableName && reference[1] == dependency.uuid) {
+                    if (dependency.isResolved) {
+                        record.data[fieldName] = dependency.recordID;
+                    }
+                    delete record.references[fieldName];
+                }
+            }
+        };
+
+        /**
+         * Add a pending fileURI (upload fields)
+         *
+         * @param {Record} record - the target Record
+         * @param {Dependency} dependency - the dependency
+         */
+        DataImport.prototype.addFileURI = function(record, dependency) {
+
+            var references = record.references,
+                reference,
+                fieldName;
+
+            // Resolve all pending uploads that match the dependency
+            for (fieldName in references) {
+                reference = references[fieldName];
+                if (reference == dependency.url) {
+                    if (dependency.isResolved) {
+                        record.data[fieldName] = dependency.fileURI;
+                    }
+                    delete record.references[fieldName];
+                }
+            }
         };
 
         /**
@@ -1166,58 +1213,6 @@ EdenMobile.factory('emSync', [
 
         // --------------------------------------------------------------------
         /**
-         * Run synchronization job
-         *
-         * @todo: deprecate
-         */
-        SyncJob.prototype.run = function() {
-
-            if (this.status != 'pending') {
-                // Do not re-run
-                return;
-            }
-
-            var self = this,
-                run = function() {
-
-                // Update status
-                var status = 'active';
-                self.status = status;
-                self.action.notify(status);
-
-                // Execute
-                if (self.type == 'form') {
-                   // deprecated
-                } else {
-                    self.result('error', 'Not Implemented');
-//                     switch(self.mode) {
-//                         case 'push':
-//                             self.uploadData();
-//                             break;
-//                         case 'pull':
-//                             self.downloadData();
-//                             break;
-//                         default:
-//                             self.result('error', 'invalid mode');
-//                             break;
-//                     }
-                }
-            };
-
-            var parentJob = this.parent;
-            if (!!parentJob) {
-                // Wait for parent job to complete
-                parentJob.completed.then(run, function(result) {
-                    // Parent job failed => fail this job too
-                    self.result(result, parentJob.error);
-                });
-            } else {
-                run();
-            }
-        };
-
-        // --------------------------------------------------------------------
-        /**
          * Set the job result, log it and update the job queue
          *
          * @param {string} status: the final status success|error|cancelled
@@ -1261,105 +1256,6 @@ EdenMobile.factory('emSync', [
                     this.action.reject(result);
                 }
             }
-        };
-
-        // --------------------------------------------------------------------
-        /**
-         * Download resource data from the server
-         *
-         * @todo: deprecate
-         */
-        SyncJob.prototype.downloadData = function() {
-
-            var self = this,
-                resourceName = self.resourceName;
-
-//             emServer.getData(this.ref,
-//                 function(data) {
-//                     emResources.open(resourceName).then(function(resource) {
-//                         resource.importJSON(data, function(result) {
-//                             var messages = [],
-//                                 status = 'success';
-//                             if (result.created) {
-//                                 messages.push(result.created + ' created');
-//                             }
-//                             if (result.updated) {
-//                                 messages.push(result.updated + ' updated');
-//                             }
-//                             if (result.failed) {
-//                                 messages.push(result.failed + ' failed');
-//                                 if (!result.created && !result.updated) {
-//                                     status = 'error';
-//                                 }
-//                             }
-//                             self.result(status, messages.join(', '));
-//                         });
-//                     });
-//                 },
-//                 function(response) {
-//                     self.result('error', emServer.parseServerError(response));
-//                 }
-//             );
-        };
-
-        // --------------------------------------------------------------------
-        /**
-         * Upload resource data to the server
-         *
-         * @todo: deprecate
-         */
-        SyncJob.prototype.uploadData = function() {
-
-            var self = this,
-                resourceName = self.resourceName;
-
-//             emResources.open(resourceName).then(function(resource) {
-//
-//                 var query = 'synchronized_on IS NULL OR synchronized_on<modified_on';
-//
-//                 resource.exportJSON(query, function(dataJSON, files) {
-//
-//                     if (!dataJSON) {
-//                         // Skip if empty
-//                         self.result(null, 'not modified');
-//                         return;
-//                     }
-//
-//                     // Data to send
-//                     var data;
-//                     if (files.length) {
-//                         // Use object to send as multipart
-//                         data = {
-//                             data: dataJSON,
-//                             _files: files
-//                         };
-//                     } else {
-//                         // Send as JSON body
-//                         data = dataJSON;
-//                     }
-//
-//                     var synchronized_on = new Date();
-//                     emServer.postData(self.ref, data,
-//                         // Success callback
-//                         function(response) {
-//                             if (response) {
-//                                 self.updateSyncDate(
-//                                     synchronized_on,
-//                                     response.created,
-//                                     response.updated
-//                                 ).then(function() {
-//                                     self.result('success');
-//                                 });
-//                             } else {
-//                                 self.result('success');
-//                             }
-//                         },
-//                         function(response) {
-//                             self.result('error', emServer.parseServerError(response));
-//                         }
-//                     );
-//                 });
-//             });
         };
 
         // --------------------------------------------------------------------
@@ -1416,7 +1312,7 @@ EdenMobile.factory('emSync', [
         // ====================================================================
 
         // Current job queue and flags
-        var syncJobs = [];
+        var currentJobs = [];
 
         // --------------------------------------------------------------------
         /**
@@ -1444,7 +1340,7 @@ EdenMobile.factory('emSync', [
                         form.tableName,
                         form.ref
                     );
-                    syncJobs.push(formJob);
+                    currentJobs.push(formJob);
                     jobsScheduled++;
                 }
                 if (form.hasData) {
@@ -1459,7 +1355,7 @@ EdenMobile.factory('emSync', [
                         // Wait for form download before downloading data
                         dataJob.parent = formJob;
                     }
-                    syncJobs.push(dataJob)
+                    currentJobs.push(dataJob)
                     jobsScheduled++;
                 }
             });
@@ -1478,7 +1374,7 @@ EdenMobile.factory('emSync', [
                             resource.tableName,
                             resource.ref
                         );
-                        syncJobs.push(job);
+                        currentJobs.push(job);
                         jobsScheduled++;
                     }
                 }
@@ -1489,43 +1385,45 @@ EdenMobile.factory('emSync', [
 
         // --------------------------------------------------------------------
         /**
-         * @todo: docstring
+         * Clean up job queue:
+         * - fail all remaining jobs
+         * - reset dependencies
+         *
+         * @todo: review concept
          */
         var cleanupJobs = function() {
 
-            // @todo: review concept
-
-            syncJobs.forEach(function(job) {
-                if (!job.$result) {
-                    job.result('error', 'not implemented');
-                }
-            });
+            if (currentJobs.length) {
+                currentJobs.forEach(function(job) {
+                    if (!job.$result) {
+                        job.result('error', 'not implemented');
+                    }
+                });
+            }
+            currentJobs = [];
             resetDependencies();
         };
 
         // --------------------------------------------------------------------
         /**
-         * Check the job queue and update the global status
+         * Update the global sync status ($rootScope.syncInProgress)
+         *
+         * @todo: review concept
          */
         var statusUpdate = false;
-
-        // --------------------------------------------------------------------
-        /**
-         * @todo: docstring
-         */
         var updateSyncStatus = function() {
 
             if (statusUpdate) {
                 $timeout(updateSyncStatus, 100);
             } else {
                 statusUpdate = true;
-                var openJobs = syncJobs.filter(function(job) {
+                var openJobs = currentJobs.filter(function(job) {
                     return (!job.$result);
                 });
                 if (openJobs.length) {
                     $rootScope.syncInProgress = true;
                 } else {
-                    syncJobs = [];
+                    currentJobs = [];
                     currentStage(null);
                     $rootScope.syncInProgress = false;
                 }
@@ -1633,9 +1531,13 @@ EdenMobile.factory('emSync', [
         // ====================================================================
         // ResourceList Management
         // ====================================================================
-
         /**
          * Update the list of available/selected resources
+         *
+         * @param {array} currentList - the current resource list
+         * @param {array} resources - the resource information from the server
+         *
+         * @returns {array} - the updated resource list
          */
         var updateResourceList = function(currentList, resources) {
 
@@ -1764,9 +1666,9 @@ EdenMobile.factory('emSync', [
 
         // --------------------------------------------------------------------
         /**
-         * Resolve dependencies of SchemaImports (synchronously); registers
-         * all resolvable SchemaImports as providers for their respective
-         * tables
+         * Sub-process to resolve dependencies of SchemaImports
+         * (synchronously); registers all resolvable SchemaImports as
+         * providers for their respective tables
          *
          * @param {Array} schemaImports - array of SchemaImports
          * @param {Array} tableNames - array of all known tables
@@ -1941,7 +1843,7 @@ EdenMobile.factory('emSync', [
                 downloads.forEach(function(download) {
                     download.done().then(
                         function(result) {
-                            var imports = result[0],
+                            var importTasks = result[0],
                                 filesRequired = result[1];
                             // Download was successful
                             if (importTasks.length) {
@@ -1976,7 +1878,7 @@ EdenMobile.factory('emSync', [
             currentStage('Resolving dependencies');
 
             var deferred = $q.defer(),
-                recordDependencies = dependencies.records,
+                recordDependencies = currentDependencies.records,
                 tableNames = Object.keys(recordDependencies);
 
             tableNames.forEach(function(tableName) {
@@ -1986,7 +1888,8 @@ EdenMobile.factory('emSync', [
                 emDB.table(tableName).then(function(table) {
 
                     var deps = recordDependencies[tableName],
-                        dependency;
+                        dependency,
+                        uuid;
 
                     if (!table) {
 
@@ -2004,9 +1907,9 @@ EdenMobile.factory('emSync', [
                     } else {
 
                         var uuids = Object.keys(deps),
-                            query = 'uuid IN ' + uuids.map(function(uuid) {
+                            query = 'uuid IN (' + uuids.map(function(uuid) {
                             return "'" + uuid + "'";
-                        }).join(',');
+                        }).join(',') + ')';
 
                         table.select(['uuid', 'id'], query, function(records) {
 
@@ -2043,19 +1946,25 @@ EdenMobile.factory('emSync', [
         /**
          * @todo: docstring
          */
-        var importData = function() {
+        var importData = function(dataImports) {
 
-            // deferred function to import all downloaded data
+            var deferred = $q.defer();
 
-            // @todo: implement as follows:
+            resolveRecordDependencies().then(function(){
 
-            // resolveRecordDependencies
-            // Then,
-            // Set stage "Importing data", watch DataImport queue
-            //    => when queue complete: resolve promise
-            // Execute all DataImports
+                currentStage("Importing data", dataImports);
 
-            // return promise
+                dataImports.forEach(function(dataImport) {
+                    if (!dataImport.$result) {
+                        dataImport.done().finally(function() {
+                            checkQueue(dataImports, deferred);
+                        });
+                        dataImport.execute();
+                    };
+                });
+            });
+
+            return deferred.promise;
         };
 
         // --------------------------------------------------------------------
@@ -2088,7 +1997,7 @@ EdenMobile.factory('emSync', [
         var synchronizeForms = function() {
 
             // Get a list of form/pull jobs
-            var jobs = syncJobs.filter(function(syncJob) {
+            var jobs = currentJobs.filter(function(syncJob) {
                 return (syncJob.mode == 'pull' && syncJob.type == 'form');
             });
             if (!jobs.length) {
@@ -2138,7 +2047,7 @@ EdenMobile.factory('emSync', [
         var synchronizeData = function() {
 
             // Get a list of form/pull jobs
-            var jobs = syncJobs.filter(function(syncJob) {
+            var jobs = currentJobs.filter(function(syncJob) {
                 return (syncJob.mode == 'pull' && syncJob.type == 'data');
             });
             if (!jobs.length) {
@@ -2148,24 +2057,24 @@ EdenMobile.factory('emSync', [
 
             var deferred = $q.defer();
 
-            emDB.tableNames().then(function(tableNames) {
+            downloadData(jobs).then(function(result) {
 
-                downloadData(jobs).then(function(importItems, filesRequired) {
+                var dataImports = result[0],
+                    filesRequired = result[1];
 
+                importData(dataImports).then(function() {
+
+                    // @todo: upload data
+
+                    jobs.forEach(function(job) {
+                        if (!job.$result) {
+                            job.result('success');
+                        }
+                    });
                     deferred.resolve();
-
-                    // @todo: resolveRecordDependencies
-                    // @todo: implement as follows:
-
-//                     importData(importItems).then(function() {
-//                         push().then(function() {
-//                             // @todo: mark all pending jobs as successful
-//                             deferred.resolve();
-//                         });
-//                     });
-//
-//                     downloadFiles(filesRequired);
                 });
+                // @todo: download files
+                //downloadFiles(filesRequired);
             });
 
             return deferred.promise;
@@ -2179,13 +2088,17 @@ EdenMobile.factory('emSync', [
 
             $rootScope.syncInProgress = true;
 
-            if (syncJobs.length) {
+            if (currentJobs.length) {
 
-                synchronizeForms().then(function() {
-                    synchronizeData().then(function() {
-                        cleanupJobs();
-                    });
-                });
+                synchronizeForms()
+                    .then(synchronizeData)
+                    .then(cleanupJobs);
+
+//                 synchronizeForms().then(function() {
+//                     synchronizeData().then(function() {
+//                         cleanupJobs();
+//                     });
+//                 });
 
             } else {
 
