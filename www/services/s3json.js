@@ -186,6 +186,7 @@ EdenMobile.factory('emS3JSON', [
                 case 'string':
                 case 'text':
                     this.data[fieldName] = value + '';
+                    break;
                 default:
                     break;
             }
@@ -327,9 +328,151 @@ EdenMobile.factory('emS3JSON', [
         /**
          * @todo: docstring
          */
-        var encode = function() {
+        var encode = function(tableName, data) {
 
-            // this part can come later => @todo
+            var jsonData = {};
+
+            jsonData['$_' + tableName] = data;
+
+            return jsonData;
+        };
+
+        // ====================================================================
+        /**
+         * Encode a record as S3JSON object
+         *
+         * @param {Table} table - the Table
+         * @param {object} record - the record data
+         *
+         * @returns {object} - the S3JSON data and its references, format:
+         *                          {data: {key: value},
+         *                           references: {fieldName: [tableName, recordID]},
+         *                           files: {fieldName: fileURI}
+         *                           }
+         */
+        var encodeRecord = function(table, record) {
+
+            var data = {},
+                references = {},
+                files = {},
+                field,
+                fieldType,
+                value;
+
+            for (var fieldName in record) {
+
+                field = table.fields[fieldName];
+                if (!field) {
+                    continue;
+                }
+
+                // Handle null-values
+                value = record[fieldName];
+                if (value === null) {
+                    continue;
+                }
+
+                // Handle meta-fields
+                if (field.meta) {
+                    switch(fieldName) {
+                        case 'uuid':
+                            data['@uuid'] = value;
+                            break;
+                        case 'created_on':
+                        case 'modified_on':
+                            data['@' + fieldName] = field.format(value);
+                            break;
+                        default:
+                            // Skip all other meta-fields
+                            break;
+                    }
+                    continue;
+                }
+
+                fieldType = field.type;
+
+                // Handle upload-fields
+                if (fieldType == 'upload') {
+                    files[fieldName] = value;
+                    continue;
+                }
+
+                // Handle references
+                var reference = emUtils.getReference(fieldType);
+                if (reference) {
+                    var lookupTable = reference[1];
+                    references[fieldName] = [lookupTable, value];
+                    continue;
+                }
+
+                // Handle all other field types
+                switch(fieldType) {
+                    case 'boolean':
+                        if (!!value) {
+                            data[fieldName] = {'@value': 'true'};
+                        } else {
+                            data[fieldName] = {'@value': 'false'};
+                        }
+                        break;
+                    case 'integer':
+                    case 'double':
+                        data[fieldName] = {'@value': value + ''};
+                        break;
+                    case 'date':
+                    case 'datetime':
+                        data[fieldName] = field.format(value);
+                        break;
+                    case 'string':
+                    case 'text':
+                        data[fieldName] = value;
+                        break;
+                    default:
+                        // Ignore
+                        break;
+                }
+            }
+
+            return {
+                data: data,
+                references: references,
+                files: files
+            };
+        };
+
+        // ====================================================================
+        /**
+         * Add a reference to an S3JSON object
+         *
+         * @param {object} data - the S3JSON object
+         * @param {string} fieldName - the field name
+         * @param {string} tableName - the look-up table name
+         * @param {string} uuid - the uuid of the referenced record
+         */
+        var addReference(data, fieldName, tableName, uuid) {
+
+            if (uuid) {
+                data['$k_' + fieldName] = {
+                    '@resource': tableName,
+                    '@uuid': uuid
+                };
+            }
+        };
+
+        // ====================================================================
+        /**
+         * Add a file reference to an S3JSON object
+         *
+         * @param {object} data - the S3JSON object
+         * @param {string} fieldName - the field name
+         * @param {string} fileName - the file name
+         */
+        var addFile(data, fieldName, fileName) {
+
+            if (fileName) {
+                data[fieldName] = {
+                    '@filename': filename
+                };
+            }
         };
 
         // ====================================================================
@@ -338,7 +481,10 @@ EdenMobile.factory('emS3JSON', [
          */
         return {
             decode: decode,
-            encode: encode
+            encode: encode,
+            encodeRecord: encodeRecord,
+            addReference: addReference,
+            addFile: addFile
         };
     }
 ]);

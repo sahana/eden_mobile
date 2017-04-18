@@ -650,8 +650,394 @@ EdenMobile.factory('emSync', [
         };
 
         // ====================================================================
+        // Export Item
+        // ====================================================================
+        /**
+         * Constructor to represent a single record export
+         *
+         * @param {DataExport} task - the data export task
+         * @param {Table} table - the Table
+         * @param {object} record - the record data
+         */
+        function ExportItem(task, table, record) {
+
+            this.files = []; // Array of file URIs
+
+            // Encode record as S3JSON object
+            var jsonData = emS3JSON.encodeRecord(table, record),
+                references = jsonData.references,
+                files = jsonData.files;
+
+            this.data = jsonData.data; // S3JSON record data
+
+            var fieldName,
+                reference,
+                lookupTable,
+                recordID,
+                self = this,
+                data = this.data;
+
+            // Collect the UUIDs for all references
+            for (fieldName in references) {
+
+                reference = references[fieldName];
+                lookupTable = reference[0];
+                recordID = reference[1];
+
+                $q.when(task.getUID(lookupTable, recordID)).then(function(uuid) {
+                    emS3JSON.addReference(data, fieldName, lookupTable, uuid);
+                });
+            }
+
+            // Collect the file names for all upload-fields
+            for (fieldName in files) {
+                $q.when(task.getFile(fileURI)).then(function(fileName) {
+                    emS3JSON.addFile(data, fieldName, fileName);
+                });
+            }
+        }
+
+        // ====================================================================
+        // Reference Map
+        // ====================================================================
+        /**
+         * Structure to manage UUID-lookups for (and implicit exports of)
+         * referenced records in a table
+         *
+         * @param {DataExport} task - the data export task
+         * @param {string} tableName - the tableName
+         */
+        function ReferenceMap(task, tableName) {
+
+            this.task = task;
+            this.tableName = tableName;
+
+            // Items to export; {recordID: ExportItem}
+            this.items = {};
+
+            // UUIDs for references; {recordID: uuid|promise}
+            this.uuids = {};
+
+            // Deferred lookups; {recordID: deferred}
+            this.pending = {};
+            this.hasPendingItems = false;
+        }
+
+        // --------------------------------------------------------------------
+        /**
+         * Get the UUID of a record
+         *
+         * @param {integer} recordID - the record ID
+         * @returns {string|promise} - the UUID of the record, or a promise
+         *                             that will be resolved with the UUID
+         */
+        ReferenceMap.prototype.getUID = function(recordID) {
+
+            var uuids = this.uuids;
+            if (uuids.hasOwnProperty(recordID)) {
+
+                // We either have the UUID, or have already promised it
+                // => just return it
+                return uuids[recordID];
+
+            } else {
+
+                // Create a deferred lookup, store+return promise
+                var deferred = $q.defer(),
+                    uuid = deferred.promise;
+
+                this.pending[recordID] = deferred;
+                this.hasPendingItems = true;
+
+                uuids[recordID] = deferred.promise;
+                return uuid;
+            }
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Perform all deferred lookups; create export items for all
+         * referenced records that are new or have been modified after
+         * last synchronization
+         *
+         * @param {boolean} all - export all (new|modified) records in the table
+         */
+        ReferenceMap.prototype.load = function(all) {
+
+            var deferred = $q.defer(),
+                task = this.task,
+                lookups = this.pending,
+                uuids = this.uuids,
+                self = this;
+
+            // Reset pending
+            this.pending = {};
+            this.hasPendingItems = false;
+
+            emDB.table(this.tableName).then(function(table) {
+
+                // Which records to export (query)
+                var query = 'synchronized_on IS NULL OR synchronized_on < modified_on';
+                if (!all) {
+                    query = '(' + query + ') AND id IN (' + Object.keys(lookups).join(',') + ')';
+                }
+
+                // Which fields to export (query)
+                var fields = [],
+                    field,
+                    mandatoryFields = ['id', 'uuid', 'modified_on', 'created_on'];
+                for (var fieldName in table.fields) {
+                    field = table.fields[fieldName];
+                    if (mandatoryFields.indexOf(fieldName) != -1 || !field.meta) {
+                        fields.push(fieldName);
+                    }
+                }
+
+                var recordID,
+                    uuid,
+                    deferredItem;
+
+                table.select(fields, query, function(records) {
+
+                    records.forEach(function(record) {
+
+                        // Resolve the UUID-promise
+                        recordID = record.id;
+                        uuid = record.uuid;
+                        uuids[recordID] = uuid;
+                        if (lookups.hasOwnProperty(recordID)) {
+                            lookups[recordID].resolve(uuid);
+                        }
+
+                        // Create an export item
+                        self.items[recordID] = new ExportItem(task, table, record);
+
+                        // Remove from lookups
+                        if (!all) {
+                            delete lookups[recordID];
+                        }
+                    });
+
+                    if (all) {
+
+                        deferred.resolve();
+
+                    } else {
+
+                        // For the remaining lookups, just look up the UUID
+                        query = 'id IN (' + Object.keys(lookups) + ')';
+                        fields = ['id', 'uuid'];
+                        table.select(fields, query, function(records) {
+
+                            records.forEach(function(record) {
+
+                                // Resolve the UUID-promise
+                                recordID = record.id;
+                                uuid = record.uuid;
+                                uuids[recordID] = uuid;
+                                if (lookups.hasOwnProperty(recordID)) {
+                                    lookups[recordID].resolve(uuid);
+                                }
+                            });
+
+                            for (recordID in lookups) {
+                                // Debug-breakpoint - we should never get here!
+                                // ...but if we however do, then rejecting is
+                                // the right thing to do:
+                                lookups[recordID].reject();
+                            }
+                            deferred.resolve();
+                        });
+                    }
+                });
+            });
+
+            return deferred.promise;
+        };
+
+        // ====================================================================
         // Synchronization Tasks
         // ====================================================================
+        /**
+         * SyncTask to export data from a database table
+         *
+         * @param {SyncJob} job - the SyncJob this task belongs to
+         */
+        function DataExport(job) {
+
+            SyncTask.apply(this, [job]);
+
+            // All reference maps for this task
+            this.references = {
+                // tableName: ReferenceMap
+            };
+
+            this.files = {
+                // fileName: fileURI
+            };
+        }
+        DataExport.prototype = Object.create(SyncTask.prototype);
+        DataExport.prototype.constructor = DataExport;
+
+        /**
+         * Execute this data export; produces a DataUpload task
+         */
+        DataExport.prototype.execute = function() {
+
+            // Create a ReferenceMap for the target table
+            var self = this,
+                tableName = this.job.tableName,
+                refMap = new ReferenceMap(this, tableName);
+
+            this.references[tableName] = refMap;
+
+            // Load all (new|modified) records in the target table,
+            // then resolve all foreign keys (and export referenced
+            // records as necessary)
+            refMap.load(true).then(function() {
+                self.export().then(function() {
+
+                    var jsonData = {},
+                        references = self.references,
+                        tableName,
+                        refMap,
+                        items,
+                        data;
+
+                    // Collect all records into one S3JSON object
+                    for (tableName in references) {
+
+                        items = references[tableName].items;
+                        data = [];
+
+                        for (var recordID in items) {
+                            data.push(items[recordID].data);
+                        }
+
+                        angular.extend(jsonData, emS3JSON.encode(tableName, data));
+                    }
+
+                    // Generate the data upload task, then resolve
+                    var dataUpload = new DataUpload(self.job, jsonData, self.files);
+                    self.resolve(dataUpload);
+                });
+            });
+        };
+
+        /**
+         * Recursively resolves all foreign keys into UUIDs, exports
+         * referenced records if they have been added|modified since
+         * last synchronization
+         *
+         * @param {deferred} deferred - the deferred object to resolve
+         *                              during recursion
+         *
+         * @returns {promise} - a promise that will be resolved when
+         *                      all keys have been resolved
+         */
+        DataExport.prototype.export = function(deferred) {
+
+            if (deferred === undefined) {
+                deferred = $q.defer();
+            }
+
+            var pending = [],
+                references = this.references,
+                refMap;
+            for (var tableName in references) {
+                var refMap = references[tableName];
+                if (refMap.hasPendingItems) {
+                    pending.push(refMap);
+                }
+            }
+
+            if (!pending.length) {
+                deferred.resolve();
+            } else {
+                var loaded = [],
+                    self = this;
+                pending.forEach(function(refMap) {
+                    loaded.push(refMap.load());
+                });
+                $q.all(loaded).then(function() {
+                    self.export(deferred);
+                });
+            }
+
+            return deferred.promise;
+        };
+
+        /**
+         * Look up the UUID of a referenced record
+         *
+         * @param {string} tableName - the table name
+         * @param {integer} recordID - the record ID
+         *
+         * @returns {string|promise} - the UUID of the record, or a promise
+         *                             that will be resolved with the UUID
+         */
+        DataExport.prototype.getUID = function(tableName, recordID) {
+
+            // Get the reference map for the table
+            var referenceMap = this.references[tableName];
+
+            // If it doesn't yet exist => create it
+            if (referenceMap === undefined) {
+                referenceMap = new ReferenceMap(this, tableName);
+                this.references[tableName] = referenceMap;
+            }
+
+            // Look up the UUID from the referenceMap
+            return referenceMap.getUID(recordID);
+        };
+
+        /**
+         * Schedule a referenced file for upload (attachment)
+         *
+         * @param {string} fileURI - the local file URI
+         *
+         * @returns {string} - the file name to reference the attachment
+         */
+        DataExport.prototype.getFile = function(fileURI) {
+
+            var fileName = fileURI.split('/').pop().split('#')[0].split('?')[0];
+
+            this.files[fileName] = fileURI;
+
+            return fileName;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * SyncTask to upload data to the server
+         *
+         * @param {object} data - the S3JSON data to send
+         * @param {array} files - array of file URIs to attach
+         */
+        function DataUpload(job, data, files) {
+
+            SyncTask.apply(this, [job]);
+
+            this.data = data;
+            this.files = files;
+        }
+        DataUpload.prototype = Object.create(SyncTask.prototype);
+        DataUpload.prototype.constructor = DataUpload;
+
+        /**
+         * @todo: docstring
+         */
+        DataUpload.prototype.execute = function() {
+
+            // @todo: implement as follows:
+//             - upload the data, attaching the files (take ref from this.job)
+//             - update synchronized_on for all uploaded records
+//             - resolve or reject
+
+            this.resolve();
+        };
+
+        // --------------------------------------------------------------------
         /**
          * SyncTask to import a table schema
          *
@@ -1944,7 +2330,12 @@ EdenMobile.factory('emSync', [
 
         // --------------------------------------------------------------------
         /**
-         * @todo: docstring
+         * Sub-process to import data
+         *
+         * @param {array} dataImports - array of DataImport tasks
+         *
+         * @returns {promise} - a promise that will be resolved when
+         *                      all DataImport tasks have completed
          */
         var importData = function(dataImports) {
 
@@ -1969,12 +2360,70 @@ EdenMobile.factory('emSync', [
 
         // --------------------------------------------------------------------
         /**
-         * @todo: docstring
+         * Export data for upload to the server
+         *
+         * @param {Array} jobs - the data upload jobs
+         *
+         * @returns {promise} - a promise that will be resolved with an
+         *                      array of DataUpload tasks
          */
-        var push = function() {
+        var exportData = function(jobs) {
 
-            // @todo: concept
-            // @todo: implement this
+            var dataExports = [],
+                dataUploads = [];
+
+            jobs.forEach(function(job) {
+                if (!job.$result) {
+                    dataExports.push(new DataExport(job));
+                }
+            });
+
+            var deferred = $q.defer();
+
+            currentStage('Exporting data', dataExports);
+
+            dataExports.forEach(function(dataExport) {
+                dataExport.done().then(function(dataUpload) {
+                    if (!!dataUpload) {
+                        dataUploads.push(dataUpload);
+                    }
+                    checkQueue(dataExports, deferred, dataUploads);
+                });
+                dataExport.execute();
+            });
+
+            return deferred.promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Upload data to the server
+         *
+         * @param {Array} dataUploads - array of DataUpload tasks
+         *
+         * @returns {promise} - a promise that will be resolved upon
+         *                      completion of all uploads
+         */
+        var uploadData = function(dataUploads) {
+
+            var deferred = $q.defer();
+
+            currentStage('Uploading data', dataUploads);
+
+            dataUploads.forEach(function(dataUpload) {
+                dataUpload.done().then(
+                    function() {
+                        dataUpload.job.result('success');
+                        checkQueue(dataUploads, deferred);
+                    },
+                    function(error) {
+                        dataUpload.job.result('error', error);
+                        checkQueue(dataUploads, deferred);
+                    });
+                dataUpload.execute();
+            });
+
+            return deferred.promise;
         };
 
         // --------------------------------------------------------------------
@@ -2039,12 +2488,12 @@ EdenMobile.factory('emSync', [
 
         // --------------------------------------------------------------------
         /**
-         * Process to synchronize data
+         * Sub-process to download (and import) data from the server
          *
          * @returns {promise} - a promise that will be resolved when
-         *                      all data have been synchronized
+         *                      all data have been downloaded and imported
          */
-        var synchronizeData = function() {
+        var pull = function() {
 
             // Get a list of form/pull jobs
             var jobs = currentJobs.filter(function(syncJob) {
@@ -2064,8 +2513,6 @@ EdenMobile.factory('emSync', [
 
                 importData(dataImports).then(function() {
 
-                    // @todo: upload data
-
                     jobs.forEach(function(job) {
                         if (!job.$result) {
                             job.result('success');
@@ -2082,7 +2529,31 @@ EdenMobile.factory('emSync', [
 
         // --------------------------------------------------------------------
         /**
-         * @todo: docstring
+         * Sub-process to (export an) upload data to the server
+         *
+         * @returns {promise} - a promise that will be resolved when
+         *                      all data have been uploaded
+         */
+        var push = function() {
+
+            // Get a list of form/pull jobs
+            var jobs = currentJobs.filter(function(syncJob) {
+                return (syncJob.mode == 'push' && syncJob.type == 'data');
+            });
+            if (!jobs.length) {
+                // Nothing to do
+                return $q.resolve();
+            }
+
+            return exportData(jobs).then(uploadData);
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Main synchronization process
+         *
+         * @param {object} forms - the selected forms list
+         * @param {object} resources - the selected resources list
          */
         var synchronize = function(forms, resources) {
 
@@ -2091,14 +2562,9 @@ EdenMobile.factory('emSync', [
             if (currentJobs.length) {
 
                 synchronizeForms()
-                    .then(synchronizeData)
+                    .then(pull)
+                    .then(push)
                     .then(cleanupJobs);
-
-//                 synchronizeForms().then(function() {
-//                     synchronizeData().then(function() {
-//                         cleanupJobs();
-//                     });
-//                 });
 
             } else {
 
