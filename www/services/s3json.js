@@ -326,19 +326,6 @@ EdenMobile.factory('emS3JSON', [
 
         // ====================================================================
         /**
-         * @todo: docstring
-         */
-        var encode = function(tableName, data) {
-
-            var jsonData = {};
-
-            jsonData['$_' + tableName] = data;
-
-            return jsonData;
-        };
-
-        // ====================================================================
-        /**
          * Encode a record as S3JSON object
          *
          * @param {Table} table - the Table
@@ -448,7 +435,7 @@ EdenMobile.factory('emS3JSON', [
          * @param {string} tableName - the look-up table name
          * @param {string} uuid - the uuid of the referenced record
          */
-        var addReference(data, fieldName, tableName, uuid) {
+        var addReference = function(data, fieldName, tableName, uuid) {
 
             if (uuid) {
                 data['$k_' + fieldName] = {
@@ -466,7 +453,7 @@ EdenMobile.factory('emS3JSON', [
          * @param {string} fieldName - the field name
          * @param {string} fileName - the file name
          */
-        var addFile(data, fieldName, fileName) {
+        var addFile = function(data, fieldName, fileName) {
 
             if (fileName) {
                 data[fieldName] = {
@@ -477,10 +464,30 @@ EdenMobile.factory('emS3JSON', [
 
         // ====================================================================
         /**
-         * @todo: docstring
+         * Encode resource data as S3JSON
+         *
+         * @param {string} tableName - the table name
+         * @param {object} data - the S3JSON records for this table
+         */
+        var encode = function(tableName, data) {
+
+            var jsonData = {};
+
+            jsonData['$_' + tableName] = data;
+
+            return jsonData;
+        };
+
+        // ====================================================================
+        /**
+         * Service API
          */
         return {
+
+            // S3JSON decoder
             decode: decode,
+
+            // S3JSON encoder
             encode: encode,
             encodeRecord: encodeRecord,
             addReference: addReference,

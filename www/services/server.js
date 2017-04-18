@@ -774,9 +774,9 @@
                     var url = new SahanaURL({
                         c: ref.c,
                         f: ref.f,
-                        args: ['mdata'],
+                        // args: ['mdata'],
                         vars: ref.v,
-                        extension: 'json'
+                        extension: 's3json'
                     });
                     post(url, 'json', data, successCallback, errorCallback);
                 },

@@ -358,10 +358,12 @@
                 options(attr.resource, attr.field, function(opts) {
 
                     // Append the options to the widget
-                    var input;
+                    var input,
+                        name = attr.resource + '-' + attr.field;
                     for (var opt in opts) {
 
                         input = angular.element('<ion-radio>')
+                                       .attr('name', name)
                                        .attr('value', opt)
                                        .html(opts[opt] || '');
 

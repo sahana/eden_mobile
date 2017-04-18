@@ -661,41 +661,61 @@ EdenMobile.factory('emSync', [
          */
         function ExportItem(task, table, record) {
 
-            this.files = []; // Array of file URIs
+            this.task = task;
 
             // Encode record as S3JSON object
             var jsonData = emS3JSON.encodeRecord(table, record),
-                references = jsonData.references,
-                files = jsonData.files;
+                fieldName;
 
             this.data = jsonData.data; // S3JSON record data
 
-            var fieldName,
-                reference,
-                lookupTable,
-                recordID,
-                self = this,
-                data = this.data;
-
             // Collect the UUIDs for all references
+            var references = jsonData.references;
             for (fieldName in references) {
-
-                reference = references[fieldName];
-                lookupTable = reference[0];
-                recordID = reference[1];
-
-                $q.when(task.getUID(lookupTable, recordID)).then(function(uuid) {
-                    emS3JSON.addReference(data, fieldName, lookupTable, uuid);
-                });
+                this.addReference(fieldName, references[fieldName]);
             }
 
             // Collect the file names for all upload-fields
+            var files = jsonData.files;
             for (fieldName in files) {
-                $q.when(task.getFile(fileURI)).then(function(fileName) {
-                    emS3JSON.addFile(data, fieldName, fileName);
-                });
+                this.addFile(fieldName, files[fieldName]);
             }
         }
+
+        /**
+         * Add the UUID of a referenced record to the S3JSON data
+         *
+         * @param {string} fieldName - the field name
+         * @param {Array} reference - the reference as tuple,
+         *                            format: [tableName, recordID]
+         */
+        ExportItem.prototype.addReference = function(fieldName, reference) {
+
+            var task = this.task,
+                data = this.data,
+                lookupTable = reference[0],
+                recordID = reference[1];
+
+            $q.when(task.getUID(lookupTable, recordID)).then(function(uuid) {
+                emS3JSON.addReference(data, fieldName, lookupTable, uuid);
+            });
+        };
+
+        /**
+         * Add the file name of a referenced file to the S3JSON data
+         *
+         * @param {string} fieldName - the field name
+         * @param {string} fileURI - the file URI
+         */
+        ExportItem.prototype.addFile = function(fieldName, fileURI) {
+
+            var task = this.task,
+                data = this.data;
+
+            $q.when(task.getFile(fileURI)).then(function(fileName) {
+                emS3JSON.addFile(data, fieldName, fileName);
+            });
+        };
 
         // ====================================================================
         // Reference Map
@@ -1025,16 +1045,42 @@ EdenMobile.factory('emSync', [
         DataUpload.prototype.constructor = DataUpload;
 
         /**
-         * @todo: docstring
+         * Execute the data upload
+         *
+         * @returns {promise} - a promise that is resolved when the
+         *                      upload is complete
          */
         DataUpload.prototype.execute = function() {
 
-            // @todo: implement as follows:
-//             - upload the data, attaching the files (take ref from this.job)
-//             - update synchronized_on for all uploaded records
-//             - resolve or reject
+            var deferred = $q.defer();
 
-            this.resolve();
+            // Collect the attachments
+            var files = this.files,
+                fileHooks = [];
+            for (var fileName in files) {
+                fileHooks.push([fileName, files[fileName]]);
+            }
+
+            // Prepare data for upload
+            var uploadData = JSON.stringify(this.data);
+            if (fileHooks.length) {
+                uploadData = {
+                    'data.s3json': uploadData,
+                    '_files': fileHooks
+                };
+            }
+
+            // Upload
+            var self = this;
+            emServer.postData(this.job.ref, uploadData,
+                function(response) {
+                    self.resolve();
+                },
+                function(error) {
+                    self.reject(emServer.parseServerError(response));
+                });
+
+            return deferred.promise;
         };
 
         // --------------------------------------------------------------------
@@ -2540,6 +2586,7 @@ EdenMobile.factory('emSync', [
             var jobs = currentJobs.filter(function(syncJob) {
                 return (syncJob.mode == 'push' && syncJob.type == 'data');
             });
+
             if (!jobs.length) {
                 // Nothing to do
                 return $q.resolve();
