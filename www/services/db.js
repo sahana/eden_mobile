@@ -851,34 +851,28 @@ EdenMobile.factory('emDB', [
          * @param {object} record - the record
          *
          * @returns {promise} - a promise that resolves into the record ID
-         *
-         * @todo: modify to also return modified_on and synchronized_on
          */
         Table.prototype.identify = function(record) {
 
-            var deferred = $q.defer(),
-                recordID = record.id;
+            var deferred = $q.defer();
 
-            if (!!recordID) {
-                // We already have a record ID
-                deferred.resolve(recordID);
+            // Try looking it up from the UUID
+            var uuid = record.uuid;
+            if (!!uuid) {
+                // Look it up
+                var query = 'uuid="' + uuid + '"',
+                    fields = ['id', 'synchronized_on', 'modified_on'];
+                this.select(fields, query, function(records) {
+                    if (records.length) {
+                        deferred.resolve(records[0]);
+                    } else {
+                        deferred.resolve();
+                    }
+                });
             } else {
-                // Try looking it up from the UUID
-                var uuid = record.uuid;
-                if (!!uuid) {
-                    // Look it up
-                    var query = 'uuid="' + uuid + '"';
-                    this.select(['id'], query, function(records) {
-                        if (records.length) {
-                            recordID = records[0].id;
-                        }
-                        deferred.resolve(recordID);
-                    });
-                } else {
-                    // No way to identify the record (yet)
-                    // @todo: try unique fields
-                    deferred.resolve(recordID);
-                }
+                // No way to identify the record (yet)
+                // @todo: try unique fields
+                deferred.resolve();
             }
 
             // Return the promise

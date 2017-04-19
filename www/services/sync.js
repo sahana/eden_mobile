@@ -1330,34 +1330,44 @@ EdenMobile.factory('emSync', [
                         return;
                     }
 
-                    var record = self.record;
-                    table.identify(record.data).then(function(recordID) {
-                        if (recordID) {
+                    var record = self.record,
+                        data = record.data;
+                    table.identify(data).then(function(original) {
+
+                        if (original) {
                             // Update existing record
 
-                            // @todo: implement NEWER policy, as follows:
+                            var recordID = original.id,
+                                modifiedOn = original.modified_on,
+                                synchronizedOn = original.synchronized_on;
 
-                            // 1) get synchronized_on and modified_on
-                            //    for the local record (from identify)
+                            // Get time stamp for remote record
+                            var timeStamp = data.modified_on;
+                            if (!timeStamp) {
+                                // Fall back to created_on
+                                timeStamp = data.created_on;
+                            }
 
-                            // 2) get modified_on for import item
-                            //    => fall back to created_on
-                            //       if not available:
-                            //          skip the import (import item age unknown)
-
-                            // 3) if record has not been synchronized yet:
-                            //    => keep the newer record (by modified_on)
-                            //    otherwise:
-                            //       if import item was modified after synchronized_on
-                            //       => import
-                            //       otherwise
-                            //       => skip (=resolve without updating)
+                            // Simplified NEWER-policy:
+                            // If...
+                            // - the remote record age is unknown (=no timeStamp), or
+                            // - the record has never been synchronized before and
+                            //   the remote record is older, or
+                            // - the remote record has not been modified since last
+                            //   sync, then
+                            // => skip the import (=resolve without updating)
+                            if (!timeStamp ||
+                                !synchronizedOn && timeStamp < modifiedOn ||
+                                timeStamp <= synchronizedOn) {
+                                self.resolve(recordID);
+                                return;
+                            }
 
                             // Set synchronized_on to now
-                            record.data['synchronized_on'] = new Date();
+                            data['synchronized_on'] = new Date();
 
                             var query = 'id=' + recordID;
-                            table.update(record.data, query,
+                            table.update(data, query,
                                 function(numRowsAffected) {
                                     if (numRowsAffected) {
                                         self.resolve(recordID);
@@ -1370,9 +1380,9 @@ EdenMobile.factory('emSync', [
                             // Create new record
 
                             // Set synchronized_on to now
-                            record.data['synchronized_on'] = new Date();
+                            data['synchronized_on'] = new Date();
 
-                            table.insert(self.record.data,
+                            table.insert(data,
                                 function(insertID) {
                                     if (insertID) {
                                         self.resolve(insertID);
