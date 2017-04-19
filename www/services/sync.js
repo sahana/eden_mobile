@@ -1333,9 +1333,29 @@ EdenMobile.factory('emSync', [
                     var record = self.record;
                     table.identify(record.data).then(function(recordID) {
                         if (recordID) {
-
                             // Update existing record
-                            // @todo: implement NEWER policy
+
+                            // @todo: implement NEWER policy, as follows:
+
+                            // 1) get synchronized_on and modified_on
+                            //    for the local record (from identify)
+
+                            // 2) get modified_on for import item
+                            //    => fall back to created_on
+                            //       if not available:
+                            //          skip the import (import item age unknown)
+
+                            // 3) if record has not been synchronized yet:
+                            //    => keep the newer record (by modified_on)
+                            //    otherwise:
+                            //       if import item was modified after synchronized_on
+                            //       => import
+                            //       otherwise
+                            //       => skip (=resolve without updating)
+
+                            // Set synchronized_on to now
+                            record.data['synchronized_on'] = new Date();
+
                             var query = 'id=' + recordID;
                             table.update(record.data, query,
                                 function(numRowsAffected) {
@@ -1347,8 +1367,11 @@ EdenMobile.factory('emSync', [
                                 });
 
                         } else {
-
                             // Create new record
+
+                            // Set synchronized_on to now
+                            record.data['synchronized_on'] = new Date();
+
                             table.insert(self.record.data,
                                 function(insertID) {
                                     if (insertID) {
@@ -1536,54 +1559,76 @@ EdenMobile.factory('emSync', [
         DataDownload.prototype.execute = function() {
 
             var job = this.job,
+                ref = job.ref,
                 self = this;
 
-            console.log('Downloading ' + job.ref.c + '/' + job.ref.f);
+            console.log('Downloading data from ' + ref.c + '/' + ref.f);
 
-            // @todo: msince, limit components (job has resource?)
-            emServer.getData(job.ref,
-                function(data) {
-                    // Download successful
-                    emDB.tables().then(function(tables) {
+            emResources.open(job.resourceName).then(function(resource) {
 
-                        var dataImports = [],
-                            filesRequired = [];
+                if (!resource) {
+                    self.reject('undefined resource');
+                    return;
+                }
 
-                        // Decode the S3JSON data
-                        var map = emS3JSON.decode(tables, job.tableName, data);
+                // Set msince
+                var lastSync = resource.getLastSync();
+                if (lastSync) {
+                    var msince = lastSync.toISOString().split('.')[0];
+                    if (!ref.v) {
+                        ref.v = {};
+                    }
+                    ref.v.msince = msince;
+                }
 
-                        for (var tableName in map) {
+                // Start download
+                emServer.getData(job.ref,
+                    function(data) {
+                        // Download successful => generate import tasks
+                        emDB.tables().then(function(tables) {
 
-                            var records = map[tableName],
-                                record,
-                                files,
-                                downloadURL,
-                                fieldName,
-                                dataImport;
+                            var dataImports = [],
+                                filesRequired = [];
 
-                            for (var uuid in records) {
+                            // Decode the S3JSON data
+                            var map = emS3JSON.decode(tables, job.tableName, data);
 
-                                // Generate a DataImport task
-                                record = records[uuid];
-                                dataImport = new DataImport(job, tableName, record);
-                                dataImports.push(dataImport);
+                            for (var tableName in map) {
 
-                                // Collect the download URLs of the required files
-                                files = record.files;
-                                for (fieldName in files) {
-                                    downloadURL = files[fieldName];
-                                    filesRequired.push(downloadURL);
+                                var records = map[tableName],
+                                    record,
+                                    files,
+                                    downloadURL,
+                                    fieldName,
+                                    dataImport;
+
+                                for (var uuid in records) {
+
+                                    // Generate a DataImport task
+                                    record = records[uuid];
+                                    dataImport = new DataImport(job, tableName, record);
+                                    dataImports.push(dataImport);
+
+                                    // Collect the download URLs of the required files
+                                    files = record.files;
+                                    for (fieldName in files) {
+                                        downloadURL = files[fieldName];
+                                        filesRequired.push(downloadURL);
+                                    }
                                 }
                             }
-                        }
 
-                        self.resolve([dataImports, filesRequired]);
+                            self.resolve([dataImports, filesRequired]);
+                        });
+
+                        // Update lastSync date
+                        resource.setLastSync(new Date());
+                    },
+                    function(response) {
+                        // Download failed
+                        self.reject(emServer.parseServerError(response));
                     });
-                },
-                function(response) {
-                    // Download failed
-                    self.reject(emServer.parseServerError(response));
-                });
+            });
         };
 
         // ====================================================================

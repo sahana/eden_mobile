@@ -117,6 +117,30 @@ EdenMobile.factory('emResources', [
 
         // ====================================================================
         /**
+         * Establish the resource name from the resource options
+         *
+         * @param {Table} table - the Table
+         * @param {object} options - the resource options
+         *
+         * @returns {string} - the resource name
+         */
+        var resourceName = function(table, options) {
+
+            var name = options.name;
+            if (!name) {
+                var c = options.controller,
+                    f = options.function;
+                if (c && f) {
+                    name = c + '_' + f;
+                } else {
+                    name = table.tableName;
+                }
+            }
+            return name;
+        };
+
+        // ====================================================================
+        /**
          * Resource constructor
          *
          * @param {Table} table - the database table for this resource
@@ -128,30 +152,22 @@ EdenMobile.factory('emResources', [
             this.tableName = table.tableName;
             this.query = null;
 
+            this.lastSync = null;
+
             if (options === undefined) {
                 options = {};
             }
 
-            var name = options.name,
-                c = options.controller,
-                f = options.function;
-
             // Resource name
-            if (name === undefined) {
-                if (c && f) {
-                    name = c + '_' + f;
-                } else {
-                    name = table.tableName;
-                }
-            }
+            var name = resourceName(table, options);
             this.name = name;
 
             // Link to table
             table.resources[name] = this;
 
             // Server-side controller/function
-            this.controller = c;
-            this.function = f;
+            this.controller = options.controller;
+            this.function = options.function;
 
             // Fields
             var fieldOptions = options.fields || {},
@@ -171,7 +187,6 @@ EdenMobile.factory('emResources', [
             // Settings
             var settings = angular.extend({}, table.settings, (options.settings || {}));
             this.settings = settings;
-
 
             // Components
             this.components = settings.components || {};
@@ -223,7 +238,7 @@ EdenMobile.factory('emResources', [
                     } else {
                         table.update(schema, query);
                     }
-                })
+                });
             });
         };
 
@@ -699,6 +714,39 @@ EdenMobile.factory('emResources', [
             }
         };
 
+        // --------------------------------------------------------------------
+        /**
+         * Setter for lastSync date
+         *
+         * @param {Date} timeStamp - the new lastSync date
+         */
+        Resource.prototype.setLastSync = function(timeStamp) {
+
+            var self = this,
+                name = this.name;
+
+            emDB.table('em_resource').then(function(table) {
+
+                var query = 'em_resource.name="' + name + '"',
+                    data = {'lastsync': timeStamp};
+
+                table.update(data, query, function(numRowsAffected) {
+                    self.lastSync = timeStamp;
+                });
+            });
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Getter for lastSync date
+         *
+         * @returns {Date} - the lastSync date
+         */
+        Resource.prototype.getLastSync = function() {
+
+            return this.lastSync;
+        };
+
         // ====================================================================
         /**
          * Set up the default resource for a table
@@ -772,7 +820,14 @@ EdenMobile.factory('emResources', [
                     if (fieldOpts) {
                         options.fields = emDB.parseSchema(fieldOpts).fields;
                     }
-                    resources[resourceName] = new Resource(table, options);
+
+                    // Instantiate the Resource, set lastSync date
+                    var resource = new Resource(table, options),
+                        syncDate = record.lastsync;
+                    if (syncDate) {
+                        resource.lastSync = syncDate;
+                    }
+                    resources[resourceName] = resource;
                 }
                 if (callback) {
                     callback(record.name);
@@ -815,7 +870,8 @@ EdenMobile.factory('emResources', [
                     'controller',
                     'function',
                     'fields',
-                    'settings'
+                    'settings',
+                    'lastsync'
                 ];
 
                 table.select(fields, function(records, result) {
@@ -884,9 +940,23 @@ EdenMobile.factory('emResources', [
                     options = angular.extend({}, schema.settings, {fields: schema.fields});
 
                 var installResource = function(table) {
-                    var resource = new Resource(table, options);
+
+                    // Find the resource
+                    var name = resourceName(table, options),
+                        resource = table.resources[name];
+
+                    if (!resource) {
+                        // New resource
+                        resource = new Resource(table, options);
+                    } else {
+                        // Update
+                        // @todo: migrate schema, update settings, etc.
+                    }
+
+                    // Register and save schema
                     resources[resource.name] = resource;
                     resource.saveSchema();
+
                     resourceInstalled.resolve(resource);
                 };
 

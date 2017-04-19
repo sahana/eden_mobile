@@ -851,6 +851,8 @@ EdenMobile.factory('emDB', [
          * @param {object} record - the record
          *
          * @returns {promise} - a promise that resolves into the record ID
+         *
+         * @todo: modify to also return modified_on and synchronized_on
          */
         Table.prototype.identify = function(record) {
 

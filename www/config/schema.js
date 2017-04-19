@@ -26,7 +26,7 @@
 /**
  * The version number for the default schema
  */
-var emSchemaVersion = '1';
+var emSchemaVersion = '3';
 
 /**
  * The default schema for the local database
@@ -101,6 +101,10 @@ EdenMobile.factory('emDefaultSchema', ['$injector', function ($injector) {
             'settings': {
                 type: 'json',
                 label: 'Settings'
+            },
+            'lastsync': {
+                type: 'datetime',
+                label: 'Last synchronized on'
             }
         },
 
