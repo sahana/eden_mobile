@@ -1095,6 +1095,8 @@ EdenMobile.factory('emSync', [
          * Identify accepted objects and update their synchronized_on
          *
          * @param {object} response - the response object from the server
+         *
+         * @todo: extend for component support
          */
         DataUpload.prototype.updateSyncDate = function(response) {
 
