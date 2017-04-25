@@ -316,6 +316,10 @@
 
         // Collect and encode data
         for (fieldName in data) {
+            if (fieldName[0] == '_') {
+                // Processing instruction => skip
+                continue;
+            }
             field = fields[fieldName];
             if (field) {
                 sqlField = new SQLField(field);
@@ -358,6 +362,10 @@
             values = [];
 
         for (fieldName in data) {
+            if (fieldName[0] == '_') {
+                // Processing instruction => skip
+                continue;
+            }
             field = fields[fieldName];
             if (field) {
                 sqlField = new SQLField(field);

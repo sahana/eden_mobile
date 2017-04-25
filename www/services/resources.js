@@ -131,7 +131,7 @@ EdenMobile.factory('emResources', [
                 var c = options.controller,
                     f = options.function;
                 if (c && f) {
-                    name = c + '_' + f;
+                    name = c + '_' + f.replace('/', '_');
                 } else {
                     name = table.tableName;
                 }

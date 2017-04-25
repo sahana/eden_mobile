@@ -686,8 +686,14 @@ EdenMobile.factory('emDB', [
          */
         Table.prototype.update = function(data, query, callback) {
 
-            var record = this.addDefaults(data, false, true),
-                sqlTable = emSQL.Table(this),
+            var record;
+            if (data.hasOwnProperty('_noDefaults') && !!data._noDefaults) {
+                record = data;
+            } else {
+                record = this.addDefaults(data, false, true);
+            }
+
+            var sqlTable = emSQL.Table(this),
                 sql;
 
             switch(arguments.length) {
