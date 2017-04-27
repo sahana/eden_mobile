@@ -457,7 +457,7 @@ EdenMobile.factory('emS3JSON', [
 
             if (fileName) {
                 data[fieldName] = {
-                    '@filename': filename
+                    '@filename': fileName
                 };
             }
         };

@@ -165,6 +165,9 @@ EdenMobile.factory('emResources', [
             // Link to table
             table.resources[name] = this;
 
+            // Is this a main resource (or a component/lookup table)?
+            this.main = !!options.main;
+
             // Server-side controller/function
             this.controller = options.controller;
             this.function = options.function;
@@ -222,7 +225,8 @@ EdenMobile.factory('emResources', [
                 'controller': this.controller,
                 'function': this.function,
                 'fields': fieldDef,
-                'settings': this.settings
+                'settings': this.settings,
+                'main': this.main
             };
 
             // Check if this is an update
@@ -814,7 +818,8 @@ EdenMobile.factory('emResources', [
                             'name': resourceName,
                             'controller': record.controller,
                             'function': record.function,
-                            'settings': record.settings
+                            'settings': record.settings,
+                            'main': record.main
                         },
                         schema;
                     if (fieldOpts) {
@@ -871,7 +876,8 @@ EdenMobile.factory('emResources', [
                     'function',
                     'fields',
                     'settings',
-                    'lastsync'
+                    'lastsync',
+                    'main'
                 ];
 
                 table.select(fields, function(records, result) {
@@ -950,6 +956,9 @@ EdenMobile.factory('emResources', [
                         resource = new Resource(table, options);
                     } else {
                         // Update
+                        if (options.main) {
+                            resource.main = true;
+                        }
                         // @todo: migrate schema, update settings, etc.
                     }
 

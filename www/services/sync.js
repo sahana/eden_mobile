@@ -1315,6 +1315,7 @@ EdenMobile.factory('emSync', [
             var ref = job.ref;
             if (this.provides == job.tableName) {
                 // Main schema => store server-side resource
+                schema._main = true;
                 schema._controller = schemaData.controller || ref.c;
                 schema._function = schemaData.function || ref.f;
             } else {

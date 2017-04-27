@@ -1194,11 +1194,22 @@ EdenMobile.factory('emDB', [
 
                     var table = db.tables[tableName];
                     if (table) {
-                        // @todo: migrate schema
-                        tableDefined.resolve(table);
+                        // Table exists or is currently being created
+                        $q.when(table).then(function(table) {
+                            // @todo: migrate schema
+                            tableDefined.resolve(table);
+                        });
                     } else {
+                        // Indicate that we're in the process to create
+                        // the table => prevent redefinition by parallel
+                        // calls
+                        db.tables[tableName] = tableDefined.promise;
+
+                        // Instantiate the Table
                         table = new Table(db, tableName, fields, settings);
                         table.addMetaFields();
+
+                        // Create the table in the database
                         table.create(records, function() {
                             tableDefined.resolve(table);
                         });

@@ -105,6 +105,10 @@ EdenMobile.factory('emDefaultSchema', ['$injector', function ($injector) {
             'lastsync': {
                 type: 'datetime',
                 label: 'Last synchronized on'
+            },
+            'main': {
+                type: 'boolean',
+                defaultValue: false
             }
         },
 
