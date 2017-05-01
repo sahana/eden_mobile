@@ -862,12 +862,22 @@ EdenMobile.factory('emDB', [
 
             var deferred = $q.defer();
 
-            // Try looking it up from the UUID
             var uuid = record.uuid;
-            if (!!uuid) {
-                // Look it up
+            if (uuid) {
+
+                // Try looking it up from the UUID
                 var query = 'uuid="' + uuid + '"',
                     fields = ['id', 'synchronized_on', 'modified_on'];
+
+                // Include upload-fields
+                var allFields = this.fields;
+                for (var fieldName in allFields) {
+                    if (allFields[fieldName].type == "upload") {
+                        fields.push(fieldName);
+                    }
+                }
+
+                // Find the record
                 this.select(fields, query, function(records) {
                     if (records.length) {
                         deferred.resolve(records[0]);
@@ -875,6 +885,7 @@ EdenMobile.factory('emDB', [
                         deferred.resolve();
                     }
                 });
+
             } else {
                 // No way to identify the record (yet)
                 // @todo: try unique fields

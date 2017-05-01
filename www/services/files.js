@@ -119,6 +119,39 @@
 
     // ------------------------------------------------------------------------
     /**
+     * Create a file from data at a temporary location (cache)
+     *
+     * @param {string} fileName - the name of the temporary file
+     * @param {Blob} data - the data as Blob
+     * @param {function} callback - success callback, function(fileURI)
+     */
+    var createTempFile = function(fileName, data, callback) {
+
+        var cacheDirectory = cordova.file.cacheDirectory;
+
+        window.resolveLocalFileSystemURL(cacheDirectory, function(cacheDir) {
+
+            cacheDir.getFile(fileName, {create: true, exclusive: false},
+
+                function(fileEntry) {
+
+                    fileEntry.createWriter(function(fileWriter) {
+                        fileWriter.onwriteend = function() {
+                            if (callback) {
+                                callback(fileEntry.nativeURL);
+                            }
+                        };
+                        fileWriter.onerror = function(error) {
+                            fsError('unable to create temporary file: ' + error);
+                        };
+                        fileWriter.write(data);
+                    });
+                }, fsError('can not write to cache directory'));
+        });
+    };
+
+    // ------------------------------------------------------------------------
+    /**
      * API function to remove a file
      *
      * @param {string} fileURI - the file URI
@@ -203,6 +236,8 @@
         function () {
 
             var api = {
+
+                createTempFile: createTempFile,
 
                 store: store,
                 remove: remove,
