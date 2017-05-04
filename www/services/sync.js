@@ -1191,178 +1191,11 @@ EdenMobile.factory('emSync', [
 
         // --------------------------------------------------------------------
         /**
-         * SyncTask to import a table schema
-         *
-         * @param {SyncJob} job - the SyncJob that generated this task
-         * @param {string} tableName - the name of the table to install
-         * @param {object} schemaData - the schema data from the Sahana
-         *                              server for the table
-         */
-        function SchemaImport(job, tableName, schemaData) {
-
-            SyncTask.apply(this, [job]);
-
-            this.tableName = tableName;
-
-            // The name of the table this task will import
-            this.provides = tableName;
-            // The names of the tables this task requires
-            this.requires = [];
-
-            // Decode the schemaData and collect Dependencies
-            var schema = this.decode(schemaData),
-                dependencies = [];
-            if (schema) {
-                this.requires.forEach(function(requirement) {
-                    dependencies.push(require(requirement));
-                });
-            }
-            this.schema = schema;
-            this.dependencies = dependencies;
-        }
-        SchemaImport.prototype = Object.create(SyncTask.prototype);
-        SchemaImport.prototype.constructor = SchemaImport;
-
-        /**
-         * Execute this schema import (async); installs or updates
-         * the Resource, also installing or updating the database
-         * table as necessary
-         */
-        SchemaImport.prototype.execute = function() {
-
-            console.log('Execute SchemaImport for ' + this.tableName);
-
-            // Collect the promises for all acquired dependencies
-            var dependencies = this.dependencies,
-                resolved = [];
-
-            dependencies.forEach(function(dependency) {
-                resolved.push(dependency.resolved());
-            });
-
-            var self = this;
-            $q.all(resolved).then(
-                function() {
-                    // all dependencies resolved => go ahead
-                    console.log('Importing schema for ' + self.tableName);
-                    emResources.install(self.tableName, self.schema).then(
-                        function() {
-                            // Schema installation successful
-                            self.resolve(self.tableName);
-                        },
-                        function(error) {
-                            // Schema installation failed
-                            self.reject(error);
-                        });
-                },
-                function(error) {
-                    // A dependency failed
-                    self.reject(error);
-                });
-        };
-
-        /**
-         * Convert Sahana schema data to internal format
-         *
-         * @param {object} schemaData - the schema data received from
-         *                              the Sahana server
-         *
-         * @returns {object} - the schema specification in
-         *                     internal format
-         */
-        SchemaImport.prototype.decode = function(schemaData) {
-
-            var job = this.job,
-                requires = this.requires;
-
-            var schema = {},
-                fieldName,
-                fieldSpec,
-                fieldType,
-                reference,
-                lookupTable;
-
-            // Field specs
-            var fieldDescriptions = schemaData.schema;
-            for (fieldName in fieldDescriptions) {
-
-                // Decode field description and add spec to schema
-                fieldSpec = this.decodeField(fieldDescriptions[fieldName]);
-                if (!!fieldSpec) {
-                    schema[fieldName] = fieldSpec;
-                }
-
-                // Add look-up table to requires if foreign key
-                fieldType = fieldSpec.type;
-                reference = emUtils.getReference(fieldType);
-                if (reference) {
-                    lookupTable = reference[1];
-                    if (lookupTable && requires.indexOf(lookupTable) == -1) {
-                        requires.push(lookupTable);
-                    }
-                }
-            }
-
-            // Table settings
-            // @todo: component declarations, data card format...
-            if (schemaData.form) {
-                schema._form = schemaData.form;
-            }
-            if (schemaData.strings) {
-                schema._strings = schemaData.strings;
-            }
-
-            var ref = job.ref;
-            if (this.provides == job.tableName) {
-                // Main schema => store server-side resource
-                schema._main = true;
-                schema._controller = schemaData.controller || ref.c;
-                schema._function = schemaData.function || ref.f;
-            } else {
-                // Reference or component schema => name after table
-                schema._name = this.provides;
-            }
-
-            return schema;
-        };
-
-        /**
-         * Convert a Sahana field description to internal format
-         *
-         * @param {object} FieldDescription - the field description from
-         *                                    the Sahana server
-         *
-         * @returns {object} - the field specification in internal format
-         */
-        SchemaImport.prototype.decodeField = function(fieldDescription) {
-
-            var spec = {
-                type: fieldDescription.type || 'string',
-            };
-
-            if (!!fieldDescription.label) {
-                spec.label = fieldDescription.label;
-            }
-            if (!!fieldDescription.options) {
-                spec.options = fieldDescription.options;
-            }
-            if (fieldDescription.hasOwnProperty('default')) {
-                spec.defaultValue = fieldDescription.default;
-            }
-
-            var settings = fieldDescription.settings;
-            for (var keyword in fieldDescription.settings) {
-                if (!spec.hasOwnProperty(keyword)) {
-                    spec[keyword] = settings[keyword];
-                }
-            }
-
-            return spec;
-        };
-
-        // --------------------------------------------------------------------
-        /**
          * SyncTask to import a record
+         *
+         * @param {SyncJob} job - the SyncJob this task belongs to
+         * @param {string} tableName - the table name
+         * @param {Record} record - the record data (prototype in s3json.js)
          */
         function DataImport(job, tableName, record) {
 
@@ -1569,6 +1402,271 @@ EdenMobile.factory('emSync', [
             return this.resolved = true;
         };
 
+        /**
+         * Helper function to generate data import tasks from S3JSON
+         *
+         * @param {SyncJob} job - the sync job
+         * @param {string} tableName - the target table name
+         * @param {object} data - the S3JSON data
+         *
+         * @returns {promise} - a promise that resolves into a tuple
+         *                      [dataImports, filesRequired], where:
+         *                      dataImports => array of DataImport tasks
+         *                      filesRequired => array of download URLs
+         */
+        var createDataImports = function(job, tableName, data) {
+
+            var deferred = $q.defer();
+
+            emDB.tables().then(function(tables) {
+
+                var dataImports = [],
+                    filesRequired = [];
+
+                // Decode the S3JSON data
+                var map = emS3JSON.decode(tables, tableName, data);
+
+                for (var tn in map) {
+
+                    var records = map[tn],
+                        record,
+                        files,
+                        downloadURL,
+                        fieldName,
+                        dataImport;
+
+                    for (var uuid in records) {
+
+                        // Generate a DataImport task
+                        record = records[uuid];
+                        dataImport = new DataImport(job, tn, record);
+                        dataImports.push(dataImport);
+
+                        // Collect the download URLs of the required files
+                        files = record.files;
+                        for (fieldName in files) {
+                            downloadURL = files[fieldName];
+                            filesRequired.push(downloadURL);
+                        }
+                    }
+                }
+
+                deferred.resolve([dataImports, filesRequired]);
+            });
+
+            return deferred.promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * SyncTask to import a table schema
+         *
+         * @param {SyncJob} job - the SyncJob that generated this task
+         * @param {string} tableName - the name of the table to install
+         * @param {object} schemaData - the schema data from the Sahana
+         *                              server for the table
+         * @param {boolean} lookup - whether this is an implicit import
+         *                           of a look-up table schema
+         */
+        function SchemaImport(job, tableName, schemaData, lookup) {
+
+            SyncTask.apply(this, [job]);
+
+            this.tableName = tableName;
+            this.lookup = !!lookup;
+
+            // The name of the table this task will import
+            this.provides = tableName;
+
+            // The names of the tables this task requires
+            this.requires = [];
+
+            // Decode the schemaData
+            var importData = this.decode(schemaData),
+                dependencies = [];
+
+            this.schema = importData.schema;
+            this.data = importData.data;
+
+            this.dataImports = null;
+            this.filesRequired = null;
+
+            // Collect dependencies
+            if (importData.schema) {
+                this.requires.forEach(function(requirement) {
+                    dependencies.push(require(requirement));
+                });
+            }
+            this.dependencies = dependencies;
+        }
+        SchemaImport.prototype = Object.create(SyncTask.prototype);
+        SchemaImport.prototype.constructor = SchemaImport;
+
+        /**
+         * Execute this schema import (async); installs or updates
+         * the Resource, also installing or updating the database
+         * table as necessary
+         */
+        SchemaImport.prototype.execute = function() {
+
+            console.log('Execute SchemaImport for ' + this.tableName);
+
+            // Collect the promises for all acquired dependencies
+            var dependencies = this.dependencies,
+                resolved = [];
+
+            dependencies.forEach(function(dependency) {
+                resolved.push(dependency.resolved());
+            });
+
+            var self = this;
+            $q.all(resolved).then(
+                function() {
+                    // all dependencies resolved => go ahead
+                    console.log('Importing schema for ' + self.tableName);
+                    emResources.install(self.tableName, self.schema).then(
+                        function() {
+                            // Schema installation successful
+
+                            if (self.lookup && self.data) {
+
+                                // Create data import tasks for look-up data
+                                createDataImports(self.job, self.tableName, self.data).then(
+                                    function(result) {
+                                        self.dataImports = result[0];
+                                        self.filesRequired = result[1];
+                                        self.resolve(self.tableName);
+                                    });
+
+                            } else {
+
+                                self.resolve(self.tableName);
+                            }
+                        },
+                        function(error) {
+                            // Schema installation failed
+                            self.reject(error);
+                        });
+                },
+                function(error) {
+                    // A dependency failed
+                    self.reject(error);
+                });
+        };
+
+        /**
+         * Convert Sahana schema data to internal format
+         *
+         * @param {object} schemaData - the schema data received from
+         *                              the Sahana server
+         *
+         * @returns {object} - the schema specification in
+         *                     internal format
+         */
+        SchemaImport.prototype.decode = function(schemaData) {
+
+            var job = this.job,
+                requires = this.requires;
+
+            var schema = {},
+                data = null,
+                fieldName,
+                fieldSpec,
+                fieldType,
+                reference,
+                lookupTable;
+
+            // Field specs
+            var fieldDescriptions = schemaData.schema;
+            for (fieldName in fieldDescriptions) {
+
+                // Decode field description and add spec to schema
+                fieldSpec = this.decodeField(fieldDescriptions[fieldName]);
+                if (!!fieldSpec) {
+                    schema[fieldName] = fieldSpec;
+                }
+
+                // Add look-up table to requires if foreign key
+                fieldType = fieldSpec.type;
+                reference = emUtils.getReference(fieldType);
+                if (reference) {
+                    lookupTable = reference[1];
+                    if (lookupTable && requires.indexOf(lookupTable) == -1) {
+                        requires.push(lookupTable);
+                    }
+                }
+            }
+
+            // Table settings
+            // @todo: component declarations, data card format...
+            if (schemaData.form) {
+                schema._form = schemaData.form;
+            }
+            if (schemaData.strings) {
+                schema._strings = schemaData.strings;
+            }
+
+            if (this.provides == job.tableName) {
+
+                // Main schema
+                schema._main = true;
+
+                // Store link to server resource
+                var ref = job.ref;
+                schema._controller = schemaData.controller || ref.c;
+                schema._function = schemaData.function || ref.f;
+
+            } else {
+
+                // Reference or component schema => name after table
+                schema._name = this.provides;
+
+                // Do we have any look-up records to import?
+                if (this.lookup && schemaData.hasOwnProperty('data')) {
+                    data = schemaData.data;
+                }
+            }
+
+            return {
+                schema: schema,
+                data: data
+            };
+        };
+
+        /**
+         * Convert a Sahana field description to internal format
+         *
+         * @param {object} FieldDescription - the field description from
+         *                                    the Sahana server
+         *
+         * @returns {object} - the field specification in internal format
+         */
+        SchemaImport.prototype.decodeField = function(fieldDescription) {
+
+            var spec = {
+                type: fieldDescription.type || 'string',
+            };
+
+            if (!!fieldDescription.label) {
+                spec.label = fieldDescription.label;
+            }
+            if (!!fieldDescription.options) {
+                spec.options = fieldDescription.options;
+            }
+            if (fieldDescription.hasOwnProperty('default')) {
+                spec.defaultValue = fieldDescription.default;
+            }
+
+            var settings = fieldDescription.settings;
+            for (var keyword in fieldDescription.settings) {
+                if (!spec.hasOwnProperty(keyword)) {
+                    spec[keyword] = settings[keyword];
+                }
+            }
+
+            return spec;
+        };
+
         // --------------------------------------------------------------------
         /**
          * Sync Task to:
@@ -1625,7 +1723,8 @@ EdenMobile.factory('emSync', [
                                 // Create a SchemaImport for the referenced table
                                 referenceImport = new SchemaImport(job,
                                                             requirement,
-                                                            references[requirement]);
+                                                            references[requirement],
+                                                            true);
                                 schemaImports.push(referenceImport);
 
                                 // Note as provided
@@ -1701,42 +1800,11 @@ EdenMobile.factory('emSync', [
                 // Start download
                 emServer.getData(job.ref,
                     function(data) {
-                        // Download successful => generate import tasks
-                        emDB.tables().then(function(tables) {
 
-                            var dataImports = [],
-                                filesRequired = [];
-
-                            // Decode the S3JSON data
-                            var map = emS3JSON.decode(tables, job.tableName, data);
-
-                            for (var tableName in map) {
-
-                                var records = map[tableName],
-                                    record,
-                                    files,
-                                    downloadURL,
-                                    fieldName,
-                                    dataImport;
-
-                                for (var uuid in records) {
-
-                                    // Generate a DataImport task
-                                    record = records[uuid];
-                                    dataImport = new DataImport(job, tableName, record);
-                                    dataImports.push(dataImport);
-
-                                    // Collect the download URLs of the required files
-                                    files = record.files;
-                                    for (fieldName in files) {
-                                        downloadURL = files[fieldName];
-                                        filesRequired.push(downloadURL);
-                                    }
-                                }
-                            }
-
-                            self.resolve([dataImports, filesRequired]);
-                        });
+                        createDataImports(job, job.tableName, data).then(
+                            function(result) {
+                                self.resolve(result);
+                            });
 
                         // Update lastSync date
                         resource.setLastSync(new Date());
@@ -2383,14 +2451,24 @@ EdenMobile.factory('emSync', [
 
             currentStage('Importing Schemas', schemaImports);
 
-            var deferred = $q.defer();
+            var deferred = $q.defer(),
+                dataImports = [],
+                filesRequired = [];
 
             schemaImports.forEach(function(schemaImport) {
                 if (!schemaImport.$result) {
                     schemaImport.done().then(
                         function() {
                             // Schema import succeeded
-                            checkQueue(schemaImports, deferred);
+                            if (schemaImport.dataImports) {
+                                dataImports = dataImports.concat(
+                                    schemaImport.dataImports);
+                            }
+                            if (schemaImport.filesRequired) {
+                                filesRequired = filesRequired.concat(
+                                    schemaImport.filesRequired);
+                            }
+                            checkQueue(schemaImports, deferred, [dataImports, filesRequired]);
                         },
                         function(error) {
                             // Schema import failed; if this was the
@@ -2701,7 +2779,13 @@ EdenMobile.factory('emSync', [
                                         tableNames);
                     if (resolvable) {
 
-                        importSchemas(schemaImports).then(function() {
+                        importSchemas(schemaImports).then(function(result) {
+
+                            var dataImports = result[0],
+                                filesRequired = result[1];
+
+                            // @todo: execute dataImports + download filesRequired
+
                             jobs.forEach(function(job) {
                                 if (!job.$result) {
                                     job.result('success');
