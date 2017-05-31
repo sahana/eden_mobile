@@ -57,6 +57,9 @@ EdenMobile.controller("EMResourceList", [
             });
         };
 
+        // Hide component/lookup resource initially
+        $scope.main = true;
+
         $scope.$on('$ionicView.enter', updateResourceList);
     }
 ]);

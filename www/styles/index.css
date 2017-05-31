@@ -43,3 +43,7 @@ img.photo-widget-preview {
 .image-view {
     width: 100%;
 }
+
+.resource-select {
+    padding 0;
+}

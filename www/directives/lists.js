@@ -111,7 +111,13 @@ EdenMobile.directive('emResource', [
 
                 var strings = resource.strings,
                     cardLabel = resource.name,
-                    cardIcon = 'ion-folder';
+                    cardIcon = 'ion-folder',
+                    showComponent = '';
+
+                if (!resource.main) {
+                    // Hide component or lookup resources when $scope.main==true
+                    showComponent = ' ng-hide="main"';
+                }
 
                 if (strings) {
                     cardLabel = strings.namePlural || strings.name || cardLabel;
@@ -119,7 +125,9 @@ EdenMobile.directive('emResource', [
                 }
 
                 // Construct the data card template
-                var cardTemplate = '<a class="item item-icon-left" href="#/data/' + resourceName + '">' +
+                var cardTemplate = '<a class="item item-icon-left"' +
+                                   showComponent +
+                                   ' href="#/data/' + resourceName + '">' +
                                    '<i class="icon ' + cardIcon + '"></i>' +
                                    cardLabel +
                                    '<span class="badge badge-assertive">' + numRows + '</span>' +

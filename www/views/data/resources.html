@@ -1,6 +1,15 @@
 <ion-view view-title="Resources">
-    <ion-content class="has-header has-footer">
-        <h2 class="padding" translate="Data"></h2>
+    <div class="bar bar-stable bar-subheader">
+        <div class="button-bar">
+            <a class="button" ng-class="main ? 'button-positive' : 'button-stable'" ng-click="main = true">
+                <label translate="Data Collections"></label>
+            </a>
+            <a class="button" ng-class="main ? 'button-stable' : 'button-positive'" ng-click="main = false">
+                <label translate="All Resources"></label>
+            </a>
+        </div>
+    </div>
+    <ion-content class="has-header has-subheader has-footer">
         <div class="list">
             <div ng-repeat="resource in resources">
                 <em-resource resource="{{resource.name}}"></em-resource>
