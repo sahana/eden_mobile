@@ -1602,6 +1602,9 @@ EdenMobile.factory('emSync', [
             if (schemaData.form) {
                 schema._form = schemaData.form;
             }
+            if (schemaData.subheadings) {
+                schema._subheadings = schemaData.subheadings;
+            }
             if (schemaData.strings) {
                 schema._strings = schemaData.strings;
             }
@@ -1610,6 +1613,7 @@ EdenMobile.factory('emSync', [
 
                 // Main schema
                 schema._main = true;
+                schema._name = job.resourceName;
 
                 // Store link to server resource
                 var ref = job.ref;
@@ -1681,18 +1685,46 @@ EdenMobile.factory('emSync', [
         FormDownload.prototype.constructor = FormDownload;
 
         /**
-         * Execute the form download; parses the downloaded form and
-         * creates SchemaImport tasks for both the main schema and any
-         * dependencies of the main schema if available in the form data.
+         * Execute the form download
          */
         FormDownload.prototype.execute = function() {
 
             var job = this.job,
                 self = this;
 
-            console.log('Downloading ' + job.ref.c + '/' + job.ref.f);
+            var msince = null;
+            emResources.open(job.resourceName).then(function(resource) {
 
-            emServer.getForm(job.ref,
+                if (resource !== undefined) {
+                    // Existing resource => apply schemaDate for msince
+                    msince = resource.getSchemaDate();
+                }
+                self.download(msince);
+            });
+        };
+
+        /**
+         * Download the form; parses the form data and creates SchemaImport
+         * tasks for both the main schema and any dependencies of the main
+         * schema if available in the form data.
+         */
+        FormDownload.prototype.download = function(msince) {
+
+            var job = this.job,
+                ref = job.ref,
+                self = this;
+
+            // Apply msince
+            if (msince) {
+                if (!ref.v) {
+                    ref.v = {};
+                }
+                ref.v.msince = msince.toISOString().split('.')[0];
+            }
+
+            console.log('Downloading ' + ref.c + '/' + ref.f);
+
+            emServer.getForm(ref,
                 function(data) {
 
                     var schemaImports = [],
@@ -2788,6 +2820,12 @@ EdenMobile.factory('emSync', [
 
                             jobs.forEach(function(job) {
                                 if (!job.$result) {
+
+                                    // Update schemaDate
+                                    emResources.open(job.resourceName).then(function(resource) {
+                                        resource.setSchemaDate(new Date());
+                                    });
+
                                     job.result('success');
                                 }
                             });

@@ -102,6 +102,10 @@ EdenMobile.factory('emDefaultSchema', ['$injector', function ($injector) {
                 type: 'json',
                 label: 'Settings'
             },
+            'schema_date': {
+                type: 'datetime',
+                label: 'Schema updated on'
+            },
             'lastsync': {
                 type: 'datetime',
                 label: 'Last synchronized on'

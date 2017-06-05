@@ -152,6 +152,7 @@ EdenMobile.factory('emResources', [
             this.tableName = table.tableName;
             this.query = null;
 
+            this.schemaDate = null;
             this.lastSync = null;
 
             if (options === undefined) {
@@ -720,6 +721,39 @@ EdenMobile.factory('emResources', [
 
         // --------------------------------------------------------------------
         /**
+         * Setter for schema date
+         *
+         * @param {Date} timeStamp - the new schema date
+         */
+        Resource.prototype.setSchemaDate = function(timeStamp) {
+
+            var self = this,
+                name = this.name;
+
+            emDB.table('em_resource').then(function(table) {
+
+                var query = 'em_resource.name="' + name + '"',
+                    data = {'schema_date': timeStamp};
+
+                table.update(data, query, function(numRowsAffected) {
+                    self.schemaDate = timeStamp;
+                });
+            });
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Getter for schema date
+         *
+         * @returns {Date} - the schema date
+         */
+        Resource.prototype.getSchemaDate = function() {
+
+            return this.schemaDate;
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Setter for lastSync date
          *
          * @param {Date} timeStamp - the new lastSync date
@@ -828,7 +862,11 @@ EdenMobile.factory('emResources', [
 
                     // Instantiate the Resource, set lastSync date
                     var resource = new Resource(table, options),
+                        schemaDate = record.schema_date,
                         syncDate = record.lastsync;
+                    if (schemaDate) {
+                        resource.schemaDate = schemaDate;
+                    }
                     if (syncDate) {
                         resource.lastSync = syncDate;
                     }
@@ -876,6 +914,7 @@ EdenMobile.factory('emResources', [
                     'function',
                     'fields',
                     'settings',
+                    'schema_date',
                     'lastsync',
                     'main'
                 ];
