@@ -33,8 +33,8 @@
  * @memberof EdenMobile
  */
 EdenMobile.factory('emDB', [
-    '$injector', '$q', 'emDefaultSchema', 'emFiles', 'emSQL',
-    function ($injector, $q, emDefaultSchema, emFiles, emSQL) {
+    '$injector', '$q', 'Expression', 'emDefaultSchema', 'emFiles', 'emSQL',
+    function ($injector, $q, Expression, emDefaultSchema, emFiles, emSQL) {
 
         // ====================================================================
 
@@ -96,6 +96,12 @@ EdenMobile.factory('emDB', [
             this.name = name;
             this.type = description.type || 'string';
 
+            // Expression type
+            Object.defineProperty(this, 'exprType', {
+                value: 'field',
+                writable: false
+            });
+
             // Meta-field?
             this.meta = !!meta;
 
@@ -113,6 +119,9 @@ EdenMobile.factory('emDB', [
             this.defaultValue = description.defaultValue;
             this.updateValue = description.updateValue;
         }
+
+        Field.prototype = Object.create(Expression.prototype);
+        Field.prototype.constructor = Field;
 
         // --------------------------------------------------------------------
         /**
