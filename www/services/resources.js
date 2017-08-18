@@ -133,7 +133,7 @@ EdenMobile.factory('emResources', [
                 if (c && f) {
                     name = c + '_' + f.replace('/', '_');
                 } else {
-                    name = table.tableName;
+                    name = table.name;
                 }
             }
             return name;
@@ -149,7 +149,7 @@ EdenMobile.factory('emResources', [
         function Resource(table, options) {
 
             this.table = table;
-            this.tableName = table.tableName;
+            this.tableName = table.name;
             this.query = null;
 
             this.schemaDate = null;

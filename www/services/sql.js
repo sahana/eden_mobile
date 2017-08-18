@@ -249,7 +249,7 @@
      */
     function SQLTable(table) {
 
-        this.name = table.tableName;
+        this.name = table.name;
         this.fields = table.fields;
     }
 

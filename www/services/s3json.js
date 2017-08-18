@@ -48,7 +48,7 @@ EdenMobile.factory('emS3JSON', [
             this.references = {};   // {fieldName: [tableName, uuid]}
             this.files = {};        // {fieldName: downloadURL}
 
-            this.tableName = table.tableName;
+            this.tableName = table.name;
             this.uuid = null;
 
             var key,

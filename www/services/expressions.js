@@ -187,59 +187,50 @@
      */
     Expression.prototype.toSQL = function() {
 
-        var sqlStr;
+        var sqlStr,
+            op = this.op,
+            left = this.left,
+            right = this.right,
+            lSql = left.toSQL(),
+            rSql;
 
-        if (this.exprType == 'field') {
-
-            sqlStr = this.sqlName(true);
-
-        } else {
-
-            var op = this.op,
-                left = this.left,
-                right = this.right,
-                lSql = left.toSQL(),
-                rSql,
-                sql;
-
-            switch (op) {
-                case 'and':
-                case 'or':
+        switch (op) {
+            case 'and':
+            case 'or':
+                rSql = right.toSQL();
+                sqlStr = '(' + lSql + ') ' + op.toUpperCase() + ' (' + rSql + ')';
+                break;
+            case '=':
+            case '!=':
+            case '<':
+            case '<=':
+            case '>=':
+            case '>':
+            case 'like':
+                if (typeof right.toSQL == 'function') {
                     rSql = right.toSQL();
-                    sqlStr = '(' + lSql + ') ' + op.toUpperCase() + ' (' + rSql + ')';
-                    break;
-                case '=':
-                case '!=':
-                case '<':
-                case '<=':
-                case '>=':
-                case '>':
-                case 'like':
-                    if (typeof right.toSQL == 'function') {
-                        rSql = right.toSQL();
+                } else {
+                    if (typeof left.sqlEncode == 'function') {
+                        rSql = left.sqlEncode(right);
                     } else {
-                        if (typeof left.sqlType == 'function') {
-                            rSql = left.sqlType(right);
-                        } else {
-                            rSql = "'" + ('' + right).replace(/'/g, "''") + "'";
-                        }
+                        rSql = "'" + ('' + right).replace(/'/g, "''") + "'";
                     }
-                    sqlStr = [lSql, op, rSql].join(' ');
-                    break;
-                case 'upper':
-                case 'lower':
-                case 'min':
-                case 'max':
-                case 'avg':
-                case 'count':
-                    sqlStr = op.toUpperCase() + '(' + leftSql + ')';
-                    break;
-                case 'on':
-                    sqlStr = '' + left + ' ON ' + right.toSQL();
-                    break;
-                default:
-                    throw new Error('unknown operator "' + this.op + '"');
-            }
+                }
+                sqlStr = [lSql, op, rSql].join(' ');
+                break;
+            case 'upper':
+            case 'lower':
+            case 'min':
+            case 'max':
+            case 'avg':
+            case 'count':
+                sqlStr = op.toUpperCase() + '(' + leftSql + ')';
+                break;
+            case 'on':
+                sqlStr = '' + left + ' ON ' + right.toSQL();
+                break;
+            default:
+                throw new Error('unknown operator "' + this.op + '"');
         }
 
         return sqlStr;
@@ -262,7 +253,7 @@
 /**
  * @todo: docstring
  */
-var Not = function(expr) {
+var not = function(expr) {
     return expr.not()
 };
 
@@ -270,11 +261,15 @@ var Not = function(expr) {
 /**
  * @todo: docstring
  */
-var AllOf = function() {
+var allOf = function() {
+
+    if (!arguments.length) {
+        throw new Error('allOf: missing arguments');
+    }
 
     var args = [].slice.call(arguments);
 
-    args.reduce(function(left, right) {
+    return args.reduce(function(left, right) {
         return left.and(right);
     });
 };
@@ -283,11 +278,15 @@ var AllOf = function() {
 /**
  * @todo: docstring
  */
-var AnyOf = function() {
+var anyOf = function() {
+
+    if (!arguments.length) {
+        throw new Error('anyOf: missing arguments');
+    }
 
     var args = [].slice.call(arguments);
 
-    args.reduce(function(left, right) {
+    return args.reduce(function(left, right) {
         return left.or(right);
     });
 };

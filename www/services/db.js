@@ -80,7 +80,6 @@ EdenMobile.factory('emDB', [
         };
 
         // ====================================================================
-
         /**
          * Field constructor
          *
@@ -88,9 +87,10 @@ EdenMobile.factory('emDB', [
          * @param {object} description - the field description
          * @param {boolean} meta - meta field flag
          */
-        function Field(name, description, meta) {
+        function Field(table, name, description, meta) {
 
-            this._description = description || {};
+            // Link to table
+            this.table = table;
 
             // Field name and type
             this.name = name;
@@ -101,6 +101,9 @@ EdenMobile.factory('emDB', [
                 value: 'field',
                 writable: false
             });
+
+            // Field description
+            this._description = description || {};
 
             // Meta-field?
             this.meta = !!meta;
@@ -120,8 +123,129 @@ EdenMobile.factory('emDB', [
             this.updateValue = description.updateValue;
         }
 
+        // --------------------------------------------------------------------
+        /**
+         * Inherit prototype methods from Expression
+         */
         Field.prototype = Object.create(Expression.prototype);
         Field.prototype.constructor = Field;
+
+        // --------------------------------------------------------------------
+        /**
+         * Override the Expression.toString method
+         *
+         * @returns {string} - an SQL identifier for the field,
+         *                     format: 'tableName.fieldName'
+         */
+        Field.prototype.toString = function() {
+
+            return (this.table || '<no table>') + '.' + this.name;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Override the Expression.toSQL method
+         *
+         * @returns {string} - an SQL identifier for the field,
+         *                     format: 'tableName.fieldName'
+         */
+        Field.prototype.toSQL = function() {
+
+            return this.toString();
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Convert a value into an SQL expression that is suitable to query
+         * this type of field (falls back to quoted string)
+         *
+         * @param {mixed} value - the value to convert
+         *
+         * @returns {string} - the SQL expression as string
+         */
+        Field.prototype.sqlEncode = function(value) {
+
+            if (value === 'undefined' || value === null) {
+                return 'NULL';
+            }
+
+            var quoted = function(arg) {
+                return "'" + ('' + arg).replace(/'/g, "''") + "'";
+            };
+
+            var sqlEncoded;
+            switch (this.type) {
+
+                case 'id':
+                case 'reference':
+                    // Try to convert into positive integer
+                    var numeric = value + 0;
+                    if (!isNaN(numeric)) {
+                        sqlEncoded = '' + Math.abs(numeric);
+                    }
+                    break;
+
+                case 'boolean':
+                    // Convert to 0|1
+                    if (!value) {
+                        sqlEncoded = '0';
+                    } else {
+                        sqlEncoded = '1';
+                    }
+                    break;
+
+                case 'date':
+                    // Try to convert into ISO date string
+                    if (value.constructor === Date) {
+                        var month = '' + (value.getMonth() + 1),
+                            day = '' + value.getDate(),
+                            year = value.getFullYear();
+                        if (month.length < 2) {
+                            month = '0' + month;
+                        }
+                        if (day.length < 2) {
+                            day = '0' + day;
+                        }
+                        sqlEncoded = quoted([year, month, day].join('-'));
+                    }
+                    break;
+
+                case 'datetime':
+                    // Try to convert into ISO date/time string
+                    if (value.constructor === Date) {
+                        value.setMilliseconds(0);
+                        sqlEncoded = quoted(value.toISOString());
+                    }
+                    break;
+
+                case 'integer':
+                case 'double':
+                    // Try to convert into number
+                    numeric = value + 0;
+                    if (!isNaN(numeric)) {
+                        sqlEncoded = '' + numeric;
+                    }
+                    break;
+
+                case 'json':
+                    // JSON-encode everything that isn't a string
+                    if (value.constructor !== String) {
+                        value = JSON.stringify(value);
+                    }
+                    break;
+
+                default:
+                    // Just use the fallback
+                    break;
+            }
+
+            // Universal fallback
+            if (sqlEncoded === undefined) {
+                sqlEncoded = quoted(value);
+            }
+
+            return sqlEncoded;
+        };
 
         // --------------------------------------------------------------------
         /**
@@ -324,12 +448,12 @@ EdenMobile.factory('emDB', [
         /**
          * Clone this field
          *
-         * @returns {Field} - the clone Field
+         * @returns {Field} - the Field clone
          */
         Field.prototype.clone = function() {
 
             var description = angular.extend({}, this._description),
-                field = new Field(this.name, description, this.meta);
+                field = new Field(null, this.name, description, this.meta);
 
             field.type = this.type;
 
@@ -437,7 +561,7 @@ EdenMobile.factory('emDB', [
                 } else if (key.slice(0, 1) == '_') {
                     settings[key.slice(1)] = value;
                 } else {
-                    fields[key] = new Field(key, value);
+                    fields[key] = new Field(null, key, value);
                 }
             }
 
@@ -461,9 +585,22 @@ EdenMobile.factory('emDB', [
         function Table(db, tableName, fields, settings) {
 
             this._db = db;
-            this.tableName = tableName;
+            this.name = tableName;
 
-            this.fields = fields;
+            var field,
+                fieldName,
+                tableFields = {};
+
+            for (fieldName in fields) {
+                field = fields[fieldName];
+                if (field.table) {
+                    field = field.clone();
+                }
+                field.table = this;
+                tableFields[fieldName] = field;
+            }
+
+            this.fields = tableFields;
             this.settings = settings;
 
             this.resources = {};
@@ -471,15 +608,45 @@ EdenMobile.factory('emDB', [
 
         // --------------------------------------------------------------------
         /**
+         * Shortcut for Table.fields[fieldName]
+         *
+         * @param {string} fieldName - the field name
+         *
+         * @returns {Field} - the Field, or undefined if no field with this
+         *                    name is defined in the table
+         */
+        Table.prototype.$ = function(fieldName) {
+
+            return this.fields[fieldName];
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * @todo: docstring
+         */
+        Table.prototype.toString = function() {
+            return this.name;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * @todo: docstring
+         */
+        Table.prototype.toSQL = function() {
+            return this.toString();
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Add the standard meta fields to this table (as defined in emDefaultSchema)
          */
         Table.prototype.addMetaFields = function() {
 
-            var tableName = this.tableName,
+            var tableName = this.name,
                 fields = this.fields;
 
             if (tableName != 'em_version' && !fields.hasOwnProperty('id')) {
-                fields.id = new Field('id', {
+                fields.id = new Field(this, 'id', {
                     type: 'id',
                     readable: false,
                     writable: false
@@ -491,7 +658,7 @@ EdenMobile.factory('emDB', [
             if (metaFields && tableName.slice(0, 3) != 'em_') {
                 for (var fieldName in metaFields) {
                     if (!fields.hasOwnProperty(fieldName)) {
-                        field = new Field(fieldName, metaFields[fieldName], true);
+                        field = new Field(this, fieldName, metaFields[fieldName], true);
                         fields[fieldName] = field;
                     }
                 }
@@ -517,7 +684,7 @@ EdenMobile.factory('emDB', [
 
             adapter.sqlBatch(sql, function() {
 
-                var tableName = self.tableName;
+                var tableName = self.name;
 
                 db.tables[tableName] = self;
 
@@ -558,7 +725,7 @@ EdenMobile.factory('emDB', [
                 }
             }
 
-            var tableName = this.tableName,
+            var tableName = this.name,
                 db = this._db,
                 adapter = db._adapter;
 
@@ -600,7 +767,7 @@ EdenMobile.factory('emDB', [
             }
 
             schemaTable.insert({
-                name: this.tableName,
+                name: this.name,
                 fields: fieldDef,
                 settings: settings
             });
@@ -930,7 +1097,7 @@ EdenMobile.factory('emDB', [
             adapter.executeSql(sql, [], function(result) {
                 var number = result.rows.item(0).number;
                 if (callback) {
-                    callback(self.tableName, number);
+                    callback(self.name, number);
                 }
             }, db.sqlError);
         };
