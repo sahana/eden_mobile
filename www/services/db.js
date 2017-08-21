@@ -252,8 +252,8 @@ EdenMobile.factory('emDB', [
          * Get the selectable options for this field
          *
          * @returns {promise} - promise that resolves into the options
-         *                      object, or undefined if no options are
-         *                      available
+         *                      array [[opt, repr], ...], or undefined
+         *                      if no options are available
          */
         Field.prototype.getOptions = function() {
 
@@ -300,8 +300,8 @@ EdenMobile.factory('emDB', [
                     // Select records
                     resource.select(fields, function(records, result) {
 
-                        // Build options object
-                        var options = {},
+                        // Build options array
+                        var options = [],
                             values = [],
                             value;
 
@@ -318,7 +318,7 @@ EdenMobile.factory('emDB', [
                             if (!values) {
                                 values = [record[key]];
                             }
-                            options[record[key]] = values.join(' ');
+                            options.push([record[key], values.join(' ')]);
                         });
 
                         // Resolve promise
@@ -328,7 +328,17 @@ EdenMobile.factory('emDB', [
 
             } else {
 
-                var options = angular.copy(this._description.options);
+                var options = this._description.options;
+
+                if (options.constructor !== Array) {
+                    // Convert into array of tuples
+                    options = Object.keys(options).map(function(k) {
+                        return [k, options[k]]
+                    });
+                } else {
+                    // Copy original array (to allow the caller to modify)
+                    options = angular.copy(options);
+                }
                 optionsLoaded.resolve(options);
             }
 

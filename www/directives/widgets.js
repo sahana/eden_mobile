@@ -360,12 +360,13 @@
                     // Append the options to the widget
                     var input,
                         name = attr.resource + '-' + attr.field;
-                    for (var opt in opts) {
+
+                    opts.forEach(function(opt) {
 
                         input = angular.element('<ion-radio>')
                                        .attr('name', name)
-                                       .attr('value', opt)
-                                       .html(opts[opt] || '');
+                                       .attr('value', opt[0])
+                                       .html(opt[1] || '');
 
                         // Input attributes
                         copyAttr(attr, input, [
@@ -374,7 +375,7 @@
                         ]);
 
                         widget.append(input);
-                    }
+                    });
 
                     // Compile the widget against the scope, then
                     // render it in place of the directive
