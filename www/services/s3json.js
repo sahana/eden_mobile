@@ -95,7 +95,7 @@ EdenMobile.factory('emS3JSON', [
 
             // If no UUID in the source => generate one now
             if (!this.uuid) {
-                this.uuid = emDB.uuid();
+                this.uuid = emUtils.uuid();
                 this.data['uuid'] = this.uuid;
             }
         }

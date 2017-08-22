@@ -31,7 +31,7 @@ var emSchemaVersion = '3';
 /**
  * The default schema for the local database
  */
-EdenMobile.factory('emDefaultSchema', ['$injector', function ($injector) {
+EdenMobile.factory('emDefaultSchema', ['emUtils', function (emUtils) {
 
     var tables = [
 
@@ -230,9 +230,7 @@ EdenMobile.factory('emDefaultSchema', ['$injector', function ($injector) {
             readable: false,
             writable: false,
             defaultValue: function() {
-                var emDB = $injector.get('emDB'),
-                    uuid = emDB.uuid();
-                return uuid.urn();
+                return emUtils.uuid().urn();
             }
         },
         'created_on': {

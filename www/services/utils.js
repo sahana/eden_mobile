@@ -1,5 +1,5 @@
 /**
- * Sahana Eden Mobile - S3JSON Codec
+ * Sahana Eden Mobile - Utilities
  *
  * Copyright (c) 2016-2017: Sahana Software Foundation
  *
@@ -33,10 +33,66 @@
 EdenMobile.factory('emUtils', [
     function () {
 
+        // ====================================================================
+        /**
+         * UUID constructor
+         * - representing an RFC 4122 v4 compliant unique identifier
+         *
+         * Inspired by Briguy37's proposal in:
+         * http://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
+         */
+        function UUID() {
+
+            var template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx',
+                time = new Date().getTime();
+
+            if (window.performance && typeof window.performance.now === "function") {
+                time += performance.now();
+            }
+            this.uuid = template.replace(/[xy]/g, function(c) {
+                var result = (time + Math.random() * 16) % 16 | 0;
+                time = Math.floor(time / 16);
+                if (c != 'x') {
+                    result = result & 0x3 | 0x8;
+                }
+                return result.toString(16);
+            });
+        }
+
+        // --------------------------------------------------------------------
+        /**
+         * String representation of the UUID
+         */
+        UUID.prototype.toString = function() {
+
+            return this.uuid;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * URN representation of the UUID
+         */
+        UUID.prototype.urn = function() {
+
+            return 'urn:uuid:' + this.uuid;
+        };
+
+        // ====================================================================
         // Regex to decode reference field types
+        //
         var refPattern = /reference\s+([a-z]{1}[a-z0-9_]*)(?:\.([a-z]{1}[a-z0-9_]*)){0,1}/gi;
 
+        // ====================================================================
+        // Expose methods
+        //
         var utils = {
+
+            /**
+             * Get a UUID instance
+             */
+            uuid: function() {
+                return new UUID();
+            },
 
             getReference: function(fieldType) {
                 refPattern.lastIndex = 0;

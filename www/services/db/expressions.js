@@ -27,18 +27,21 @@
 
 (function() {
 
+    // ========================================================================
+    /**
+     * SQL Expressions - Constructor
+     */
     function Expression(exprType, left, op, right) {
 
         if (!left) {
             throw new Error('left operand required');
         }
         if (!op) {
-            throw new Error('operator required')
+            throw new Error('operator required');
         }
 
         switch (exprType) {
             case 'assert':
-            case 'connective':
             case 'transform':
             case 'aggregate':
             case 'join':
@@ -51,7 +54,6 @@
                     value: exprType,
                     writable: false
                 });
-
                 break;
 
             default:
@@ -60,25 +62,28 @@
         }
     }
 
+    // ------------------------------------------------------------------------
     /**
-     * Connectives
+     * Connectives (logical operators)
      */
     Expression.prototype._connective = function(op, other) {
 
         if (!other) {
             return this;
         } else if (other.exprType != 'assert') {
-            throw new Error('invalid type for connective');
+            throw new Error('invalid expression type for "' + op + '"');
         }
+
         switch (this.exprType) {
             case 'assert':
-                return new Expression('connective', this, op, other);
+                return new Expression('assert', this, op, other);
                 break;
             default:
-                throw new Error('invalid type for connective');
+                throw new Error('invalid expression type for "' + op + '"');
                 break;
         }
     };
+
     Expression.prototype.and = function(other) {
         return this._connective('and', other);
     };
@@ -89,6 +94,7 @@
         return this._connective('not', this);
     };
 
+    // ------------------------------------------------------------------------
     /**
      * Assertions
      */
@@ -105,7 +111,7 @@
                 return new Expression('assert', this, op, other);
                 break;
             default:
-                throw new Error('invalid type for assertion');
+                throw new Error('invalid operand type for "' + op + '" assertion');
                 break;
         }
     };
@@ -131,6 +137,7 @@
         return this._assert("like", other);
     };
 
+    // ------------------------------------------------------------------------
     /**
      * Transformation functions
      */
@@ -143,10 +150,11 @@
                 return new Expression('transform', this, op);
                 break;
             default:
-                throw new Error('invalid type for transformation');
+                throw new Error('invalid type for "' + op + '" transformation');
                 break;
         }
     };
+
     Expression.prototype.upper = function() {
         return this._transform('upper');
     };
@@ -154,6 +162,7 @@
         return this._transform('lower');
     };
 
+    // ------------------------------------------------------------------------
     /**
      * Aggregation functions
      */
@@ -165,10 +174,11 @@
                 return new Expression('aggregate', this, op)
                 break;
             default:
-                throw new Error('invalid type for aggregation');
+                throw new Error('invalid type for "' + op + '" aggregation');
                 break;
         }
     };
+
     Expression.prototype.min = function() {
         return this._aggregate('min');
     };
@@ -182,6 +192,7 @@
         return this._aggregate('avg');
     };
 
+    // ------------------------------------------------------------------------
     /**
      * SQL construction
      */
@@ -234,32 +245,37 @@
         }
 
         return sqlStr;
+    };
 
-    }
-
+    // ------------------------------------------------------------------------
     Expression.prototype.toString = function() {
         return this.toSQL();
     };
 
+    // ------------------------------------------------------------------------
     // Make injectable
     angular.module('EdenMobile').constant('Expression', Expression);
 
 })();
 
 // ============================================================================
-// Helper functions for query constructions
+// Global helper functions for query constructions
 //
-
 /**
- * @todo: docstring
+ * NOT - negate an expression
+ *
+ * @returns {Expression} - the negated expression
  */
 var not = function(expr) {
+
     return expr.not()
 };
 
 // ----------------------------------------------------------------------------
 /**
- * @todo: docstring
+ * AND - conjunction of expressions
+ *
+ * @returns {Expression} - a conjunction expression
  */
 var allOf = function() {
 
@@ -270,13 +286,16 @@ var allOf = function() {
     var args = [].slice.call(arguments);
 
     return args.reduce(function(left, right) {
+
         return left.and(right);
     });
 };
 
 // ----------------------------------------------------------------------------
 /**
- * @todo: docstring
+ * OR - disjunction of expressions
+ *
+ * @returns {Expression} - a disjunction expression
  */
 var anyOf = function() {
 
