@@ -26,8 +26,8 @@
 "use strict";
 
 EdenMobile.factory('Table', [
-    '$q', 'emDefaultSchema', 'emFiles', 'emSQL', 'Expression', 'Field',
-    function ($q, emDefaultSchema, emFiles, emSQL, Expression, Field) {
+    '$q', 'emDefaultSchema', 'emFiles', 'emSQL', 'Expression', 'Field', 'Set',
+    function ($q, emDefaultSchema, emFiles, emSQL, Expression, Field, Set) {
 
         // ====================================================================
         /**
@@ -111,9 +111,12 @@ EdenMobile.factory('Table', [
         /**
          * Create a join expression
          *
-         * @param {Expression} expr - the assertion(s) for the join
+         * @param {Expression} expr - the assertion for the join
          *
          * @returns {Expression} - the join expression
+         *
+         * @example
+         *  table.on(table.$('key').equals(otherTable.$('key')))
          */
         Table.prototype.on = function(expr) {
 
@@ -125,14 +128,55 @@ EdenMobile.factory('Table', [
 
         // --------------------------------------------------------------------
         /**
-         * Create a new Set from this table
+         * Create a Set from this table
          *
-         * @param {Expression} expr - the filter expression for the Set
+         * @param {Expression} expr - the filter query (WHERE) for the Set
+         *
          * @returns {Set} - the Set
+         *
+         * @example
+         *  table.where(query)
+         *       .select([field1, field2], callback);
          */
         Table.prototype.where = function(expr) {
 
             return new Set(this).where(expr);
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Create a Set with an inner join
+         *
+         * @param {Expression} expr - the join expression
+         *
+         * @returns {Set} - the Set
+         *
+         * @example
+         *  table.join(otherTable.on(assertion))
+         *       .where(query)
+         *       .select([field1, field2], callback);
+         */
+        Table.prototype.join = function(expr) {
+
+            return new Set(this).join(expr);
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Create a Set with a left join
+         *
+         * @param {Expression} expr - the join expression
+         *
+         * @returns {Set} - the Set
+         *
+         * @example
+         *  table.left(otherTable.on(assertion))
+         *       .where(query)
+         *       .select([field1, field2], callback);
+         */
+        Table.prototype.left = function(expr) {
+
+            return new Set(this).left(expr);
         };
 
         // --------------------------------------------------------------------
@@ -613,3 +657,5 @@ EdenMobile.factory('Table', [
         return Table;
     }
 ]);
+
+// END ========================================================================

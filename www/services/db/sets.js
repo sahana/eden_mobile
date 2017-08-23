@@ -29,31 +29,40 @@
 
     // ========================================================================
     /**
-     * Data Sets
+     * Set constructor
+     *
+     * @param {Table} table - the primary table of the Set
      */
     function Set(table) {
 
         this.table = table;
+        this._db = table._db;
 
-        this.join = [];
-        this.left = [];
+        this._join = [];
+        this._left = [];
     }
 
     // ------------------------------------------------------------------------
     /**
-     * Add a filter query to this Set
+     * Add a filter query (WHERE) to this Set
      *
-     * @param {Expression} expr - a filter expression
+     * @param {Expression} expr - the filter expression
+     *
+     * @returns {Set} - the Set
      */
     Set.prototype.where = function(expr) {
 
-        // Only assertions can be
-        if (expr.exprType != 'assert' && expr.exprType != 'connective') {
+        // Only assertions can be filter expressions
+        if (expr.exprType != 'assert') {
             throw new Error('invalid expression type');
         }
 
-        // @todo: if we already have a where, AND it with expr
-        this.where = expr;
+        var query = this.query;
+        if (query === undefined) {
+            this.query = expr;
+        } else {
+            this.query = query.and(expr);
+        }
 
         // Make chainable
         return this;
@@ -61,13 +70,20 @@
 
     // ------------------------------------------------------------------------
     /**
-     * @todo: docstring
+     * Add an inner join to this Set
+     *
+     * @param {Expression} expr - the join expression
+     *
+     * @returns {Set} - the Set
      */
     Set.prototype.join = function(expr) {
 
-        // @todo: make sure expr is type 'join'
+        // Must be a join expression
+        if (expr.exprType != 'join') {
+            throw new Error('invalid expression type');
+        }
 
-        this.join.push(expr);
+        this._join.push(expr);
 
         // Make chainable
         return this;
@@ -75,13 +91,20 @@
 
     // ------------------------------------------------------------------------
     /**
-     * @todo: docstring
+     * Add a left join to this Set
+     *
+     * @param {Expression} expr - the join expression
+     *
+     * @returns {Set} - the Set
      */
     Set.prototype.left = function(expr) {
 
-        // @todo: make sure expr is type 'join'
+        // Must be a join expression
+        if (expr.exprType != 'join') {
+            throw new Error('invalid expression type');
+        }
 
-        this.left.push(expr);
+        this._left.push(expr);
 
         // Make chainable
         return this;
@@ -89,25 +112,133 @@
 
     // ------------------------------------------------------------------------
     /**
-     * @todo: implement this
-     * @todo: docstring
+     * Convert an array of result column expressions to SQL
+     *
+     * @param {Array} columns: array of result column expressions
+     *
+     * @returns {string}: string with result column expressions
      */
-    Set.prototype.select = function(fields, options, onSuccess, onError) {
+    Set.prototype.expand = function(columns) {
 
-        var sql = ['SELECT'];
+        var sql = [],
+            set = this;
 
-        sql.push('*');
+        columns.forEach(function(expr) {
+            switch (expr.exprType) {
+                case 'field':
+                case 'transform':
+                case 'aggregate':
+                    var alias = expr.columnAlias(set),
+                        sqlExpr = expr.toSQL();
+                    if (alias !== expr.name) {
+                        sqlExpr += ' AS "' + alias + '"';
+                    }
+                    sql.push(sqlExpr);
+                    break;
+                default:
+                    throw new Error('invalid expression');
+                    break;
+            }
+        });
+        return sql.join(',');
+    };
 
-        sql.push('FROM');
+    // ------------------------------------------------------------------------
+    /**
+     * Select data from this Set
+     *
+     * @param {Array} columns - array of column expressions, can be
+     *                          omitted (defaults to all columns)
+     * @param {object} options - an object with options, can be omitted
+     * @param {function} onSuccess - success callback, required
+     * @param {function} onError - error callback, optional
+     */
+    Set.prototype.select = function(columns, options, onSuccess, onError) {
 
-        sql.push('' + this.table);
-
-        if (this.where) {
-            sql.push('WHERE');
-            sql.push(this.where.toSQL());
+        // Flexible argument list
+        if (arguments.length < 4) {
+            if (columns !== null && columns !== undefined && columns.constructor !== Array) {
+                onError = onSuccess;
+                onSuccess = options;
+                options = columns;
+                columns = undefined;
+            }
+            if (typeof options == 'function') {
+                onError = onSuccess;
+                onSuccess = options;
+                options = undefined;
+            }
         }
 
-        console.log(sql.join(' '));
+        // Success callback is required
+        if (typeof onSuccess != 'function') {
+            throw new Error('callback required');
+        }
+
+        // Expand the columns
+        var sql = ['SELECT'];
+        if (!columns) {
+            sql.push('*');
+        } else {
+            sql.push(this.expand(columns));
+        }
+
+        // Expand the set
+        sql.push('FROM');
+        sql.push(this.table.toSQL());
+
+        this._join.forEach(function(expr) {
+            sql.push('JOIN ' + expr.toSQL());
+        });
+        this._left.forEach(function(expr) {
+            sql.push('LEFT JOIN ' + expr.toSQL());
+        });
+
+        // Expand the query
+        if (this.query) {
+            sql.push('WHERE');
+            sql.push(this.query.toSQL());
+        }
+
+        // Complete SQL statement
+        sql = sql.join(' ');
+
+        // Execute SQL query
+        if (sql) {
+
+            var db = this._db,
+                set = this;
+
+            db._adapter.executeSql(sql, [],
+                function(result) {
+                    // Success
+                    var rows = result.rows,
+                        records = [],
+                        record;
+
+                    // @todo: implement proper extraction method
+                    for (var i = 0, len = rows.length; i < len; i++) {
+                        record = {};
+                        columns.forEach(function(column) {
+                            if (column.extract) {
+                                var value = column.extract(set, rows.item(i));
+                            }
+                            record[column.columnAlias(set)] = value;
+                        });
+                        records.push(record);
+                    }
+
+                    onSuccess(records, result);
+                },
+                function(error) {
+                    // Error
+                    if (typeof onError == 'function') {
+                        onError(error);
+                    } else {
+                        db.sqlError(error);
+                    }
+                });
+        }
     };
 
     // ------------------------------------------------------------------------
@@ -124,7 +255,7 @@
      * @todo: implement this
      * @todo: docstring
      */
-    Set.prototype.delete = function(options, onSuccess, onError) {
+    Set.prototype.deleteRecords = function(options, onSuccess, onError) {
 
     };
 
@@ -134,3 +265,5 @@
     angular.module('EdenMobile').constant('Set', Set);
 
 })();
+
+// END ========================================================================

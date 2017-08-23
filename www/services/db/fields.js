@@ -82,26 +82,46 @@ EdenMobile.factory('Field', [
 
         // --------------------------------------------------------------------
         /**
-         * Override the Expression.toString method
+         * Override the Expression.toString method:
+         * - provide a string representation of this field
          *
-         * @returns {string} - an SQL identifier for the field,
-         *                     format: 'tableName.fieldName'
+         * @returns {string} - a string representation of this field
          */
         Field.prototype.toString = function() {
+
+            return this.toSQL();
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Override the Expression.toSQL method:
+         * - returns a prefixed SQL identifier for this field
+         *
+         * @returns {string} - the SQL identifier: 'tableName.fieldName'
+         */
+        Field.prototype.toSQL = function() {
 
             return (this.table || '<no table>') + '.' + this.name;
         };
 
         // --------------------------------------------------------------------
         /**
-         * Override the Expression.toSQL method
+         * Override Expression.prototype.columnAlias:
+         * - provide a column alias for this field
+         * - use simple field name for fields in the primary table of a set
+         * - use prefixed SQL identifier for all other cases
          *
-         * @returns {string} - an SQL identifier for the field,
-         *                     format: 'tableName.fieldName'
+         * @param {Set} set - the Set the Field is to be extracted from
+         *
+         * @returns {string} - an SQL alias for the Field
          */
-        Field.prototype.toSQL = function() {
+        Field.prototype.columnAlias = function(set) {
 
-            return this.toString();
+            var alias = this.name;
+            if (set && this.table !== set.table) {
+                alias = this.toSQL();
+            }
+            return alias;
         };
 
         // --------------------------------------------------------------------
@@ -198,6 +218,46 @@ EdenMobile.factory('Field', [
         };
 
         // --------------------------------------------------------------------
+        // @todo: implement encode() = JS=>SQL
+
+        // --------------------------------------------------------------------
+        /**
+         * Convert an SQL result value to JS
+         *
+         * @param {mixed} sqlValue - the SQL result value
+         *                           (as returned by executeSql)
+         *
+         * @returns {mixed} - the corresponding JS value
+         */
+        Field.prototype.decode = function(sqlValue) {
+
+            var jsValue = sqlValue;
+
+            if (jsValue !== undefined && jsValue !== null) {
+                switch(this.type) {
+                    case 'boolean':
+                        if (!sqlValue) {
+                            jsValue = false;
+                        } else {
+                            jsValue = true;
+                        }
+                        break;
+                    case 'date':
+                    case 'datetime':
+                        jsValue = new Date(sqlValue);
+                        break;
+                    case 'json':
+                        jsValue = JSON.parse(sqlValue);
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            return jsValue;
+        };
+
+        // --------------------------------------------------------------------
         /**
          * Get the selectable options for this field
          *
@@ -283,7 +343,7 @@ EdenMobile.factory('Field', [
                 if (options.constructor !== Array) {
                     // Convert into array of tuples
                     options = Object.keys(options).map(function(k) {
-                        return [k, options[k]]
+                        return [k, options[k]];
                     });
                 } else {
                     // Copy original array (to allow the caller to modify)
@@ -500,3 +560,4 @@ EdenMobile.factory('Field', [
     }
 ]);
 
+// END ========================================================================

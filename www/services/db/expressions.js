@@ -30,6 +30,11 @@
     // ========================================================================
     /**
      * SQL Expressions - Constructor
+     *
+     * @param {string} exprType - the expression type
+     * @param {Expression} left - the left operand
+     * @param {string} op - the operator
+     * @param {Expression} right - the right operand
      */
     function Expression(exprType, left, op, right) {
 
@@ -65,23 +70,29 @@
     // ------------------------------------------------------------------------
     /**
      * Connectives (logical operators)
+     *
+     * @example
+     *  expression.and(otherExpression)
      */
     Expression.prototype._connective = function(op, other) {
 
+        var expr;
+
         if (!other) {
-            return this;
+            expr = this;
         } else if (other.exprType != 'assert') {
             throw new Error('invalid expression type for "' + op + '"');
+        } else {
+            switch (this.exprType) {
+                case 'assert':
+                    expr = new Expression('assert', this, op, other);
+                    break;
+                default:
+                    throw new Error('invalid expression type for "' + op + '"');
+                    break;
+            }
         }
-
-        switch (this.exprType) {
-            case 'assert':
-                return new Expression('assert', this, op, other);
-                break;
-            default:
-                throw new Error('invalid expression type for "' + op + '"');
-                break;
-        }
+        return expr;
     };
 
     Expression.prototype.and = function(other) {
@@ -97,24 +108,31 @@
     // ------------------------------------------------------------------------
     /**
      * Assertions
+     *
+     * @example
+     *  field.equals(value)
      */
     Expression.prototype._assert = function(op, other) {
 
+        var expr;
+
         if (other === undefined) {
             throw new Error('missing operand');
+        } else {
+            switch (this.exprType) {
+                case 'field':
+                case 'transform':
+                case 'aggregate':
+                    expr = new Expression('assert', this, op, other);
+                    break;
+                default:
+                    throw new Error('invalid operand type for "' + op + '" assertion');
+                    break;
+            }
         }
-        switch (this.exprType) {
-
-            case 'field':
-            case 'transform':
-            case 'aggregate':
-                return new Expression('assert', this, op, other);
-                break;
-            default:
-                throw new Error('invalid operand type for "' + op + '" assertion');
-                break;
-        }
+        return expr;
     };
+
     Expression.prototype.equals = function(other) {
         return this._assert("=", other);
     };
@@ -140,19 +158,25 @@
     // ------------------------------------------------------------------------
     /**
      * Transformation functions
+     *
+     * @example
+     *  field.upper()
      */
     Expression.prototype._transform = function(op) {
 
-        switch (this.exprType) {
+        var expr;
 
+        switch (this.exprType) {
             case 'field':
             case 'transform':
-                return new Expression('transform', this, op);
+                expr = new Expression('transform', this, op);
+                expr.decode = this.decode;
                 break;
             default:
                 throw new Error('invalid type for "' + op + '" transformation');
                 break;
         }
+        return expr;
     };
 
     Expression.prototype.upper = function() {
@@ -165,18 +189,24 @@
     // ------------------------------------------------------------------------
     /**
      * Aggregation functions
+     *
+     * @example
+     *  field.count()
      */
     Expression.prototype._aggregate = function(op) {
 
-        switch (this.exprType) {
+        var expr;
 
+        switch (this.exprType) {
             case 'field':
-                return new Expression('aggregate', this, op)
+                expr = new Expression('aggregate', this, op);
+                expr.decode = this.decode;
                 break;
             default:
                 throw new Error('invalid type for "' + op + '" aggregation');
                 break;
         }
+        return expr;
     };
 
     Expression.prototype.min = function() {
@@ -191,10 +221,25 @@
     Expression.prototype.avg = function() {
         return this._aggregate('avg');
     };
+    Expression.prototype.sum = function() {
+        return this._aggregate('sum');
+    };
+
+    // ------------------------------------------------------------------------
+    /**
+     * Provide a string representation of this expression
+     *
+     * @returns {string} - a string representation of this expression
+     */
+    Expression.prototype.toString = function() {
+        return this.toSQL();
+    };
 
     // ------------------------------------------------------------------------
     /**
      * SQL construction
+     *
+     * @returns {string} - this expression as SQL string
      */
     Expression.prototype.toSQL = function() {
 
@@ -234,6 +279,7 @@
             case 'min':
             case 'max':
             case 'avg':
+            case 'sum':
             case 'count':
                 sqlStr = op.toUpperCase() + '(' + leftSql + ')';
                 break;
@@ -248,8 +294,53 @@
     };
 
     // ------------------------------------------------------------------------
-    Expression.prototype.toString = function() {
-        return this.toSQL();
+    /**
+     * Get a column alias for this expression
+     *
+     * @param {Set} set - the Set the column is extracted from
+     *
+     * @returns {string} - the column alias
+     */
+    Expression.prototype.columnAlias = function(set) {
+
+        var alias;
+
+        switch (this.exprType) {
+            case 'transform':
+            case 'aggregate':
+                var leftAlias = this.left.columnAlias(set);
+                if (leftAlias) {
+                    alias = this.op.toUpperCase() + '(' + leftAlias + ')';
+                }
+                break;
+            default:
+                throw new Error('invalid expression type');
+                break;
+        }
+        return alias;
+    };
+
+    // ------------------------------------------------------------------------
+    /**
+     * Extract a value for this expression from a query result row
+     *
+     * @param {Set} set - the set the row has been selected from
+     * @param {object} row - the result row (an item returned by executeSql)
+     *
+     * @returns {mixed} - the value for this expression from the row
+     */
+    Expression.prototype.extract = function(set, row) {
+
+        var alias = this.columnAlias(set),
+            value;
+
+        if (row.hasOwnProperty(alias)) {
+            value = row[alias];
+        }
+        if (value !== undefined && this.decode) {
+            value = this.decode(value);
+        }
+        return value;
     };
 
     // ------------------------------------------------------------------------
@@ -268,7 +359,7 @@
  */
 var not = function(expr) {
 
-    return expr.not()
+    return expr.not();
 };
 
 // ----------------------------------------------------------------------------
@@ -278,6 +369,8 @@ var not = function(expr) {
  * @returns {Expression} - a conjunction expression
  */
 var allOf = function() {
+
+    // @todo: accept+resolve arrays of expressions
 
     if (!arguments.length) {
         throw new Error('allOf: missing arguments');
@@ -298,6 +391,8 @@ var allOf = function() {
  * @returns {Expression} - a disjunction expression
  */
 var anyOf = function() {
+
+    // @todo: accept+resolve arrays of expressions
 
     if (!arguments.length) {
         throw new Error('anyOf: missing arguments');
