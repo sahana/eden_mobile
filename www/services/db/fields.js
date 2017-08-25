@@ -218,7 +218,57 @@ EdenMobile.factory('Field', [
         };
 
         // --------------------------------------------------------------------
-        // @todo: implement encode() = JS=>SQL
+        /**
+         * Convert a field value from JS to SQL
+         *
+         * @param {mixed} jsValue - the JS value
+         *
+         * @returns {mixed} - the SQL value
+         */
+        Field.prototype.encode = function(jsValue) {
+
+            if (jsValue === undefined) {
+                return jsValue;
+            }
+            var sqlValue = jsValue;
+
+            if (jsValue !== null) {
+                switch(this.type) {
+                    case 'boolean':
+                        if (!jsValue) {
+                            sqlValue = 0;
+                        } else {
+                            sqlValue = 1;
+                        }
+                        break;
+                    case 'date':
+                        var month = '' + (jsValue.getMonth() + 1),
+                            day = '' + jsValue.getDate(),
+                            year = jsValue.getFullYear();
+                        if (month.length < 2) {
+                            month = '0' + month;
+                        }
+                        if (day.length < 2) {
+                            day = '0' + day;
+                        }
+                        sqlValue = [year, month, day].join('-');
+                        break;
+                    case 'datetime':
+                        if (jsValue) {
+                            jsValue.setMilliseconds(0);
+                            sqlValue = jsValue.toISOString();
+                        }
+                        break;
+                    case 'json':
+                        sqlValue = JSON.stringify(jsValue);
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            return sqlValue;
+        };
 
         // --------------------------------------------------------------------
         /**

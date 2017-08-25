@@ -138,111 +138,6 @@
         };
     };
 
-    // ------------------------------------------------------------------------
-    /**
-     * SQL identifier for the field
-     *
-     * @param {any} tableName - the table name to prefix the field name, no
-     *                          prefix will be applied if omitted
-     */
-    SQLField.prototype.sqlName = function(tableName) {
-
-        if (tableName) {
-            return quoted(tableName + '.' + this.name);
-        } else {
-            return quoted(this.name);
-        }
-    };
-
-    // ------------------------------------------------------------------------
-    /**
-     * Convert a field value from JS to SQL
-     *
-     * @param {mixed} jsValue - the JS value
-     *
-     * @returns {mixed} - the SQL value
-     */
-    SQLField.prototype.encode = function(jsValue) {
-
-        if (jsValue === undefined) {
-            return jsValue;
-        }
-        var sqlValue = jsValue;
-
-        if (jsValue !== null) {
-            switch(this.type) {
-                case 'boolean':
-                    if (!jsValue) {
-                        sqlValue = 0;
-                    } else {
-                        sqlValue = 1;
-                    }
-                    break;
-                case 'date':
-                    var month = '' + (jsValue.getMonth() + 1),
-                        day = '' + jsValue.getDate(),
-                        year = jsValue.getFullYear();
-                    if (month.length < 2) {
-                        month = '0' + month;
-                    }
-                    if (day.length < 2) {
-                        day = '0' + day;
-                    }
-                    sqlValue = [year, month, day].join('-');
-                    break;
-                case 'datetime':
-                    if (jsValue) {
-                        jsValue.setMilliseconds(0);
-                        sqlValue = jsValue.toISOString();
-                    }
-                    break;
-                case 'json':
-                    sqlValue = JSON.stringify(jsValue);
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        return sqlValue;
-    };
-
-    // ------------------------------------------------------------------------
-    /**
-     * Convert a field value from SQL to JS
-     *
-     * @param {mixed} sqlValue - the SQL value
-     *
-     * @returns {mixed} - the JS value
-     */
-    SQLField.prototype.decode = function(sqlValue) {
-
-        var jsValue = sqlValue;
-
-        if (jsValue !== undefined && jsValue !== null) {
-            switch(this.type) {
-                case 'boolean':
-                    if (!sqlValue) {
-                        jsValue = false;
-                    } else {
-                        jsValue = true;
-                    }
-                    break;
-                case 'date':
-                case 'datetime':
-                    jsValue = new Date(sqlValue);
-                    break;
-                case 'json':
-                    jsValue = JSON.parse(sqlValue);
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        return jsValue;
-    };
-
     // ========================================================================
     /**
      * SQLTable constructor - helper class to generate SQL table statements
@@ -324,10 +219,9 @@
             }
             field = fields[fieldName];
             if (field) {
-                sqlField = new SQLField(field);
-                sqlValue = sqlField.encode(data[fieldName]);
+                sqlValue = field.encode(data[fieldName]);
                 if (sqlValue !== undefined) {
-                    cols.push(sqlField.sqlName());
+                    cols.push(quoted(field.name));
                     values.push(sqlValue);
                 }
             }
@@ -370,10 +264,9 @@
             }
             field = fields[fieldName];
             if (field) {
-                sqlField = new SQLField(field);
-                sqlValue = sqlField.encode(data[fieldName]);
+                sqlValue = field.encode(data[fieldName]);
                 if (sqlValue !== undefined) {
-                    cols.push(sqlField.sqlName());
+                    cols.push(quoted(field.name));
                     values.push(sqlValue);
                 }
             }
@@ -490,8 +383,7 @@
             var field = fields[fieldName];
             if (field) {
                 if (item.hasOwnProperty(fieldName)) {
-                    sqlField = new SQLField(field);
-                    jsValue = sqlField.decode(item[fieldName]);
+                    jsValue = field.decode(item[fieldName]);
                 } else {
                     jsValue = null;
                 }
