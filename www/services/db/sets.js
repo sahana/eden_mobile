@@ -200,6 +200,24 @@
             sql.push(this.query.toSQL());
         }
 
+        // Limitby
+        var limitby = options.limitby;
+        if (limitby) {
+            if (limitby.constructor == Array) {
+                limitby = [0].concat(limitby).reverse();
+            } else {
+                limitby = [0, limitby].reverse();
+            }
+            var limit = limitby[0] - 0;
+            if (limit && !isNaN(limit)) {
+                sql.push('LIMIT ' + limit);
+            }
+            var offset = limitby[1] - 0;
+            if (offset && !isNaN(offset)) {
+                sql.push('OFFSET ' + offset);
+            }
+        }
+
         // Complete SQL statement
         sql = sql.join(' ');
 

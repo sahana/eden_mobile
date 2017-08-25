@@ -482,7 +482,7 @@ EdenMobile.factory('Table', [
 
         // @todo: implement new select using Set
 
-        //Table.prototype.select = function(fields, options, onSuccess, onError) {
+        //Table.prototype.nSelect = function(fields, options, onSuccess, onError) {
         //    new Set(this).select(fields, options, onSuccess, onError);
         //};
 
