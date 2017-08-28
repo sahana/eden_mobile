@@ -111,14 +111,14 @@ EdenMobile.factory('Field', [
          * - use simple field name for fields in the primary table of a set
          * - use prefixed SQL identifier for all other cases
          *
-         * @param {Set} set - the Set the Field is to be extracted from
+         * @param {string} tableName - the name of the primary table name
          *
          * @returns {string} - an SQL alias for the Field
          */
-        Field.prototype.columnAlias = function(set) {
+        Field.prototype.columnAlias = function(tableName) {
 
             var alias = this.name;
-            if (set && this.table !== set.table) {
+            if (set && this.table.name !== tableName) {
                 alias = this.toSQL();
             }
             return alias;

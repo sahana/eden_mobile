@@ -297,18 +297,18 @@
     /**
      * Get a column alias for this expression
      *
-     * @param {Set} set - the Set the column is extracted from
+     * @param {string} tableName - the name of the primary table name
      *
      * @returns {string} - the column alias
      */
-    Expression.prototype.columnAlias = function(set) {
+    Expression.prototype.columnAlias = function(tableName) {
 
         var alias;
 
         switch (this.exprType) {
             case 'transform':
             case 'aggregate':
-                var leftAlias = this.left.columnAlias(set);
+                var leftAlias = this.left.columnAlias(tableName);
                 if (leftAlias) {
                     alias = this.op.toUpperCase() + '(' + leftAlias + ')';
                 }
@@ -324,14 +324,14 @@
     /**
      * Extract a value for this expression from a query result row
      *
-     * @param {Set} set - the set the row has been selected from
+     * @param {string} tableName - the name of the primary table name
      * @param {object} row - the result row (an item returned by executeSql)
      *
      * @returns {mixed} - the value for this expression from the row
      */
-    Expression.prototype.extract = function(set, row) {
+    Expression.prototype.extract = function(tableName, row) {
 
-        var alias = this.columnAlias(set),
+        var alias = this.columnAlias(tableName),
             value;
 
         if (row.hasOwnProperty(alias)) {

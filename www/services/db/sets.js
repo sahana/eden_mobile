@@ -237,26 +237,28 @@
         if (sql) {
 
             var db = this._db,
-                set = this;
+                tableName = this.table.name;
 
             db._adapter.executeSql(sql, [],
                 function(result) {
                     // Success
                     var rows = result.rows,
-                        records = [],
-                        record,
-                        value;
+                        records = [];
 
                     // @todo: implement proper extraction method
+                    var extract = function(row, column, record) {
+                        var alias = column.columnAlias(tableName),
+                            value;
+                        if (column.extract) {
+                            record[alias] = column.extract(tableName, row);
+                        }
+                    };
+
                     for (var i = 0, len = rows.length; i < len; i++) {
-                        record = {};
+                        var row = rows.items(i),
+                            record = {};
                         columns.forEach(function(column) {
-                            if (column.extract) {
-                                value = column.extract(set, rows.item(i));
-                            } else {
-                                return;
-                            }
-                            record[column.columnAlias(set)] = value;
+                            extract(row, column, record);
                         });
                         records.push(record);
                     }
@@ -368,8 +370,13 @@
 
     // ------------------------------------------------------------------------
     /**
-     * @todo: implement this
-     * @todo: docstring
+     * Delete records in this Set
+     *
+     * @param {object} options - options {key: value}, can be omitted
+     * @param {function} onSuccess - success callback, receives the number
+     *                               of deleted rows as argument
+     * @param {function} onError - error callback, receives the error
+     *                             message as argument
      */
     Set.prototype.delete = function(options, onSuccess, onError) {
 
@@ -386,7 +393,8 @@
             }
         }
 
-        var table = this.table;
+        // Construct the SQL
+        var table = this.table,
             sql = ['DELETE FROM', quoted(table.toSQL())],
             query;
 
@@ -396,8 +404,11 @@
             sql.push(query);
         }
 
-        var db = this._db,
+        var db = this._db;
 
+        // Remember the URIs of files linked to this set,
+        // to remove them after successful deletion of records
+        //
         // @todo: pass this.query instead of SQLified query
         //        (once getFiles is updated to use Set.select)
         table.getFiles(query, function(orphanedFiles) {
@@ -405,7 +416,7 @@
             db._adapter.executeSql(sql.join(' '), [],
                 function(result) {
                     // Delete now-orphaned files
-                    table.deleteFiles(orphanedFiles);
+                    orphanedFiles.remove();
                     // Execute callback
                     if (onSuccess) {
                         onSuccess(result.rowsAffected);

@@ -157,10 +157,13 @@ EdenMobile.controller("EMDataUpdate", [
                     'Delete Record',
                     'Are you sure you want to delete this record?',
                     function() {
-                        var query = tableName + '.id=' + targetID;
-                        targetResource.deleteRecords(query, function() {
-                            confirmAction('Record deleted', resourceName, recordID, componentName);
-                        });
+                        var table = targetResource.table,
+                            id = table.$('id');
+                        if (id) {
+                            table.where(id.equals(targetID)).delete(function() {
+                                onDelete();
+                            });
+                        }
                     });
             };
 

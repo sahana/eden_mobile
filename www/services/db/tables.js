@@ -26,8 +26,8 @@
 "use strict";
 
 EdenMobile.factory('Table', [
-    '$q', 'emDefaultSchema', 'emFiles', 'emSQL', 'Expression', 'Field', 'Set',
-    function ($q, emDefaultSchema, emFiles, emSQL, Expression, Field, Set) {
+    '$q', 'emDefaultSchema', 'emFiles', 'emSQL', 'Expression', 'Field', 'FileHandler', 'Set',
+    function ($q, emDefaultSchema, emFiles, emSQL, Expression, Field, FileHandler, Set) {
 
         // ====================================================================
         /**
@@ -524,26 +524,16 @@ EdenMobile.factory('Table', [
                         });
                     });
                     if (callback) {
-                        callback(files);
+                        callback(new FileHandler(files));
                     }
                 });
 
             } else {
 
                 if (callback) {
-                    callback(files);
+                    callback(new FileHandler(files));
                 }
             }
-        };
-
-        // --------------------------------------------------------------------
-        /**
-         * @todo: docstring
-         * @todo: better solution by passing back a handler with a remove()
-         */
-        Table.prototype.deleteFiles(files) {
-
-            emFiles.removeAll(files);
         };
 
         // --------------------------------------------------------------------
@@ -573,7 +563,7 @@ EdenMobile.factory('Table', [
                 adapter.executeSql(sql, [], function(result) {
 
                     // Delete now-orphaned files
-                    emFiles.removeAll(orphanedFiles);
+                    orphanedFiles.remove();
 
                     // Execute callback
                     if (callback) {

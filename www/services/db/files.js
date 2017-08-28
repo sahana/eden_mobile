@@ -23,9 +23,42 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
-
 (function() {
+
+    "use strict";
+
+    // ========================================================================
+    /**
+     * Handler for multiple file URIs
+     *
+     * @param {Array|string} fileURIs - an Array of file URIs
+     */
+    function FileHandler(fileURIs) {
+
+        if (fileURIs.constructor !== Array) {
+            this.fileURIs = [fileURIs];
+        } else {
+            this.fileURIs = fileURIs;
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Remove all files of this handler (asynchronously)
+     */
+    FileHandler.prototype.remove = function() {
+
+        this.fileURIs.forEach(function(fileURI) {
+            window.resolveLocalFileSystemURL(fileURI, function(fileEntry) {
+                fileEntry.remove();
+            });
+        });
+    };
+
+    // ------------------------------------------------------------------------
+    // Make injectable
+    //
+    angular.module('EdenMobile').constant('FileHandler', FileHandler);
 
     // ========================================================================
     /**
