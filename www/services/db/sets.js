@@ -23,9 +23,9 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
-
 (function() {
+
+    "use strict";
 
     // ========================================================================
     /**
@@ -150,7 +150,6 @@
                     break;
                 default:
                     throw new Error('invalid expression');
-                    break;
             }
         });
         return sql.join(',');
@@ -245,14 +244,17 @@
                     // Success
                     var rows = result.rows,
                         records = [],
-                        record;
+                        record,
+                        value;
 
                     // @todo: implement proper extraction method
                     for (var i = 0, len = rows.length; i < len; i++) {
                         record = {};
                         columns.forEach(function(column) {
                             if (column.extract) {
-                                var value = column.extract(set, rows.item(i));
+                                value = column.extract(set, rows.item(i));
+                            } else {
+                                return;
                             }
                             record[column.columnAlias(set)] = value;
                         });
@@ -369,8 +371,55 @@
      * @todo: implement this
      * @todo: docstring
      */
-    Set.prototype.deleteRecords = function(options, onSuccess, onError) {
+    Set.prototype.delete = function(options, onSuccess, onError) {
 
+        if (this._join.length || this._left.length) {
+            throw new Error('Can not delete from a join');
+        }
+
+        // Flexible arguments list
+        if (arguments.length < 3) {
+            if (typeof options == 'function') {
+                onError = onSuccess;
+                onSuccess = options;
+                options = undefined;
+            }
+        }
+
+        var table = this.table;
+            sql = ['DELETE FROM', quoted(table.toSQL())],
+            query;
+
+        if (this.query) {
+            query = this.query.toSQL();
+            sql.push('WHERE');
+            sql.push(query);
+        }
+
+        var db = this._db,
+
+        // @todo: pass this.query instead of SQLified query
+        //        (once getFiles is updated to use Set.select)
+        table.getFiles(query, function(orphanedFiles) {
+
+            db._adapter.executeSql(sql.join(' '), [],
+                function(result) {
+                    // Delete now-orphaned files
+                    table.deleteFiles(orphanedFiles);
+                    // Execute callback
+                    if (onSuccess) {
+                        onSuccess(result.rowsAffected);
+                    }
+                },
+                function(error) {
+                    // Error
+                    if (typeof onError == 'function') {
+                        onError(error);
+                    } else {
+                        db.sqlError(error);
+                    }
+                });
+        });
     };
 
     // ------------------------------------------------------------------------

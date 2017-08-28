@@ -538,6 +538,16 @@ EdenMobile.factory('Table', [
 
         // --------------------------------------------------------------------
         /**
+         * @todo: docstring
+         * @todo: better solution by passing back a handler with a remove()
+         */
+        Table.prototype.deleteFiles(files) {
+
+            emFiles.removeAll(files);
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Delete records in this table
          *
          * @param {string} query - SQL WHERE expression
