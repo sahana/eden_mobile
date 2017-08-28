@@ -29,6 +29,19 @@
 
     // ========================================================================
     /**
+     * Helper function to quote SQL identifiers
+     *
+     * @param {string} identifier - the identifier
+     *
+     * @returns {string} - the quoted identifier
+     */
+    var quoted = function(identifier) {
+
+        return '"' + identifier + '"';
+    };
+
+    // ========================================================================
+    /**
      * Set constructor
      *
      * @param {Table} table - the primary table of the Set
@@ -261,11 +274,94 @@
 
     // ------------------------------------------------------------------------
     /**
-     * @todo: implement this
-     * @todo: docstring
+     * Update the records in this Set
+     *
+     * @param {object} data - the data {fieldName: value, ...}
+     * @param {object} options - the options {key: value, ...}
+     * @property {bool} options.noDefaults - do not add update-defaults
+     * @param {function} onSuccess - the success callback, receives
+     *                               the number of updated rows as argument
+     * @param {Function} onError - the error callback, receives the error
+     *                             message as argument
      */
     Set.prototype.update = function(data, options, onSuccess, onError) {
 
+        if (this._join.length || this._left.length) {
+            throw new Error('Can not update a join');
+        }
+
+        // Flexible argument list (options and callbacks can be omitted)
+        if (arguments.length < 4) {
+            if (typeof options == 'function') {
+                onError = onSuccess;
+                onSuccess = options;
+                options = undefined;
+            }
+        }
+
+        // Add defaults
+        var table = this.table,
+            record;
+        if (options && options.noDefaults) {
+            record = data;
+        } else {
+            record = table.addDefaults(data, false, true);
+        }
+
+        // Collect columns and values
+        var fields = table.fields,
+            fieldName,
+            field,
+            sqlValue,
+            cols = [],
+            values = [];
+
+        for (fieldName in record) {
+            field = fields[fieldName];
+            if (field) {
+                sqlValue = field.encode(record[fieldName]);
+                if (sqlValue !== undefined) {
+                    cols.push(quoted(fieldName) + '=?');
+                    values.push(sqlValue);
+                }
+            }
+        }
+
+        if (cols.length) {
+
+            // Build the SQL
+            var sql = [
+                'UPDATE ' + quoted(table.toSQL()),
+                'SET ' + cols.join(',')
+            ];
+            if (this.query) {
+                sql.push('WHERE');
+                sql.push(this.query.toSQL());
+            }
+
+            // Execute the SQL
+            var db = this._db;
+            db._adapter.executeSql(sql.join(' '), values,
+                function(result) {
+                    // Success
+                    if (typeof onSuccess == 'function') {
+                        onSuccess(result.rowsAffected);
+                    }
+                },
+                function(error) {
+                    // Error
+                    if (typeof onError == 'function') {
+                        onError(error);
+                    } else {
+                        db.sqlError(error);
+                    }
+                });
+        } else {
+            // No data to write => invoke success callback immediately
+            if (onSuccess) {
+                onSuccess(0);
+            }
+        }
     };
 
     // ------------------------------------------------------------------------
