@@ -46,10 +46,11 @@
         }
 
         switch (exprType) {
-            case 'assert':
-            case 'transform':
             case 'aggregate':
+            case 'assert':
             case 'join':
+            case 'orderby':
+            case 'transform':
 
                 this.op = op;
                 this.left = left;
@@ -222,6 +223,33 @@
 
     // ------------------------------------------------------------------------
     /**
+     * Order-by expressions
+     */
+    Expression.prototype._orderby = function(op) {
+
+        var expr;
+
+        switch (this.exprType) {
+            case 'field':
+            case 'aggregate':
+            case 'transform':
+                expr = new Expression('orderby', this, op);
+                break;
+            default:
+                throw new Error('invalid type for "' + op + '" sorting');
+        }
+        return expr;
+    };
+
+    Expression.prototype.asc = function() {
+        return this._orderby('asc');
+    };
+    Expression.prototype.desc = function() {
+        return this._orderby('desc');
+    };
+
+    // ------------------------------------------------------------------------
+    /**
      * Provide a string representation of this expression
      *
      * @returns {string} - a string representation of this expression
@@ -234,9 +262,13 @@
     /**
      * SQL construction
      *
+     * @param {string} tableName - the name of the primary table in the
+     *                             query; optional: only required for
+     *                             orderby with aggregates/transformations
+     *
      * @returns {string} - this expression as SQL string
      */
-    Expression.prototype.toSQL = function() {
+    Expression.prototype.toSQL = function(tableName) {
 
         var sqlStr,
             op = this.op,
@@ -276,10 +308,21 @@
             case 'avg':
             case 'sum':
             case 'count':
-                sqlStr = op.toUpperCase() + '(' + leftSql + ')';
+                sqlStr = op.toUpperCase() + '(' + lSql + ')';
                 break;
             case 'on':
                 sqlStr = '' + left + ' ON ' + right.toSQL();
+                break;
+            case 'asc':
+            case 'desc':
+                if (left.exprType != 'field') {
+                    lSql = '"' + left.columnAlias(tableName) + '"';
+                }
+                sqlStr = lSql;
+                // ASC is default, other directions must be explicit
+                if (op != 'asc') {
+                    sqlStr += ' ' + op.toUpperCase();
+                }
                 break;
             default:
                 throw new Error('unknown operator "' + this.op + '"');

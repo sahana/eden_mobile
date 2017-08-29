@@ -214,6 +214,101 @@
 
     // ------------------------------------------------------------------------
     /**
+     * Get the SQL for limitby-option
+     *
+     * @param {Array|number} limitby - the limitby option
+     *
+     * @returns {string} - the SQL fragment for limitby
+     */
+    Set.prototype.limitbySQL = function(limitby) {
+
+        var sql = [];
+
+        if (limitby) {
+
+            if (limitby.constructor == Array) {
+                limitby = [0].concat(limitby).reverse();
+            } else {
+                limitby = [0, limitby].reverse();
+            }
+
+            var limit = limitby[0] - 0;
+            if (limit && !isNaN(limit)) {
+                sql.push('LIMIT ' + limit);
+            }
+
+            var offset = limitby[1] - 0;
+            if (offset && !isNaN(offset)) {
+                sql.push('OFFSET ' + offset);
+            }
+        }
+
+        if (sql.length) {
+            sql = sql.join(' ');
+        } else {
+            sql = undefined;
+        }
+        return sql;
+    };
+
+    // ------------------------------------------------------------------------
+    /**
+     * Get the SQL for orderby-option
+     *
+     * @param {Array|number} orderby - the orderby option
+     *
+     * @example
+     *  orderby: [table.$('date').desc()]
+     * @example
+     *  orderby: [table.$('value').max()]
+     *
+     * @note
+     *  Orderby-columns which are not fields must be in the result
+     * @todo:
+     *  ...enforce this
+     *
+     * @returns {string} - the SQL fragment for orderby
+     */
+    Set.prototype.orderbySQL = function(orderby) {
+
+        var sql = [],
+            tableName = this.table.name;
+
+        if (orderby) {
+
+            if (orderby.constructor !== Array) {
+                orderby = [orderby];
+            }
+            orderby.forEach(function(expr) {
+                if (typeof expr == 'string') {
+                    sql.push(expr);
+                } else {
+                    switch (expr.exprType) {
+                        case 'field':
+                        case 'aggregate':
+                        case 'transform':
+                            sql.push(expr.asc().toSQL(tableName));
+                            break;
+                        case 'orderby':
+                            sql.push(expr.toSQL(tableName));
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            });
+        }
+
+        if (sql.length) {
+            sql = 'ORDER BY ' + sql.join(', ');
+        } else {
+            sql = undefined;
+        }
+        return sql;
+    };
+
+    // ------------------------------------------------------------------------
+    /**
      * Select data from this Set
      *
      * @param {Array} columns - array of column expressions, can be
@@ -267,23 +362,15 @@
             sql.push(this.query.toSQL());
         }
 
+        // Query options
         if (options) {
-            // Limitby
-            var limitby = options.limitby;
+            var orderby = this.orderbySQL(options.orderby);
+            if (orderby) {
+               sql.push(orderby);
+            }
+            var limitby = this.limitbySQL(options.limitby);
             if (limitby) {
-                if (limitby.constructor == Array) {
-                    limitby = [0].concat(limitby).reverse();
-                } else {
-                    limitby = [0, limitby].reverse();
-                }
-                var limit = limitby[0] - 0;
-                if (limit && !isNaN(limit)) {
-                    sql.push('LIMIT ' + limit);
-                }
-                var offset = limitby[1] - 0;
-                if (offset && !isNaN(offset)) {
-                    sql.push('OFFSET ' + offset);
-                }
+                sql.push(limitby);
             }
         }
 
