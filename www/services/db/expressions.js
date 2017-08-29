@@ -23,9 +23,9 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
-
 (function() {
+
+    "use strict";
 
     // ========================================================================
     /**
@@ -63,7 +63,6 @@
 
             default:
                 throw new Error('unsupported expression type: ' + exprType);
-                break;
         }
     }
 
@@ -89,7 +88,6 @@
                     break;
                 default:
                     throw new Error('invalid expression type for "' + op + '"');
-                    break;
             }
         }
         return expr;
@@ -127,7 +125,6 @@
                     break;
                 default:
                     throw new Error('invalid operand type for "' + op + '" assertion');
-                    break;
             }
         }
         return expr;
@@ -174,7 +171,6 @@
                 break;
             default:
                 throw new Error('invalid type for "' + op + '" transformation');
-                break;
         }
         return expr;
     };
@@ -204,7 +200,6 @@
                 break;
             default:
                 throw new Error('invalid type for "' + op + '" aggregation');
-                break;
         }
         return expr;
     };
@@ -344,7 +339,6 @@
                 break;
             default:
                 throw new Error('invalid expression type');
-                break;
         }
         return alias;
     };

@@ -25,9 +25,9 @@
  * @todo: deprecate
  */
 
-"use strict";
-
 (function() {
+
+    "use strict";
 
     var refPattern = /reference\s+([a-z]{1}[a-z0-9_]*)(?:\.([a-z]{1}[a-z0-9_]*)){0,1}/gi;
 
@@ -228,7 +228,7 @@
         }
 
         // Construct SQL statement
-        var placeholders = cols.map(col => '?').join(','),
+        var placeholders = cols.map(function(col) { return '?'; }).join(','),
             sql = [
                 'INSERT INTO ' + quoted(this.name),
                 '(' + cols.join(',') + ')',
@@ -272,7 +272,7 @@
             }
         }
 
-        var placeholders = cols.map(col => col + '=?').join(','),
+        var placeholders = cols.map(function(col) { return col + '=?'; }).join(','),
             sql = [
                 'UPDATE ' + quoted(this.name),
                 'SET ' + placeholders
@@ -305,7 +305,9 @@
         var tableName = this.name,
             cols = '*';
         if (fieldNames) {
-            cols = fieldNames.map(col => tableName + '.' + col).join(',');
+            cols = fieldNames.map(function(col) {
+                return tableName + '.' + col;
+            }).join(',');
         }
 
         var sql = 'SELECT ' + cols + ' FROM ' + quoted(tableName);

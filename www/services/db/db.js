@@ -23,11 +23,11 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
-
 EdenMobile.factory('emDB', [
     '$q', 'emDefaultSchema', 'Field', 'Table',
     function ($q, emDefaultSchema, Field, Table) {
+
+        "use strict";
 
         // ====================================================================
         /**
