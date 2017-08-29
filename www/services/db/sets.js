@@ -29,6 +29,63 @@
 
     // ========================================================================
     /**
+     * Container for a row in a query result
+     *
+     * @param {Table} table - the primary table of the Set
+     * @param {object} data - the raw data as returned from SELECT
+     */
+    function Row(table, data) {
+
+        this._db = table._db;
+        this.tableName = table.name;
+        this.data = data;
+    }
+
+    // ------------------------------------------------------------------------
+    /**
+     * Get the value for an expression
+     *
+     * @param {Expression|string} expr - the expression, or the column alias
+     *                                   of the expression
+     *
+     * @example
+     *  value = row.$(table.$('name'));
+     * @example
+     *  value = row.$('name');
+     * @example
+     *  value = row.$('my_table.name');
+     *
+     * @returns {*} - the value for the expression, or undefined if
+     *                there is no column for the expression
+     */
+    Row.prototype.$ = function(expr) {
+
+        var value;
+
+        if (expr) {
+            var data = this.data;
+
+            if (typeof expr == 'string') {
+
+                if (data.hasOwnProperty(expr)) {
+                    value = data[expr];
+                } else if (expr.startsWith(this.tableName + '.')) {
+                    var fieldName = expr.substring(expr.indexOf('.') + 1);
+                    value = data[fieldName];
+                }
+            } else {
+                var columnAlias = expr.columnAlias(this.tableName);
+                if (columnAlias) {
+                    value = this.data[columnAlias];
+                }
+            }
+        }
+
+        return value;
+    };
+
+    // ========================================================================
+    /**
      * Helper function to quote SQL identifiers
      *
      * @param {string} identifier - the identifier
@@ -134,14 +191,14 @@
     Set.prototype.expand = function(columns) {
 
         var sql = [],
-            set = this;
+            tableName = this.table.name;
 
         columns.forEach(function(expr) {
             switch (expr.exprType) {
                 case 'field':
                 case 'transform':
                 case 'aggregate':
-                    var alias = expr.columnAlias(set),
+                    var alias = expr.columnAlias(tableName),
                         sqlExpr = expr.toSQL();
                     if (alias !== expr.name) {
                         sqlExpr += ' AS "' + alias + '"';
@@ -168,18 +225,16 @@
     Set.prototype.select = function(columns, options, onSuccess, onError) {
 
         // Flexible argument list
-        if (arguments.length < 4) {
-            if (columns !== null && columns !== undefined && columns.constructor !== Array) {
-                onError = onSuccess;
-                onSuccess = options;
-                options = columns;
-                columns = undefined;
-            }
-            if (typeof options == 'function') {
-                onError = onSuccess;
-                onSuccess = options;
-                options = undefined;
-            }
+        if (columns !== null && columns !== undefined && columns.constructor !== Array) {
+            onError = onSuccess;
+            onSuccess = options;
+            options = columns;
+            columns = undefined;
+        }
+        if (typeof options == 'function') {
+            onError = onSuccess;
+            onSuccess = options;
+            options = undefined;
         }
 
         // Success callback is required
@@ -212,21 +267,23 @@
             sql.push(this.query.toSQL());
         }
 
-        // Limitby
-        var limitby = options.limitby;
-        if (limitby) {
-            if (limitby.constructor == Array) {
-                limitby = [0].concat(limitby).reverse();
-            } else {
-                limitby = [0, limitby].reverse();
-            }
-            var limit = limitby[0] - 0;
-            if (limit && !isNaN(limit)) {
-                sql.push('LIMIT ' + limit);
-            }
-            var offset = limitby[1] - 0;
-            if (offset && !isNaN(offset)) {
-                sql.push('OFFSET ' + offset);
+        if (options) {
+            // Limitby
+            var limitby = options.limitby;
+            if (limitby) {
+                if (limitby.constructor == Array) {
+                    limitby = [0].concat(limitby).reverse();
+                } else {
+                    limitby = [0, limitby].reverse();
+                }
+                var limit = limitby[0] - 0;
+                if (limit && !isNaN(limit)) {
+                    sql.push('LIMIT ' + limit);
+                }
+                var offset = limitby[1] - 0;
+                if (offset && !isNaN(offset)) {
+                    sql.push('OFFSET ' + offset);
+                }
             }
         }
 
@@ -237,7 +294,7 @@
         if (sql) {
 
             var db = this._db,
-                tableName = this.table.name;
+                table = this.table;
 
             db._adapter.executeSql(sql, [],
                 function(result) {
@@ -245,24 +302,9 @@
                     var rows = result.rows,
                         records = [];
 
-                    // @todo: implement proper extraction method
-                    var extract = function(row, column, record) {
-                        var alias = column.columnAlias(tableName),
-                            value;
-                        if (column.extract) {
-                            record[alias] = column.extract(tableName, row);
-                        }
-                    };
-
                     for (var i = 0, len = rows.length; i < len; i++) {
-                        var row = rows.items(i),
-                            record = {};
-                        columns.forEach(function(column) {
-                            extract(row, column, record);
-                        });
-                        records.push(record);
+                        records.push(new Row(table, rows.item(i)));
                     }
-
                     onSuccess(records, result);
                 },
                 function(error) {
@@ -295,12 +337,10 @@
         }
 
         // Flexible argument list (options and callbacks can be omitted)
-        if (arguments.length < 4) {
-            if (typeof options == 'function') {
-                onError = onSuccess;
-                onSuccess = options;
-                options = undefined;
-            }
+        if (typeof options == 'function') {
+            onError = onSuccess;
+            onSuccess = options;
+            options = undefined;
         }
 
         // Add defaults
@@ -385,12 +425,10 @@
         }
 
         // Flexible arguments list
-        if (arguments.length < 3) {
-            if (typeof options == 'function') {
-                onError = onSuccess;
-                onSuccess = options;
-                options = undefined;
-            }
+        if (typeof options == 'function') {
+            onError = onSuccess;
+            onSuccess = options;
+            options = undefined;
         }
 
         // Construct the SQL

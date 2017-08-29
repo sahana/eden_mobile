@@ -295,6 +295,35 @@
 
     // ------------------------------------------------------------------------
     /**
+     * Get the table name for a field expression
+     *
+     * @returns {string} - the table name
+     */
+    Expression.prototype.tableName = function() {
+
+        var tableName;
+
+        switch (this.exprType) {
+            case 'transform':
+            case 'aggregate':
+                tableName = this.left.tableName();
+                break;
+            case 'field':
+                if (this.table) {
+                    tableName = this.table.name;
+                } else {
+                    tableName = '<no table>';
+                }
+                break;
+            default:
+                // Not a field expression
+                break;
+        }
+        return tableName;
+    };
+
+    // ------------------------------------------------------------------------
+    /**
      * Get a column alias for this expression
      *
      * @param {string} tableName - the name of the primary table name

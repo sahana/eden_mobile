@@ -118,7 +118,7 @@ EdenMobile.factory('Field', [
         Field.prototype.columnAlias = function(tableName) {
 
             var alias = this.name;
-            if (set && this.table.name !== tableName) {
+            if (tableName && this.table.name !== tableName) {
                 alias = this.toSQL();
             }
             return alias;
