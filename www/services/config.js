@@ -23,8 +23,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
-
 /**
  * emConfig - Service providing access to user settings
  *
@@ -34,6 +32,8 @@
 EdenMobile.factory('emConfig', [
     '$q', 'emDB', 'emSettings',
     function ($q, emDB, emSettings) {
+
+        "use strict";
 
         // The current settings
         var currentSettings = {};
@@ -84,9 +84,10 @@ EdenMobile.factory('emConfig', [
          */
         var loadSettings = function(records) {
 
-            if (records.length > 0) {
+            if (records.length) {
 
-                var settings = records[0].settings,
+                var record = records[0],
+                    settings = record.$('settings'),
                     name,
                     section,
                     values,
@@ -117,10 +118,10 @@ EdenMobile.factory('emConfig', [
                     }
                 }
                 // Store the record ID for later updates
-                settingsID = records[0].id;
+                settingsID = record.$('id');
             }
             // Resolve the promise
-            settingsStatus.resolve(settings);
+            settingsStatus.resolve(currentSettings);
         };
 
         // Load the defaults
@@ -128,7 +129,7 @@ EdenMobile.factory('emConfig', [
 
         // Initial loading of the current configuration values from the database:
         emDB.table('em_config').then(function(table) {
-            table.sqlSelect(['id', 'settings'], loadSettings);
+            table.select(['id', 'settings'], {limitby: 1}, loadSettings);
         });
 
         /**
@@ -154,7 +155,8 @@ EdenMobile.factory('emConfig', [
          * @returns {mixed} - the current value for the key, or undefined if
          *                    the key doesn't exist
          *
-         * @example serverURL = settings.get('server.url');
+         * @example
+         *  serverURL = settings.get('server.url');
          */
         Settings.prototype.get = function(key) {
 
@@ -181,7 +183,8 @@ EdenMobile.factory('emConfig', [
          * @param {string} key - the key as 'sectionKey.settingKey'
          * @param {mixed} value - the new value (must be JSON-serializable)
          *
-         * @example settings.set('server.url', 'http://eden.example.com');
+         * @example
+         *  settings.set('server.url', 'http://eden.example.com');
          */
         Settings.prototype.set = function(key, value) {
 
@@ -205,7 +208,8 @@ EdenMobile.factory('emConfig', [
          *
          * @param {object} updates - object with updated settings
          *
-         * @example settings.update({server: {url: 'http://eden.example.com'}});
+         * @example
+         *  settings.update({server: {url: 'http://eden.example.com'}});
          */
         Settings.prototype.update = function(updates) {
 
@@ -304,7 +308,8 @@ EdenMobile.factory('emConfig', [
              *                              function(settings), where settings is an
              *                              instance of the Settings API
              *
-             * @example emConfig.apply(function(settings) { ... });
+             * @example
+             *  emConfig.apply(function(settings) { ... });
              *
              */
             apply: function(callback) {
