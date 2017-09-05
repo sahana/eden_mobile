@@ -32,7 +32,7 @@
      * Container for a row in a query result
      *
      * @param {Table} table - the primary table of the Set
-     * @param {object} data - the raw data as returned from SELECT
+     * @param {object} data - the decoded data (from Set.extract)
      */
     function Row(table, data) {
 
@@ -67,33 +67,20 @@
             var data = this.data;
 
             if (typeof expr == 'string') {
-
-                var tables = this._db.tables,
-                    table = tables[tableName],
-                    fields = table.fields,
-                    field;
-
-                if (fields.hasOwnProperty(expr)) {
-                    field = fields[expr];
-                    value = field.extract(this.tableName, data);
-                } else if (expr.indexOf('.') > 0) {
-                    var items = expr.split('.', 2);
-                    table = tables[items[0]];
-                    if (table) {
-                        field = table.$(items[1]);
-                        if (field) {
-                            value = field.extract(this.tableName, data);
-                        }
-                    }
-                }
-
-                if (!field && data.hasOwnProperty(expr)) {
-                    value = data[expr]; // NB: raw data!
+                if (data.hasOwnProperty(expr)) {
+                    value = data[expr];
+                } else if (expr.startsWith(this.tableName + '.')) {
+                    var fieldName = expr.substring(expr.indexOf('.') + 1);
+                    value = data[fieldName];
                 }
             } else {
-                value = expr.extract(this.tableName, data);
+                var columnAlias = expr.columnAlias(this.tableName);
+                if (columnAlias) {
+                    value = this.data[columnAlias];
+                }
             }
         }
+
         return value;
     };
 
@@ -128,8 +115,7 @@
 
             var fields = table.fields,
                 colName,
-                fieldName,
-                field;
+                fieldName;
 
             for (colName in data) {
                 if (colName.startsWith(tableName + '.')) {
@@ -138,8 +124,7 @@
                     fieldName = colName;
                 }
                 if (fields.hasOwnProperty(fieldName)) {
-                    field = fields[fieldName];
-                    result[fieldName] = field.decode(data[colName]);
+                    result[fieldName] = data[colName];
                 }
             }
         }
@@ -288,6 +273,62 @@
             }
         });
         return sql.join(',');
+    };
+
+    // ------------------------------------------------------------------------
+    /**
+     * Extract column data from a query result
+     *
+     * @param {Array} columns - Array of column expressions
+     * @param {} rows - the rows returned from SELECT
+     *
+     * @returns {Array} - Array of Rows
+     */
+    Set.prototype.extract = function(columns, rows) {
+
+        var expressions = {},
+            table = this.table,
+            tableName = table.name,
+            fieldName;
+
+        columns.forEach(function(expr) {
+            if (typeof expr == 'string') {
+                fieldName = expr;
+                expr = table.$(fieldName);
+                if (!expr) {
+                    throw new Error('undefined field: ' + tableName + '.' + fieldName);
+                }
+            }
+            expressions[expr.columnAlias(tableName)] = expr;
+        });
+
+        var records = [],
+            item,
+            data,
+            expr,
+            alias,
+            value;
+
+        for (var i = 0, len = rows.length; i < len; i++) {
+
+            item = rows.item(i);
+            data = {};
+
+            for (alias in expressions) {
+
+                expr = expressions[alias];
+                value = item[alias];
+
+                if (value !== undefined && expr.decode) {
+                    value = expr.decode(value);
+                }
+
+                data[alias] = value;
+            }
+            records.push(new Row(table, data));
+        }
+
+        return records;
     };
 
     // ------------------------------------------------------------------------
@@ -459,17 +500,14 @@
         if (sql) {
 
             var db = this._db,
-                table = this.table;
+                table = this.table,
+                self = this;
 
             db._adapter.executeSql(sql, [],
                 function(result) {
                     // Success
                     var rows = result.rows,
-                        records = [];
-
-                    for (var i = 0, len = rows.length; i < len; i++) {
-                        records.push(new Row(table, rows.item(i)));
-                    }
+                        records = self.extract(columns, rows);
                     onSuccess(records, result);
                 },
                 function(error) {
