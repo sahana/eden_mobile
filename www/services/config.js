@@ -282,7 +282,8 @@ EdenMobile.factory('emConfig', [
             if (!empty) {
                 emDB.table('em_config').then(function(table) {
                     if (settingsID) {
-                        table.update({settings: data}, 'id=' + settingsID, function() {
+                        table.where(table.$('id').equals(settingsID))
+                             .update({settings: data}, function() {
                             if (callback) {
                                 callback();
                             }
