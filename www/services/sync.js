@@ -92,7 +92,7 @@ EdenMobile.factory('emSyncLog', [
                             'message'
                         ];
 
-                    table.select(fields, 'current=1', callback);
+                    table.sqlSelect(fields, 'current=1', callback);
                 });
             }
         };
@@ -817,7 +817,7 @@ EdenMobile.factory('emSync', [
                     uuid,
                     deferredItem;
 
-                table.select(fields, query, function(records) {
+                table.sqlSelect(fields, query, function(records) {
 
                     records.forEach(function(record) {
 
@@ -847,7 +847,7 @@ EdenMobile.factory('emSync', [
                         // For the remaining lookups, just look up the UUID
                         query = 'id IN (' + Object.keys(lookups) + ')';
                         fields = ['id', 'uuid'];
-                        table.select(fields, query, function(records) {
+                        table.sqlSelect(fields, query, function(records) {
 
                             records.forEach(function(record) {
 
@@ -2627,7 +2627,7 @@ EdenMobile.factory('emSync', [
                             return "'" + uuid + "'";
                         }).join(',') + ')';
 
-                        table.select(['uuid', 'id'], query, function(records) {
+                        table.sqlSelect(['uuid', 'id'], query, function(records) {
 
                             // Resolve the dependency for each record found
                             if (records.length) {

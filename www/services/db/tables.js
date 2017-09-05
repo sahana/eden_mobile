@@ -78,6 +78,19 @@ EdenMobile.factory('Table', [
 
         // --------------------------------------------------------------------
         /**
+         * Construct a WHERE expression (assertion) from raw SQL
+         *
+         * @param {string} sqlStr - the SQL WHERE expression as string
+         *
+         * @returns {Expression} - an Expression with exprType 'assert'
+         */
+        Table.prototype.sqlAssert = function(sqlStr) {
+
+            return new Expression('assert', sqlStr, 'sql');
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Get a string representation for this table
          *
          * @returns {string} - a string representation for this table
@@ -437,13 +450,15 @@ EdenMobile.factory('Table', [
 
         // --------------------------------------------------------------------
         /**
-         * Select records from this table
+         * Select records from this table (using raw SQL WHERE expression)
          *
          * @param {Array} fields - Array of field names
          * @param {string} query - SQL WHERE expression
          * @param {function} callback - callback function: function(records, result)
+         *
+         * @todo: deprecate
          */
-        Table.prototype.select = function(fields, query, callback) {
+        Table.prototype.sqlSelect = function(fields, query, callback) {
 
             var sqlTable = emSQL.Table(this),
                 sql = null;
@@ -480,11 +495,22 @@ EdenMobile.factory('Table', [
             }
         };
 
-        // @todo: implement new select using Set
+        // --------------------------------------------------------------------
+        /**
+         * Select records from this table (see Set.select)
+         *
+         * @param {Array} columns - array of column expressions, can be
+         *                          omitted (defaults to all fields in the
+         *                          table)
+         * @param {object} options - an object with SELECT options (orderby,
+         *                           limitby, etc), can be omitted
+         * @param {function} onSuccess - success callback, required
+         * @param {function} onError - error callback, optional
+         */
+        Table.prototype.select = function(fields, options, onSuccess, onError) {
 
-        //Table.prototype.nSelect = function(fields, options, onSuccess, onError) {
-        //    new Set(this).select(fields, options, onSuccess, onError);
-        //};
+           new Set(this).select(fields, options, onSuccess, onError);
+        };
 
         // --------------------------------------------------------------------
         /**
@@ -514,7 +540,7 @@ EdenMobile.factory('Table', [
             if (uploadFields.length) {
 
                 // Get all file URIs in upload-fields
-                this.select(uploadFields, query, function(records) {
+                this.sqlSelect(uploadFields, query, function(records) {
                     records.forEach(function(record) {
                         uploadFields.forEach(function(fieldName) {
                             var fileURI = record[fieldName];
@@ -603,7 +629,7 @@ EdenMobile.factory('Table', [
                 }
 
                 // Find the record
-                this.select(fields, query, function(records) {
+                this.sqlSelect(fields, query, function(records) {
                     if (records.length) {
                         deferred.resolve(records[0]);
                     } else {

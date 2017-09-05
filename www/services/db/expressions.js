@@ -270,12 +270,18 @@
      */
     Expression.prototype.toSQL = function(tableName) {
 
-        var sqlStr,
-            op = this.op,
-            left = this.left,
+        var op = this.op,
+            left = this.left;
+
+        if (op == 'sql') {
+            // Raw SQL => return left operand as-is
+            return left;
+        }
+
+        var lSql = left.toSQL(),
             right = this.right,
-            lSql = left.toSQL(),
-            rSql;
+            rSql,
+            sqlStr;
 
         switch (op) {
             case 'and':

@@ -128,7 +128,7 @@ EdenMobile.factory('emConfig', [
 
         // Initial loading of the current configuration values from the database:
         emDB.table('em_config').then(function(table) {
-            table.select(['id', 'settings'], loadSettings);
+            table.sqlSelect(['id', 'settings'], loadSettings);
         });
 
         /**

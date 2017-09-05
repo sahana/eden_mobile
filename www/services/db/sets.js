@@ -84,6 +84,54 @@
         return value;
     };
 
+    // ------------------------------------------------------------------------
+    /**
+     * Convert the Row into an object with {fieldName: value} properties
+     *
+     * @param {string|Table} - the table name (or table) for which to
+     *                         extract the field values, optional
+     *                         (default = primary table)
+     *
+     * @returns {object} - an object with {fieldName: value} properties
+     */
+    Row.prototype._ = function(tableName) {
+
+        if (tableName === undefined) {
+            tableName = this.tableName;
+        }
+
+        var table;
+        if (typeof tableName != 'string') {
+            table = tableName;
+            tableName = table.name;
+        } else {
+            table = this._db.tables[tableName];
+        }
+
+        var data = this.data,
+            result = {};
+
+        if (tableName && table) {
+
+            var fields = table.fields,
+                colName,
+                fieldName;
+
+            for (colName in data) {
+                if (colName.startsWith(tableName + '.')) {
+                    fieldName = substring(colName.indexOf('.') + 1);
+                } else {
+                    fieldName = colName;
+                }
+                if (fields.hasOwnProperty(fieldName)) {
+                    result[fieldName] = data[colName];
+                }
+            }
+        }
+
+        return result;
+    };
+
     // ========================================================================
     /**
      * Helper function to quote SQL identifiers
@@ -121,6 +169,11 @@
      * @returns {Set} - the Set
      */
     Set.prototype.where = function(expr) {
+
+        // Treat strings as raw SQL
+        if (typeof expr == 'string') {
+            expr = this.table.sqlAssert(expr);
+        }
 
         // Only assertions can be filter expressions
         if (expr.exprType != 'assert') {
@@ -191,9 +244,19 @@
     Set.prototype.expand = function(columns) {
 
         var sql = [],
-            tableName = this.table.name;
+            table = this.table,
+            tableName = table.name;
 
         columns.forEach(function(expr) {
+
+            if (typeof expr == 'string') {
+                var fieldName = expr;
+                expr = table.$(fieldName);
+                if (expr === undefined) {
+                    throw new Error('undefined field: ' + tableName + '.' + fieldName);
+                }
+            }
+
             switch (expr.exprType) {
                 case 'field':
                 case 'transform':
@@ -206,7 +269,7 @@
                     sql.push(sqlExpr);
                     break;
                 default:
-                    throw new Error('invalid expression');
+                    throw new Error('invalid column expression');
             }
         });
         return sql.join(',');

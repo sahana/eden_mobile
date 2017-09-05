@@ -237,7 +237,7 @@ EdenMobile.factory('emResources', [
 
                 var query = 'em_resource.name="' + name + '"';
 
-                table.select(['id'], query, function(records) {
+                table.sqlSelect(['id'], query, function(records) {
                     if (records.length === 0) {
                         table.insert(schema);
                     } else {
@@ -378,7 +378,7 @@ EdenMobile.factory('emResources', [
             }
             var query = this.extendQuery(query);
 
-            this.table.select(fields, query, callback);
+            this.table.sqlSelect(fields, query, callback);
         };
 
         // --------------------------------------------------------------------
@@ -919,7 +919,7 @@ EdenMobile.factory('emResources', [
                     'main'
                 ];
 
-                table.select(fields, function(records, result) {
+                table.sqlSelect(fields, function(records, result) {
                     if (records.length) {
                         records.forEach(function(record) {
                             pending[record.name] = true;

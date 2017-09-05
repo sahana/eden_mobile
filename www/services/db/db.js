@@ -237,7 +237,7 @@ EdenMobile.factory('emDB', [
                 schema = parseSchema(emDefaultSchema.schema('em_schema')),
                 schemaTable = new Table(self, 'em_schema', schema.fields);
 
-            schemaTable.select(['name', 'fields', 'settings'], function(rows) {
+            schemaTable.sqlSelect(['name', 'fields', 'settings'], function(rows) {
                 rows.forEach(function(row) {
                     schema = parseSchema(row.fields);
                     var tableName = row.name,
