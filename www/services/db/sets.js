@@ -63,24 +63,37 @@
         var value;
 
         if (expr) {
+
             var data = this.data;
 
             if (typeof expr == 'string') {
 
-                if (data.hasOwnProperty(expr)) {
-                    value = data[expr];
-                } else if (expr.startsWith(this.tableName + '.')) {
-                    var fieldName = expr.substring(expr.indexOf('.') + 1);
-                    value = data[fieldName];
+                var tables = this._db.tables,
+                    table = tables[tableName],
+                    fields = table.fields,
+                    field;
+
+                if (fields.hasOwnProperty(expr)) {
+                    field = fields[expr];
+                    value = field.extract(this.tableName, data);
+                } else if (expr.indexOf('.') > 0) {
+                    var items = expr.split('.', 2);
+                    table = tables[items[0]];
+                    if (table) {
+                        field = table.$(items[1]);
+                        if (field) {
+                            value = field.extract(this.tableName, data);
+                        }
+                    }
+                }
+
+                if (!field && data.hasOwnProperty(expr)) {
+                    value = data[expr]; // NB: raw data!
                 }
             } else {
-                var columnAlias = expr.columnAlias(this.tableName);
-                if (columnAlias) {
-                    value = this.data[columnAlias];
-                }
+                value = expr.extract(this.tableName, data);
             }
         }
-
         return value;
     };
 
@@ -115,7 +128,8 @@
 
             var fields = table.fields,
                 colName,
-                fieldName;
+                fieldName,
+                field;
 
             for (colName in data) {
                 if (colName.startsWith(tableName + '.')) {
@@ -124,7 +138,8 @@
                     fieldName = colName;
                 }
                 if (fields.hasOwnProperty(fieldName)) {
-                    result[fieldName] = data[colName];
+                    field = fields[fieldName];
+                    result[fieldName] = field.decode(data[colName]);
                 }
             }
         }

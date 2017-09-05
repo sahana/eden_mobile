@@ -150,10 +150,13 @@ EdenMobile.factory('emDB', [
 
                     if (result.rows.length) {
                         // em_version table exists => load tables
-                        self._loadTables().then(function() {
-                            status.resolve();
-                        });
-
+                        self._loadTables().then(
+                            function() {
+                                status.resolve();
+                            },
+                            function(error) {
+                                status.reject(error);
+                            });
                     } else {
                         // em_version table does not exist => first run
                         self._firstRun().then(function() {
@@ -234,19 +237,35 @@ EdenMobile.factory('emDB', [
                 tablesLoaded = $q.defer();
 
             var tables = self.tables,
+                tableData,
+                tableName,
+                table,
                 schema = parseSchema(emDefaultSchema.schema('em_schema')),
                 schemaTable = new Table(self, 'em_schema', schema.fields);
 
-            schemaTable.sqlSelect(['name', 'fields', 'settings'], function(rows) {
-                rows.forEach(function(row) {
-                    schema = parseSchema(row.fields);
-                    var tableName = row.name,
-                        table = new Table(self, tableName, schema.fields, row.settings);
-                    table.addMetaFields();
-                    tables[tableName] = table;
+            schemaTable.select(['name', 'fields', 'settings'],
+                function(rows) {
+                    if (!rows.length) {
+                        tablesLoaded.reject('no table schemas found');
+                        return;
+                    }
+                    rows.forEach(function(row) {
+
+                        tableData = row._(schemaTable);
+                        tableName = tableData.name;
+
+                        schema = parseSchema(tableData.fields);
+
+                        table = new Table(self, tableName, schema.fields, tableData.settings);
+                        table.addMetaFields();
+
+                        tables[tableName] = table;
+                    });
+                    tablesLoaded.resolve();
+                },
+                function(error) {
+                    tablesLoaded.reject(error);
                 });
-                tablesLoaded.resolve();
-            });
 
             return tablesLoaded.promise;
         };
@@ -267,7 +286,10 @@ EdenMobile.factory('emDB', [
          * @param {string} error - the error message
          */
         var apiNotReady = function(error) {
+
             alert('Database Error: ' + error);
+
+            throw new Error(error);
         };
 
         var api = {
