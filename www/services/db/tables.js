@@ -602,26 +602,31 @@ EdenMobile.factory('Table', [
 
         // --------------------------------------------------------------------
         /**
-         * Identify a record, use like:
-         *      - table.identify(record).then(function(recordID){});
+         * Identify a record from a data fragment
          *
-         * @param {object} record - the record
+         * @param {object} fragment - the available record data as object
+         *                            with {fieldName: value} properties
          *
-         * @returns {promise} - a promise that resolves into the record ID
+         * @example
+         *  table.identify(fragment).then(function(record){ });
+         *
+         * @returns {promise} - a promise that resolves into the record,
+         *                      including record ID, synchronized_on and
+         *                      modified_on timestamps as well as all
+         *                      upload fields
          */
-        Table.prototype.identify = function(record) {
+        Table.prototype.identify = function(fragment) {
 
-            var deferred = $q.defer();
+            var deferred = $q.defer(),
+                uuid = fragment.uuid,
+                uuidField = this.$('uuid');
 
-            var uuid = record.uuid;
-            if (uuid) {
+            if (uuid && uuidField) {
 
-                // Try looking it up from the UUID
-                var query = 'uuid="' + uuid + '"',
+                // Try looking up the record from the UUID
+
+                var allFields = this.fields,
                     fields = ['id', 'synchronized_on', 'modified_on'];
-
-                // Include upload-fields
-                var allFields = this.fields;
                 for (var fieldName in allFields) {
                     if (allFields[fieldName].type == "upload") {
                         fields.push(fieldName);
@@ -629,9 +634,10 @@ EdenMobile.factory('Table', [
                 }
 
                 // Find the record
-                this.sqlSelect(fields, query, function(records) {
+                this.where(uuidField.equals(uuid))
+                    .select(fields, {limit: 1}, function(records) {
                     if (records.length) {
-                        deferred.resolve(records[0]);
+                        deferred.resolve(records[0]._());
                     } else {
                         deferred.resolve();
                     }
@@ -643,7 +649,6 @@ EdenMobile.factory('Table', [
                 deferred.resolve();
             }
 
-            // Return the promise
             return deferred.promise;
         };
 

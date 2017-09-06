@@ -291,6 +291,9 @@
             tableName = table.name,
             fieldName;
 
+        if (!columns) {
+            columns = Object.values(table.fields);
+        }
         columns.forEach(function(expr) {
             if (typeof expr == 'string') {
                 fieldName = expr;
