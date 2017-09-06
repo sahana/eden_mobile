@@ -27,8 +27,14 @@
 
     "use strict";
 
+    // ========================================================================
     /**
-     * @todo: docstring
+     * Helper function to enclose a value in single quotes
+     * (for SQL construction, escaping inner single quotes)
+     *
+     * @param {*} obj - the object to encode
+     *
+     * @returns {string} - the quoted value of the object
      */
     var quoted = function(obj) {
         return "'" + ('' + obj).replace(/'/g, "''") + "'";
@@ -357,7 +363,7 @@
                     sqlStr = sql.join(' OR ');
                 } else {
                     // Empty set contains nothing => inevitably false
-                    sqlStr = 'FALSE';
+                    sqlStr = '0';
                 }
                 break;
             case 'upper':
