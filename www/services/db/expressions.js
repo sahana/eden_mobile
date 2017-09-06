@@ -27,6 +27,13 @@
 
     "use strict";
 
+    /**
+     * @todo: docstring
+     */
+    var quoted = function(obj) {
+        return "'" + ('' + obj).replace(/'/g, "''") + "'";
+    };
+
     // ========================================================================
     /**
      * SQL Expressions - Constructor
@@ -151,6 +158,9 @@
     };
     Expression.prototype.like = function(other) {
         return this._assert("like", other);
+    };
+    Expression.prototype.in = function(other) {
+        return this._assert("in", other);
     };
 
     // ------------------------------------------------------------------------
@@ -302,10 +312,53 @@
                     if (typeof left.sqlEncode == 'function') {
                         rSql = left.sqlEncode(right);
                     } else {
-                        rSql = "'" + ('' + right).replace(/'/g, "''") + "'";
+                        rSql = quoted(right);
                     }
                 }
                 sqlStr = [lSql, op, rSql].join(' ');
+                break;
+            case 'in':
+                // Get the value set
+                var values = right;
+                if (values.constructor !== Array) {
+                    // Consistency with JavaScript "in" operator
+                    values = Object.keys(values);
+                }
+
+                // Convert the value set to SQL
+                var items = [],
+                    hasNull = false,
+                    sqlEncode = false;
+
+                if (typeof left.sqlEncode == 'function') {
+                    sqlEncode = true;
+                }
+                values.forEach(function(value) {
+                    if (value === null || value === undefined) {
+                        hasNull = true;
+                    } else {
+                        if (sqlEncode) {
+                            items.push(left.sqlEncode(value));
+                        } else {
+                            items.push(quoted(value));
+                        }
+                    }
+                });
+
+                // Construct the SQL expression
+                var sql = [];
+                if (items.length) {
+                    sql.push(lSql + ' IN (' + items.join(',') + ')');
+                }
+                if (hasNull) {
+                    sql.push(lSql + ' = NULL');
+                }
+                if (sql.length) {
+                    sqlStr = sql.join(' OR ');
+                } else {
+                    // Empty set contains nothing => inevitably false
+                    sqlStr = 'FALSE';
+                }
                 break;
             case 'upper':
             case 'lower':

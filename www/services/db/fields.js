@@ -149,7 +149,7 @@ EdenMobile.factory('Field', [
                 case 'id':
                 case 'reference':
                     // Try to convert into positive integer
-                    var numeric = value + 0;
+                    var numeric = value - 0;
                     if (!isNaN(numeric)) {
                         sqlEncoded = '' + Math.abs(numeric);
                     }
@@ -191,7 +191,7 @@ EdenMobile.factory('Field', [
                 case 'integer':
                 case 'double':
                     // Try to convert into number
-                    numeric = value + 0;
+                    numeric = value - 0;
                     if (!isNaN(numeric)) {
                         sqlEncoded = '' + numeric;
                     }
