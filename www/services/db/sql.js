@@ -343,6 +343,8 @@
      * @param {string} query - SQL WHERE expression
      *
      * @returns {string} - the SQL statement
+     *
+     * @deprecated
      */
     SQLTable.prototype.deleteRecords = function(query) {
 

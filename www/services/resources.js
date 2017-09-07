@@ -23,8 +23,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
-
 // ========================================================================
 /**
  * emResources - Service providing abstract data resources
@@ -35,6 +33,8 @@
 EdenMobile.factory('emResources', [
     '$q', 'emDB',
     function ($q, emDB) {
+
+        "use strict";
 
         var resources = {},
             status = $q.defer(),
@@ -213,13 +213,13 @@ EdenMobile.factory('emResources', [
                 field,
                 fieldDef = {};
 
+            // Encode the schema
             for (fieldName in fields) {
                 field = fields[fieldName];
                 if (!field.meta) {
                     fieldDef[fieldName] = field.description();
                 }
             }
-
             var schema = {
                 'name': name,
                 'tablename': this.tableName,
@@ -230,18 +230,14 @@ EdenMobile.factory('emResources', [
                 'main': this.main
             };
 
-            // Check if this is an update
-
-            var name = this.name;
+            // Save the schema
             emDB.table('em_resource').then(function(table) {
-
-                var query = 'em_resource.name="' + name + '"';
-
-                table.sqlSelect(['id'], query, function(records) {
-                    if (records.length === 0) {
-                        table.insert(schema);
+                var dbSet = table.where(table.$('name').equals(name));
+                dbSet.select(['id'], {limit: 1}, function(rows) {
+                    if (rows.length) {
+                        dbSet.update(schema);
                     } else {
-                        table.update(schema, query);
+                        table.insert(schema);
                     }
                 });
             });
@@ -376,9 +372,7 @@ EdenMobile.factory('emResources', [
                 default:
                     break;
             }
-            var query = this.extendQuery(query);
-
-            this.table.sqlSelect(fields, query, callback);
+            this.table.sqlSelect(fields, this.extendQuery(query), callback);
         };
 
         // --------------------------------------------------------------------
@@ -412,6 +406,8 @@ EdenMobile.factory('emResources', [
          *
          * @param {string} query - SQL WHERE expression
          * @param {function} callback - callback function: function(numRowsDeleted)
+         *
+         * @deprecated
          */
         Resource.prototype.deleteRecords = function(query, callback) {
 
@@ -492,7 +488,7 @@ EdenMobile.factory('emResources', [
                         query = null;
                     if (recordID) {
                         query = hook.joinby + '=' + recordID;
-                    };
+                    }
                     if (onSuccess) {
                         onSuccess(component, query);
                     }
@@ -679,9 +675,9 @@ EdenMobile.factory('emResources', [
                             result.created++;
                             break;
                         default:
-                            result.failed++
+                            result.failed++;
                             break;
-                    };
+                    }
 
                     // Check queue status
                     var ready = true;
@@ -787,51 +783,41 @@ EdenMobile.factory('emResources', [
 
         // ====================================================================
         /**
-         * Set up the default resource for a table
+         * Set up the default resource for a table; default resources are
+         * only set up if there are no loaded resources for the table.
          *
          * @param {string} tableName - the table name
-         * @param {function} callback - callback function: function(tableName)
+         *
+         * @returns {promise} - a promise that is resolved when the default
+         *                      resource for this table has been set up
          */
-        var setupDefaultResource = function(tableName, callback) {
+        var setupDefaultResource = function(tableName) {
 
-            emDB.table(tableName).then(function(table) {
+            return emDB.table(tableName).then(function(table) {
                 if (table !== undefined &&
                     Object.keys(table.resources).length === 0) {
-                    var resource = new Resource(table)
+                    var resource = new Resource(table);
                     resources[resource.name] = resource;
-                }
-                if (callback) {
-                    callback(tableName);
                 }
             });
         };
 
         // --------------------------------------------------------------------
         /**
-         * Set up default resources for pre-installed tables (emDefaultSchema)
+         * Set up default resources for resource-less tables
+         *
+         * @returns {promise} - a promise chain that is resolved when all
+         *                      default resources have been set up
          */
         var setupDefaultResources = function() {
 
-            var deferred = $q.defer(),
-                pending = {};
-
-            var resolve = function(tableName) {
-                if (pending.hasOwnProperty(tableName)) {
-                    delete pending[tableName];
-                }
-                if (Object.keys(pending).length === 0) {
-                    deferred.resolve();
-                }
-            };
-
-            emDB.tableNames().then(function(tableNames) {
+            return emDB.tableNames().then(function(tableNames) {
+                var pending = [];
                 tableNames.forEach(function(tableName) {
-                    pending[tableName] = true;
-                    setupDefaultResource(tableName, resolve);
+                    pending.push(setupDefaultResource(tableName));
                 });
+                return $q.all(pending);
             });
-
-            return deferred.promise;
         };
 
         // --------------------------------------------------------------------
@@ -839,13 +825,20 @@ EdenMobile.factory('emResources', [
          * Set up a resource from a em_resource record
          *
          * @param {object} record - the em_resource record
-         * @param {function} callback - callback function: function(resourceName)
+         *
+         * @returns {promise} - a promise that is resolved when the resource
+         *                      has been set up
          */
-        var setupResource = function(record, callback) {
+        var setupResource = function(record) {
 
             var tableName = record.tablename;
-            emDB.table(tableName).then(function(table) {
+
+            return emDB.table(tableName).then(function(table) {
+
+                var resource;
+
                 if (table !== undefined) {
+
                     var resourceName = record.name,
                         fieldOpts = record.fields,
                         options = {
@@ -856,24 +849,26 @@ EdenMobile.factory('emResources', [
                             'main': record.main
                         },
                         schema;
+
                     if (fieldOpts) {
                         options.fields = emDB.parseSchema(fieldOpts).fields;
                     }
 
-                    // Instantiate the Resource, set lastSync date
-                    var resource = new Resource(table, options),
-                        schemaDate = record.schema_date,
-                        syncDate = record.lastsync;
+                    // Instantiate the Resource
+                    resource = new Resource(table, options);
+                    resources[resourceName] = resource;
+
+                    // Set date of schema synchronization
+                    var schemaDate = record.schema_date;
                     if (schemaDate) {
                         resource.schemaDate = schemaDate;
                     }
+
+                    // Set date of data synchronization
+                    var syncDate = record.lastsync;
                     if (syncDate) {
                         resource.lastSync = syncDate;
                     }
-                    resources[resourceName] = resource;
-                }
-                if (callback) {
-                    callback(record.name);
                 }
             });
         };
@@ -885,24 +880,6 @@ EdenMobile.factory('emResources', [
          * - resolves the resourcesLoaded promise
          */
         var loadResources = function() {
-
-            var pending = {};
-
-            var wrapUp = function() {
-                setupDefaultResources().then(function() {
-                    status.resolve();
-                });
-            };
-
-            var resolve = function(resourceName) {
-
-                if (pending.hasOwnProperty(resourceName)) {
-                    delete pending[resourceName];
-                }
-                if (Object.keys(pending).length === 0) {
-                    wrapUp();
-                }
-            };
 
             // Load all resources from database
             emDB.table('em_resource').then(function(table) {
@@ -919,15 +896,21 @@ EdenMobile.factory('emResources', [
                     'main'
                 ];
 
-                table.sqlSelect(fields, function(records, result) {
-                    if (records.length) {
-                        records.forEach(function(record) {
-                            pending[record.name] = true;
-                            setupResource(record, resolve);
+                table.select(fields, function(rows) {
+
+                    var pending = [];
+
+                    if (rows.length) {
+                        rows.forEach(function(row) {
+                            pending.push(setupResource(row._()));
                         });
-                    } else {
-                        wrapUp();
                     }
+                    $q.all(pending).then(function() {
+                        // Add default resources for all tables
+                        setupDefaultResources().then(function() {
+                            status.resolve();
+                        });
+                    });
                 });
             });
         };

@@ -539,7 +539,7 @@
     Set.prototype.update = function(data, options, onSuccess, onError) {
 
         if (this._join.length || this._left.length) {
-            throw new Error('Can not update a join');
+            throw new Error('Cannot update a join');
         }
 
         // Flexible argument list (options and callbacks can be omitted)
@@ -627,7 +627,7 @@
     Set.prototype.delete = function(options, onSuccess, onError) {
 
         if (this._join.length || this._left.length) {
-            throw new Error('Can not delete from a join');
+            throw new Error('Cannot delete from a join');
         }
 
         // Flexible arguments list
@@ -638,29 +638,30 @@
         }
 
         // Construct the SQL
-        var table = this.table,
+        var db = this._db,
+            table = this.table,
             sql = ['DELETE FROM', quoted(table.toSQL())],
-            query;
+            query = this.query;
 
-        if (this.query) {
-            query = this.query.toSQL();
+        if (query) {
             sql.push('WHERE');
-            sql.push(query);
+            sql.push(query.toSQL());
         }
-
-        var db = this._db;
 
         // Remember the URIs of files linked to this set,
         // to remove them after successful deletion of records
-        //
-        // @todo: pass this.query instead of SQLified query
-        //        (once getFiles is updated to use Set.select)
-        table.getFiles(query, function(orphanedFiles) {
+        table.getFiles(query).then(function(orphanedFiles) {
 
             db._adapter.executeSql(sql.join(' '), [],
                 function(result) {
+
                     // Delete now-orphaned files
-                    orphanedFiles.remove();
+                    orphanedFiles.forEach(function(fileURI) {
+                        window.resolveLocalFileSystemURL(fileURI, function(fileEntry) {
+                            fileEntry.remove();
+                        });
+                    });
+
                     // Execute callback
                     if (onSuccess) {
                         onSuccess(result.rowsAffected);

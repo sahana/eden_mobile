@@ -24,8 +24,8 @@
  */
 
 EdenMobile.factory('Table', [
-    '$q', 'emDefaultSchema', 'emFiles', 'emSQL', 'Expression', 'Field', 'FileHandler', 'Set',
-    function ($q, emDefaultSchema, emFiles, emSQL, Expression, Field, FileHandler, Set) {
+    '$q', 'emDefaultSchema', 'emFiles', 'emSQL', 'Expression', 'Field',  'Set',
+    function ($q, emDefaultSchema, emFiles, emSQL, Expression, Field, Set) {
 
         "use strict";
 
@@ -516,50 +516,44 @@ EdenMobile.factory('Table', [
         /**
          * Get all files linked to records in this table
          *
-         * @param {string} query - SQL WHERE expression
-         * @param {function} callback - callback function, receives an array
-         *                              of file URIs
+         * @param {Expression|string} query - the filter Expression
+         *
+         * @returns {promise} - a promise that resolves into an Array of
+         *                      all file URIs linked to the selected records
          */
-        Table.prototype.getFiles = function(query, callback) {
+        Table.prototype.getFiles = function(query) {
 
-            var uploadFields = [],
-                fields = this.fields,
-                fieldName,
-                field;
+            var deferred = $q.defer(),
+                uploadFields = [],
+                fields = Object.values(this.fields);
 
-            // Get all upload-type fields
-            for (fieldName in fields) {
-                field = fields[fieldName];
+            fields.forEach(function(field) {
                 if (field.type == 'upload') {
-                    uploadFields.push(fieldName);
+                    uploadFields.push(field);
                 }
-            }
+            });
 
             var files = [];
 
             if (uploadFields.length) {
 
-                // Get all file URIs in upload-fields
-                this.sqlSelect(uploadFields, query, function(records) {
-                    records.forEach(function(record) {
-                        uploadFields.forEach(function(fieldName) {
-                            var fileURI = record[fieldName];
+                this.where(query).select(uploadFields, function(rows) {
+                    rows.forEach(function(row) {
+                        uploadFields.forEach(function(field) {
+                            var fileURI = row.$(field);
                             if (fileURI) {
                                 files.push(fileURI);
                             }
                         });
                     });
-                    if (callback) {
-                        callback(new FileHandler(files));
-                    }
+
+                    deferred.resolve(files);
                 });
-
             } else {
-
-                if (callback) {
-                    callback(new FileHandler(files));
-                }
+                deferred.resolve(files);
             }
+
+            return deferred.promise;
         };
 
         // --------------------------------------------------------------------
@@ -568,6 +562,8 @@ EdenMobile.factory('Table', [
          *
          * @param {string} query - SQL WHERE expression
          * @param {function} callback - callback function: function(numRowsDeleted)
+         *
+         * @deprecated
          */
         Table.prototype.deleteRecords = function(query, callback) {
 
@@ -584,12 +580,16 @@ EdenMobile.factory('Table', [
             var db = this._db,
                 adapter = db._adapter;
 
-            this.getFiles(query, function(orphanedFiles) {
+            this.getFiles(query).then(function(orphanedFiles) {
 
                 adapter.executeSql(sql, [], function(result) {
 
                     // Delete now-orphaned files
-                    orphanedFiles.remove();
+                    orphanedFiles.forEach(function(fileURI) {
+                        window.resolveLocalFileSystemURL(fileURI, function(fileEntry) {
+                            fileEntry.remove();
+                        });
+                    });
 
                     // Execute callback
                     if (callback) {
