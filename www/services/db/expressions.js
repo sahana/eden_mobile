@@ -147,9 +147,15 @@
     Expression.prototype.equals = function(other) {
         return this._assert("=", other);
     };
+    // Alias
+    Expression.prototype.is = Expression.prototype.equals;
+
     Expression.prototype.notEqual = function(other) {
         return this._assert("!=", other);
     };
+    // Alias
+    Expression.prototype.isNot = Expression.prototype.notEqual;
+
     Expression.prototype.lessThan = function(other) {
         return this._assert("<", other);
     };
