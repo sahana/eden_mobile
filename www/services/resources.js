@@ -372,7 +372,13 @@ EdenMobile.factory('emResources', [
                 default:
                     break;
             }
-            this.table.sqlSelect(fields, this.extendQuery(query), callback);
+
+            this.table.where(this.extendQuery(query))
+                      .select(fields, function(rows, result) {
+                if (callback) {
+                    callback(rows.map(function(row) { return row._(); }));
+                }
+            });
         };
 
         // --------------------------------------------------------------------

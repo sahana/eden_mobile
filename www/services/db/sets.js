@@ -170,21 +170,24 @@
      */
     Set.prototype.where = function(expr) {
 
-        // Treat strings as raw SQL
-        if (typeof expr == 'string') {
-            expr = this.table.sqlAssert(expr);
-        }
+        if (expr !== null && expr !== undefined) {
 
-        // Only assertions can be filter expressions
-        if (expr.exprType != 'assert') {
-            throw new Error('invalid expression type');
-        }
+            // Treat strings as raw SQL
+            if (typeof expr == 'string') {
+                expr = this.table.sqlAssert(expr);
+            }
 
-        var query = this.query;
-        if (query === undefined) {
-            this.query = expr;
-        } else {
-            this.query = query.and(expr);
+            // Only assertions can be filter expressions
+            if (expr.exprType != 'assert') {
+                throw new Error('invalid expression type');
+            }
+
+            var query = this.query;
+            if (query === undefined) {
+                this.query = expr;
+            } else {
+                this.query = query.and(expr);
+            }
         }
 
         // Make chainable
