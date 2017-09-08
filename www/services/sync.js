@@ -2554,17 +2554,13 @@ EdenMobile.factory('emSync', [
 
                     } else {
 
-                        var uuids = Object.keys(deps),
-                            query = 'uuid IN (' + uuids.map(function(uuid) {
-                            return "'" + uuid + "'";
-                        }).join(',') + ')';
-
-                        table.sqlSelect(['uuid', 'id'], query, function(records) {
+                        table.where(table.$('uuid').in(Object.keys(deps)))
+                             .select(['uuid', 'id'], function(rows) {
 
                             // Resolve the dependency for each record found
-                            if (records.length) {
-                                records.forEach(function(record) {
-                                    deps[record.uuid].resolve(record.id);
+                            if (rows.length) {
+                                rows.forEach(function(row) {
+                                    deps[row.$('uuid')].resolve(row.$('id'));
                                 });
                             }
 
