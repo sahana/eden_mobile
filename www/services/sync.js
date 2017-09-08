@@ -1042,6 +1042,14 @@ EdenMobile.factory('emSync', [
             // Collect UUIDs of rejected items
             if (errorTree) {
 
+                var registerRejected = function(item) {
+                    uuid = item['@uuid'];
+                    error = item['@error'];
+                    if (uuid && error) {
+                        rejectedItems[uuid] = error;
+                    }
+                };
+
                 for (key in errorTree) {
                     if (key.slice(0, 2) == '$_') {
 
@@ -1050,14 +1058,7 @@ EdenMobile.factory('emSync', [
                             rejected[tableName] = {};
                         }
                         rejectedItems = rejected[tableName];
-
-                        errorTree[key].forEach(function(item) {
-                            uuid = item['@uuid'];
-                            error = item['@error'];
-                            if (uuid && error) {
-                                rejectedItems[uuid] = error;
-                            }
-                        });
+                        errorTree[key].forEach(registerRejected);
                     }
                 }
             }
@@ -1067,24 +1068,24 @@ EdenMobile.factory('emSync', [
                 acceptedItems;
 
             // Collect UUIDs of accepted items
-            for (key in uploaded) {
 
+            var registerAccepted = function(item) {
+                uuid = item['@uuid'];
+                if (!rejectedItems.hasOwnProperty(uuid)) {
+                    acceptedItems.push(uuid);
+                }
+            };
+
+            for (key in uploaded) {
                 if (key.slice(0, 2) == '$_') {
 
                     tableName = key.slice(2);
                     if (!accepted.hasOwnProperty(tableName)) {
                         accepted[tableName] = [];
                     }
-
                     acceptedItems = accepted[tableName];
                     rejectedItems = rejected[tableName] || {};
-
-                    uploaded[key].forEach(function(item) {
-                        uuid = item['@uuid'];
-                        if (!rejectedItems.hasOwnProperty(uuid)) {
-                            acceptedItems.push(uuid);
-                        }
-                    });
+                    uploaded[key].forEach(registerAccepted);
                 }
             }
 
@@ -1159,27 +1160,29 @@ EdenMobile.factory('emSync', [
                 self = this;
 
             // Register record dependencies
+            var resolveRecordDependency = function(dependency) {
+                self.addForeignKey(record, dependency);
+                if (!!self.dependencies && self.isResolved()) {
+                    self.dependencies.resolve();
+                }
+            };
             for (fieldName in references) {
                 reference = references[fieldName];
                 dependency = require(reference[0], reference[1]);
-                dependency.complete().then(function(dependency) {
-                    self.addForeignKey(record, dependency);
-                    if (!!self.dependencies && self.isResolved()) {
-                        self.dependencies.resolve();
-                    }
-                });
+                dependency.complete().then(resolveRecordDependency);
             }
 
             // Register file dependencies
+            var resolveFileDependency = function(dependency) {
+                self.addFileURI(record, dependency);
+                if (!!self.dependencies && self.isResolved()) {
+                    self.dependencies.resolve();
+                }
+            };
             for (fieldName in files) {
                 downloadURL = files[fieldName];
                 dependency = require(null, null, downloadURL);
-                dependency.complete().then(function(dependency) {
-                    self.addFileURI(record, dependency);
-                    if (!!self.dependencies && self.isResolved()) {
-                        self.dependencies.resolve();
-                    }
-                });
+                dependency.complete().then(resolveFileDependency);
             }
         }
         DataImport.prototype = Object.create(SyncTask.prototype);
@@ -1670,6 +1673,13 @@ EdenMobile.factory('emSync', [
                         provided = [tableName];
 
                     if (!!references) {
+
+                        var addRequirement = function(name) {
+                            if (provided.indexOf(name) == -1) {
+                                requirements.push(name);
+                            }
+                        };
+
                         while(requirements.length) {
 
                             requirement = requirements.shift();
@@ -1695,12 +1705,7 @@ EdenMobile.factory('emSync', [
                                 provided.push(requirement);
 
                                 // Capture new requirements of the reference import
-                                referenceImport.requires.forEach(function(name) {
-                                    if (provided.indexOf(name) == -1) {
-                                        requirements.push(name);
-                                    }
-                                });
-
+                                referenceImport.requires.forEach(addRequirement);
                             }
                         }
                     }
@@ -2329,8 +2334,43 @@ EdenMobile.factory('emSync', [
             });
 
             var check,
-                resolved,
-                index;
+                resolved;
+
+            // Check whether a schemaImport is resolvable, and if so,
+            // register it as a provider for that schema
+            var checkResolvable = function(schemaImport) {
+
+                var resolvable = true,
+                    requires = schemaImport.requires,
+                    provides = schemaImport.provides;
+
+                if (requires.length) {
+                    for (var i=requires.length; i--;) {
+                        if (knownTables.indexOf(requires[i]) == -1) {
+                            resolvable = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (resolvable) {
+                    // Register as provider
+                    provide(schemaImport, provides);
+
+                    // Add provides to knownTables
+                    knownTables.push(provides);
+
+                    // Remove provides from unknownTables
+                    var index = unknownTables.indexOf(provides);
+                    if (index !== -1) {
+                        resolved++;
+                        unknownTables.splice(index, 1);
+                    }
+                } else {
+                    // Retain for next iteration
+                    unresolved.push(schemaImport);
+                }
+            };
 
             while(unknownTables.length) {
 
@@ -2341,39 +2381,7 @@ EdenMobile.factory('emSync', [
 
                 // Check which schemaImports can be resolved with the
                 // currently known tables
-                check.forEach(function(schemaImport) {
-
-                    var resolvable = true,
-                        requires = schemaImport.requires,
-                        provides = schemaImport.provides;
-
-                    if (requires.length) {
-                        for (var i=requires.length; i--;) {
-                            if (knownTables.indexOf(requires[i]) == -1) {
-                                resolvable = false;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (resolvable) {
-                        // Register as provider
-                        provide(schemaImport, provides);
-
-                        // Add provides to knownTables
-                        knownTables.push(provides);
-
-                        // Remove provides from unknownTables
-                        index = unknownTables.indexOf(provides);
-                        if (index !== -1) {
-                            resolved++;
-                            unknownTables.splice(index, 1);
-                        }
-                    } else {
-                        // Retain for next iteration
-                        unresolved.push(schemaImport);
-                    }
-                });
+                check.forEach(checkResolvable);
 
                 if (!resolved && unknownTables.length) {
                     // ERROR: unresolvable dependencies
