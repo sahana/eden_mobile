@@ -24,8 +24,8 @@
  */
 
 EdenMobile.factory('Field', [
-    '$q', 'Expression',
-    function ($q, Expression) {
+    '$injector', '$q', 'Expression',
+    function ($injector, $q, Expression) {
 
         "use strict";
 

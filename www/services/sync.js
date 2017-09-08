@@ -23,8 +23,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
-
 // ============================================================================
 /**
  * emSync - Service for synchronization of data and forms
@@ -35,6 +33,8 @@
 EdenMobile.factory('emSync', [
     '$q', '$rootScope', '$timeout', 'emDB', 'emResources', 'emS3JSON', 'emServer', 'emSyncLog', 'emUtils',
     function ($q, $rootScope, $timeout, emDB, emResources, emS3JSON, emServer, emSyncLog, emUtils) {
+
+        "use strict";
 
         $rootScope.syncStage = null;
         $rootScope.syncProgress = null;
@@ -721,10 +721,16 @@ EdenMobile.factory('emSync', [
 
             emDB.table(this.tableName).then(function(table) {
 
+                var synchronizedOn = table.$('synchronized_on'),
+                    modifiedOn = table.$('modified_on'),
+                    query = synchronizedOn.is(null).or(
+                            synchronizedOn.lessThan(modifiedOn)),
+                    subSet;
+
                 // Which records to export (query)
-                var query = 'synchronized_on IS NULL OR synchronized_on < modified_on';
                 if (!all) {
-                    query = '(' + query + ') AND id IN (' + Object.keys(lookups).join(',') + ')';
+                    subSet = table.$('id').in(Object.keys(lookups));
+                    query = subSet.and(query);
                 }
 
                 // Which fields to export (query)
@@ -738,17 +744,19 @@ EdenMobile.factory('emSync', [
                     }
                 }
 
-                var recordID,
-                    uuid,
-                    deferredItem;
+                table.where(query).select(fields, function(rows) {
 
-                table.sqlSelect(fields, query, function(records) {
+                    var record,
+                        recordID,
+                        uuid;
 
-                    records.forEach(function(record) {
+                    rows.forEach(function(row) {
 
-                        // Resolve the UUID-promise
+                        record = row._();
                         recordID = record.id;
                         uuid = record.uuid;
+
+                        // Resolve the UUID-promise
                         uuids[recordID] = uuid;
                         if (lookups.hasOwnProperty(recordID)) {
                             lookups[recordID].resolve(uuid);
@@ -770,15 +778,13 @@ EdenMobile.factory('emSync', [
                     } else {
 
                         // For the remaining lookups, just look up the UUID
-                        query = 'id IN (' + Object.keys(lookups) + ')';
-                        fields = ['id', 'uuid'];
-                        table.sqlSelect(fields, query, function(records) {
+                        table.where(subSet).select(['id', 'uuid'], function(rows) {
 
-                            records.forEach(function(record) {
+                            rows.forEach(function(row) {
 
                                 // Resolve the UUID-promise
-                                recordID = record.id;
-                                uuid = record.uuid;
+                                recordID = row.$('id');
+                                uuid = row.$('uuid');
                                 uuids[recordID] = uuid;
                                 if (lookups.hasOwnProperty(recordID)) {
                                     lookups[recordID].resolve(uuid);
@@ -890,7 +896,7 @@ EdenMobile.factory('emSync', [
                 references = this.references,
                 refMap;
             for (var tableName in references) {
-                var refMap = references[tableName];
+                refMap = references[tableName];
                 if (refMap.hasPendingItems) {
                     pending.push(refMap);
                 }
@@ -1229,7 +1235,7 @@ EdenMobile.factory('emSync', [
                             }
 
                             // Set synchronized_on to now
-                            data['synchronized_on'] = new Date();
+                            data.synchronized_on = new Date();
 
                             var query = 'id=' + recordID;
                             table.update(data, query,
@@ -1245,7 +1251,7 @@ EdenMobile.factory('emSync', [
                             // Create new record
 
                             // Set synchronized_on to now
-                            data['synchronized_on'] = new Date();
+                            data.synchronized_on = new Date();
 
                             table.insert(data,
                                 function(insertID) {
@@ -1323,8 +1329,9 @@ EdenMobile.factory('emSync', [
                 if (Object.keys(this.record.files).length) {
                     return false;
                 }
+                this.resolved = true;
             }
-            return this.resolved = true;
+            return true;
         };
 
         /**
@@ -1974,7 +1981,7 @@ EdenMobile.factory('emSync', [
                         // Wait for form download before downloading data
                         dataJob.parent = formJob;
                     }
-                    currentJobs.push(dataJob)
+                    currentJobs.push(dataJob);
                     jobsScheduled++;
                 }
             });
@@ -2611,7 +2618,7 @@ EdenMobile.factory('emSync', [
                             checkQueue(dataImports, deferred);
                         });
                         dataImport.execute();
-                    };
+                    }
                 });
             });
 

@@ -318,7 +318,7 @@
             case '>=':
             case '>':
             case 'like':
-                if (typeof right.toSQL == 'function') {
+                if (right !== null && right !== undefined && typeof right.toSQL == 'function') {
                     rSql = right.toSQL();
                 } else {
                     if (typeof left.sqlEncode == 'function') {
@@ -327,7 +327,19 @@
                         rSql = quoted(right);
                     }
                 }
-                sqlStr = [lSql, op, rSql].join(' ');
+                if (rSql == 'NULL') {
+                    switch (op) {
+                        case '=':
+                            op = 'IS';
+                            break;
+                        case '!=':
+                            op = 'IS NOT';
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                sqlStr = [lSql, op.toUpperCase(), rSql].join(' ');
                 break;
             case 'in':
                 // Get the value set
