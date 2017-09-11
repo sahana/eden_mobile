@@ -293,6 +293,8 @@
      * @param {query} query - an SQL query expression (WHERE)
      *
      * @returns {string} - the SQL statement
+     *
+     * @deprecated
      */
     SQLTable.prototype.select = function(fieldNames, query) {
 
@@ -329,26 +331,6 @@
     SQLTable.prototype.count = function(query) {
 
         var sql = 'SELECT COUNT(id) AS number FROM ' + quoted(this.name);
-        if (query) {
-            sql += (' WHERE ' + query);
-        }
-
-        return sql;
-    };
-
-    // ------------------------------------------------------------------------
-    /**
-     * SQL statements to delete records
-     *
-     * @param {string} query - SQL WHERE expression
-     *
-     * @returns {string} - the SQL statement
-     *
-     * @deprecated
-     */
-    SQLTable.prototype.deleteRecords = function(query) {
-
-        var sql = 'DELETE FROM ' + quoted(this.name);
         if (query) {
             sql += (' WHERE ' + query);
         }

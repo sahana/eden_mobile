@@ -450,53 +450,6 @@ EdenMobile.factory('Table', [
 
         // --------------------------------------------------------------------
         /**
-         * Select records from this table (using raw SQL WHERE expression)
-         *
-         * @param {Array} fields - Array of field names
-         * @param {string} query - SQL WHERE expression
-         * @param {function} callback - callback function: function(records, result)
-         *
-         * @todo: deprecate
-         */
-        Table.prototype.sqlSelect = function(fields, query, callback) {
-
-            var sqlTable = emSQL.Table(this),
-                sql = null;
-
-            // Flexible argument list (only callback is required)
-            switch(arguments.length) {
-                case 1:
-                    callback = fields;
-                    fields = null;
-                    sql = sqlTable.select();
-                    break;
-                case 2:
-                    callback = query;
-                    sql = sqlTable.select(fields);
-                    break;
-                default:
-                    sql = sqlTable.select(fields, query);
-                    break;
-            }
-
-            var db = this._db,
-                adapter = db._adapter;
-            if (sql && callback) {
-                adapter.executeSql(sql, [], function(result) {
-                    var rows = result.rows,
-                        records = [],
-                        record;
-                    for (var i = 0, len = rows.length; i < len; i++) {
-                        record = sqlTable.extract(fields, rows.item(i));
-                        records.push(record);
-                    }
-                    callback(records, result);
-                }, db.sqlError);
-            }
-        };
-
-        // --------------------------------------------------------------------
-        /**
          * Select records from this table (see Set.select)
          *
          * @param {Array} columns - array of column expressions, can be
@@ -554,50 +507,6 @@ EdenMobile.factory('Table', [
             }
 
             return deferred.promise;
-        };
-
-        // --------------------------------------------------------------------
-        /**
-         * Delete records in this table
-         *
-         * @param {string} query - SQL WHERE expression
-         * @param {function} callback - callback function: function(numRowsDeleted)
-         *
-         * @deprecated
-         */
-        Table.prototype.deleteRecords = function(query, callback) {
-
-            var sqlTable = emSQL.Table(this),
-                sql = null;
-
-            if (arguments.length == 1) {
-                callback = query;
-                sql = sqlTable.deleteRecords();
-            } else {
-                sql = sqlTable.deleteRecords(query);
-            }
-
-            var db = this._db,
-                adapter = db._adapter;
-
-            this.getFiles(query).then(function(orphanedFiles) {
-
-                adapter.executeSql(sql, [], function(result) {
-
-                    // Delete now-orphaned files
-                    orphanedFiles.forEach(function(fileURI) {
-                        window.resolveLocalFileSystemURL(fileURI, function(fileEntry) {
-                            fileEntry.remove();
-                        });
-                    });
-
-                    // Execute callback
-                    if (callback) {
-                        callback(result.rowsAffected);
-                    }
-
-                }, db.sqlError);
-            });
         };
 
         // --------------------------------------------------------------------

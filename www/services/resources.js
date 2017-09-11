@@ -408,25 +408,6 @@ EdenMobile.factory('emResources', [
 
         // --------------------------------------------------------------------
         /**
-         * Delete records in this resource
-         *
-         * @param {string} query - SQL WHERE expression
-         * @param {function} callback - callback function: function(numRowsDeleted)
-         *
-         * @deprecated
-         */
-        Resource.prototype.deleteRecords = function(query, callback) {
-
-            if (arguments.length == 1) {
-                callback = query;
-                query = null;
-            }
-
-            this.table.deleteRecords(this.extendQuery(query), callback);
-        };
-
-        // --------------------------------------------------------------------
-        /**
          * Identify a record, use like:
          *      - resource.identify(record).then(function(recordID){});
          *
