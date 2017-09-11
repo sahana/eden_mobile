@@ -455,7 +455,7 @@ EdenMobile.factory('Table', [
          * @param {Array} columns - array of column expressions, can be
          *                          omitted (defaults to all fields in the
          *                          table)
-         * @param {object} options - an object with SELECT options (orderby,
+         * @param {object} options - an object with query options (orderby,
          *                           limitby, etc), can be omitted
          * @param {function} onSuccess - success callback, required
          * @param {function} onError - error callback, optional
@@ -563,32 +563,16 @@ EdenMobile.factory('Table', [
 
         // --------------------------------------------------------------------
         /**
-         * Count records in this table
+         * Count the records in this table (see Set.count)
          *
-         * @param {string} query - SQL WHERE expression
-         * @param {function} callback - callback function: function(numOfRecords)
+         * @param {object} options - an object with query options (orderby,
+         *                           limitby, etc), can be omitted
+         * @param {function} onSuccess - success callback, required
+         * @param {function} onError - error callback, optional
          */
-        Table.prototype.count = function(query, callback) {
+        Table.prototype.count = function(options, onSuccess, onError) {
 
-            var self = this,
-                sqlTable = emSQL.Table(self),
-                sql = null;
-
-            if (arguments.length == 1) {
-                callback = query;
-                sql = sqlTable.count();
-            } else {
-                sql = sqlTable.count(query);
-            }
-
-            var db = self._db,
-                adapter = db._adapter;
-            adapter.executeSql(sql, [], function(result) {
-                var number = result.rows.item(0).number;
-                if (callback) {
-                    callback(self.name, number);
-                }
-            }, db.sqlError);
+            return new Set(this).count(options, onSuccess, onError);
         };
 
         // ====================================================================

@@ -322,24 +322,6 @@
 
     // ------------------------------------------------------------------------
     /**
-     * SQL statement to count records
-     *
-     * @param {string} query - SQL WHERE expression
-     *
-     * @returns {string} - the SQL statement
-     */
-    SQLTable.prototype.count = function(query) {
-
-        var sql = 'SELECT COUNT(id) AS number FROM ' + quoted(this.name);
-        if (query) {
-            sql += (' WHERE ' + query);
-        }
-
-        return sql;
-    };
-
-    // ------------------------------------------------------------------------
-    /**
      * Convert a raw database record into a JS object
      *
      * @param {Array} fieldNames - list of field names

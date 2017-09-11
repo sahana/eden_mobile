@@ -438,7 +438,7 @@
      *
      * @param {Array} columns - array of column expressions, can be
      *                          omitted (defaults to all columns)
-     * @param {object} options - an object with options, can be omitted
+     * @param {object} options - an object with query options, can be omitted
      * @param {function} onSuccess - success callback, required
      * @param {function} onError - error callback, optional
      */
@@ -515,6 +515,82 @@
                     var rows = result.rows,
                         records = self.extract(columns, rows);
                     onSuccess(records, result);
+                },
+                function(error) {
+                    // Error
+                    if (typeof onError == 'function') {
+                        onError(error);
+                    } else {
+                        db.sqlError(error);
+                    }
+                });
+        }
+    };
+
+    // ------------------------------------------------------------------------
+    /**
+     * Count the rows in this Set
+     *
+     * @param {object} options - an object with query options, can be omitted
+     * @param {function} onSuccess - success callback, required
+     * @param {function} onError - error callback, optional
+     */
+    Set.prototype.count = function(options, onSuccess, onError) {
+
+        // Flexible argument list
+        if (typeof options == 'function') {
+            onError = onSuccess;
+            onSuccess = options;
+            options = undefined;
+        }
+
+        // Success callback is required
+        if (typeof onSuccess != 'function') {
+            throw new Error('callback required');
+        }
+
+        // Table and joins
+        var sql = ['SELECT COUNT(1) AS total FROM', this.table.toSQL()];
+        this._join.forEach(function(expr) {
+            sql.push('JOIN ' + expr.toSQL());
+        });
+        this._left.forEach(function(expr) {
+            sql.push('LEFT JOIN ' + expr.toSQL());
+        });
+
+        // Expand the query
+        if (this.query) {
+            sql.push('WHERE');
+            sql.push(this.query.toSQL());
+        }
+
+        // Query options
+        if (options) {
+            var orderby = this.orderbySQL(options.orderby);
+            if (orderby) {
+               sql.push(orderby);
+            }
+            var limitby = this.limitbySQL(options.limitby);
+            if (limitby) {
+                sql.push(limitby);
+            }
+        }
+
+        // Complete SQL statement
+        sql = sql.join(' ');
+
+        // Execute SQL query
+        if (sql) {
+
+            var db = this._db,
+                table = this.table,
+                self = this;
+
+            db._adapter.executeSql(sql, [],
+                function(result) {
+                    // Success
+                    var numRows = result.rows.item(0).total;
+                    onSuccess(numRows);
                 },
                 function(error) {
                     // Error

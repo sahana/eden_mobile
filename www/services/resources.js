@@ -383,7 +383,7 @@ EdenMobile.factory('emResources', [
 
         // --------------------------------------------------------------------
         /**
-         * Count records in this resource
+         * Count the records in this resource
          *
          * @param {string} query - SQL WHERE expression
          * @param {function} callback - callback function:
@@ -397,13 +397,12 @@ EdenMobile.factory('emResources', [
             }
 
             var resourceName = this.name;
-            this.table.count(this.extendQuery(query),
-                function(tableName, numRows) {
-                    if (callback) {
-                        callback(resourceName, numRows);
-                    }
+            this.table.where(this.extendQuery(query))
+                      .count(function(numRows) {
+                if (typeof callback == 'function') {
+                    callback(resourceName, numRows);
                 }
-            );
+            });
         };
 
         // --------------------------------------------------------------------
