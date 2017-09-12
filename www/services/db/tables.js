@@ -24,8 +24,8 @@
  */
 
 EdenMobile.factory('Table', [
-    '$q', 'emDefaultSchema', 'emFiles', 'emSQL', 'Expression', 'Field',  'Set',
-    function ($q, emDefaultSchema, emFiles, emSQL, Expression, Field, Set) {
+    '$q', 'emDefaultSchema', 'emFiles', 'Expression', 'Field',  'Set',
+    function ($q, emDefaultSchema, emFiles, Expression, Field, Set) {
 
         "use strict";
 
@@ -223,6 +223,53 @@ EdenMobile.factory('Table', [
 
         // --------------------------------------------------------------------
         /**
+         * Construct an SQL statement to create this table
+         *
+         * @returns {string} - the SQL statement
+         */
+        Table.prototype._create = function() {
+
+            var sql = ['CREATE TABLE IF NOT EXISTS "' + this.name + '"'];
+
+            var fields = this.fields,
+                fieldName,
+                fieldDesc,
+                columns = [],
+                column,
+                constraints = [],
+                constraint;
+
+            for (fieldName in fields) {
+
+                fieldDesc = fields[fieldName].sqlDescribe();
+                column = fieldDesc.column;
+                if (column) {
+                    columns.push(column);
+                    constraint = fieldDesc.constraint;
+                    if (constraint) {
+                        constraints.push(constraint);
+                    }
+                }
+            }
+
+            sql.push('(' + columns.concat(constraints).join(',') + ')');
+
+            return sql.join(' ');
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Construct an SQL statement to drop this table
+         *
+         * @returns {string} - the SQL statement
+         */
+        Table.prototype._drop = function() {
+
+            return 'DROP TABLE IF EXISTS "' + this.name + '"';
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Create this table in the database
          *
          * @param {Array} records - Array of records to populate the table with
@@ -230,18 +277,14 @@ EdenMobile.factory('Table', [
          */
         Table.prototype.create = function(records, callback) {
 
-            var self = this;
-
-            var sqlTable = emSQL.Table(self),
-                sql = [sqlTable.drop(), sqlTable.create()];
-
-            var db = self._db,
-                adapter = db._adapter;
+            var db = this._db,
+                adapter = db._adapter,
+                sql = [this._drop(), this._create()],
+                self = this;
 
             adapter.sqlBatch(sql, function() {
 
                 var tableName = self.name;
-
                 db.tables[tableName] = self;
 
                 if (tableName == 'em_schema') {
@@ -269,12 +312,11 @@ EdenMobile.factory('Table', [
          */
         Table.prototype.populate = function(records, callback) {
 
-            var sqlTable = emSQL.Table(this),
-                sql = [];
+            var sql = [];
 
             if (records) {
                 for (var i = 0, len = records.length; i < len; i++) {
-                    var insertSQL = sqlTable.insert(records[i]);
+                    var insertSQL = this._insert(records[i]);
                     if (insertSQL) {
                         sql.push(insertSQL);
                     }
@@ -388,64 +430,96 @@ EdenMobile.factory('Table', [
 
         // --------------------------------------------------------------------
         /**
-         * Insert a new record into this table
+         * Construct SQL to insert a record into the table
          *
-         * @param {object} data - the record data {fieldName: value}
-         * @param {function} callback - callback function: function(insertId)
+         * @param {object} data - the data to insert, object with properties
+         *                        {fieldName: value}
+         *
+         * @returns {string} - the SQL statement to insert the record
          */
-        Table.prototype.insert = function(data, callback) {
+        Table.prototype._insert = function(data) {
 
-            var record = this.addDefaults(data, false, false),
-                sql = emSQL.Table(this).insert(record);
+            var quoted = function(name) { return '"' + name + '"'; };
 
-            var db = this._db,
-                adapter = db._adapter;
+            var fields = this.fields,
+                fieldName,
+                field,
+                sqlValue,
+                cols = [],
+                values = [];
 
-            adapter.executeSql(sql[0], sql[1], function(result) {
-                if (callback) {
-                    callback(result.insertId);
+            // Collect and encode data
+            for (fieldName in data) {
+                if (fieldName[0] == '_') {
+                    // Processing instruction => skip
+                    continue;
                 }
-            }, db.sqlError);
+                field = fields[fieldName];
+                if (field) {
+                    sqlValue = field.encode(data[fieldName]);
+                    if (sqlValue !== undefined) {
+                        cols.push(quoted(field.name));
+                        values.push(sqlValue);
+                    }
+                }
+            }
+
+            // Construct SQL statement
+            var placeholders = cols.map(function() { return '?'; }).join(','),
+                sql = [
+                    'INSERT INTO ' + quoted(this.name),
+                    '(' + cols.join(',') + ')',
+                    'VALUES (' + placeholders + ')'
+                ];
+
+            return [sql.join(' '), values];
         };
 
         // --------------------------------------------------------------------
         /**
-         * Update records in this table
+         * Insert a new record into this table
          *
-         * @param {object} data - the data to update {fieldName: value}
-         * @param {string} query - SQL WHERE expression
-         * @param {function} callback - callback function: function(numRowsAffected)
+         * @param {object} data - the record data {fieldName: value}
+         * @param {function} onSuccess - success callback, function(insertId)
+         * @param {function} onError - error callback, function(error)
          */
-        Table.prototype.update = function(data, query, callback) {
+        Table.prototype.insert = function(data, onSuccess, onError) {
 
-            var record;
-            if (data.hasOwnProperty('_noDefaults') && !!data._noDefaults) {
-                record = data;
-            } else {
-                record = this.addDefaults(data, false, true);
-            }
-
-            var sqlTable = emSQL.Table(this),
-                sql;
-
-            switch(arguments.length) {
-                case 2:
-                    callback = query;
-                    sql = sqlTable.update(record);
-                    break;
-                default:
-                    sql = sqlTable.update(record, query);
-                    break;
-            }
-
-            var db = this._db,
+            var record = this.addDefaults(data, false, false),
+                sql = this._insert(record),
+                db = this._db,
                 adapter = db._adapter;
 
-            adapter.executeSql(sql[0], sql[1], function(result) {
-                if (callback) {
-                    callback(result.rowsAffected);
-                }
-            }, db.sqlError);
+            adapter.executeSql(sql[0], sql[1],
+                function(result) {
+                    if (onSuccess) {
+                        onSuccess(result.insertId);
+                    }
+                },
+                function(error) {
+                    if (onError) {
+                        onError(error);
+                    } else {
+                        db.sqlError(error);
+                    }
+                });
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Update all records in this Table (see Set.update)
+         *
+         * @param {object} data - the data {fieldName: value, ...}
+         * @param {object} options - the options {key: value, ...}
+         * @property {bool} options.noDefaults - do not add update-defaults
+         * @param {function} onSuccess - the success callback, receives
+         *                               the number of updated rows as argument
+         * @param {Function} onError - the error callback, receives the error
+         *                             message as argument
+         */
+        Table.prototype.update = function(data, options, onSuccess, onError) {
+
+            new Set(this).update(data, options, onSuccess, onError);
         };
 
         // --------------------------------------------------------------------

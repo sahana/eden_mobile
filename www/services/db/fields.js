@@ -24,8 +24,8 @@
  */
 
 EdenMobile.factory('Field', [
-    '$injector', '$q', 'Expression',
-    function ($injector, $q, Expression) {
+    '$injector', '$q', 'emUtils', 'Expression',
+    function ($injector, $q, emUtils, Expression) {
 
         "use strict";
 
@@ -122,6 +122,72 @@ EdenMobile.factory('Field', [
                 alias = this.toSQL();
             }
             return alias;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Get an SQL description of the field (for table creation)
+         *
+         * @returns {object} - an object with SQL phrases describing the
+         *                     field, properties:
+         *                      - column: the column definition
+         *                      - constraint: foreign key constraint
+         */
+        Field.prototype.sqlDescribe = function() {
+
+            var quotedName = '"' + this.name + '"',
+                description = this._description,
+                fieldType = this.type,
+                reference = emUtils.getReference(fieldType),
+                constraints = [];
+
+            if (reference) {
+                var lookupTable = reference[1],
+                    key = reference[2] || 'id',
+                    ondelete = description.ondelete || 'RESTRICT';
+                constraints.push('FOREIGN KEY (' + quotedName + ') ' +
+                                 'REFERENCES ' + lookupTable + '("' + key + '") ' +
+                                 'ON DELETE ' + ondelete);
+                fieldType = 'reference';
+            }
+
+            // SQL field type
+            var sqlType;
+            switch(fieldType) {
+                case 'id':
+                    sqlType = 'INTEGER PRIMARY KEY AUTOINCREMENT';
+                    break;
+                case 'reference':
+                case 'boolean':
+                case 'integer':
+                    sqlType = 'INTEGER';
+                    break;
+                case 'double':
+                    sqlType = 'REAL';
+                    break;
+                case 'string':
+                case 'text':
+                case 'date':
+                case 'time':
+                case 'datetime':
+                case 'json':
+                case 'upload':
+                    sqlType = 'TEXT';
+                    break;
+                default:
+                    sqlType = 'TEXT';
+                    break;
+            }
+
+            var column = [quotedName, sqlType];
+            if (description.notnull) {
+                column.push('NOT NULL');
+            }
+
+            return {
+                column: column.join(' '),
+                constraint: constraints.join(',')
+            };
         };
 
         // --------------------------------------------------------------------

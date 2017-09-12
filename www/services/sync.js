@@ -1107,16 +1107,11 @@ EdenMobile.factory('emSync', [
         DataUpload.prototype.setSyncDate = function(tableName, uuids, syncDate) {
 
             if (uuids.length) {
-                var quoted = uuids.map(function(uuid) {
-                        return '"' + uuid + '"';
-                    }),
-                    query = 'uuid IN (' + quoted.join(',') + ')';
-
                 emDB.table(tableName).then(function(table) {
-                    table.update({
-                        synchronized_on: syncDate,
-                        _noDefaults: true
-                    }, query, null);
+                    table.where(table.$('uuid').in(uuids))
+                         .update(
+                             {synchronized_on: syncDate},
+                             {noDefaults: true});
                 });
             }
         };
@@ -1239,9 +1234,7 @@ EdenMobile.factory('emSync', [
 
                             // Set synchronized_on to now
                             data.synchronized_on = new Date();
-
-                            var query = 'id=' + recordID;
-                            table.update(data, query,
+                            table.where(table.$('id').equals(recordID)).update(data,
                                 function(numRowsAffected) {
                                     if (numRowsAffected) {
                                         self.resolve(recordID);
@@ -1887,55 +1880,6 @@ EdenMobile.factory('emSync', [
                     this.action.reject(result);
                 }
             }
-        };
-
-        // --------------------------------------------------------------------
-        /**
-         * Update synchronized_on for all imported records
-         *
-         * @param {Date} synchronized_on - the synchronization date/time
-         * @param {Array} created - list of UUIDs of newly created records
-         * @param {Array} updated - list of UUIDs of updated records
-         *
-         * @returns {promise} - a promise that gets resolved when all
-         *                      records have been updated
-         */
-        SyncJob.prototype.updateSyncDate = function(synchronized_on, created, updated) {
-
-            var deferred = $q.defer(),
-                uuids = [];
-
-            // Helper function to create an Array of quoted UUIDs
-            var add = function(uuid) {
-                uuids.push("'" + uuid + "'");
-            };
-
-            // Collect the UUIDs
-            if (created.length) {
-                created.forEach(add);
-            }
-            if (updated.length) {
-                updated.forEach(add);
-            }
-
-            // Update synchronized_on for all matching records
-            if (uuids.length) {
-                emResources.open(this.resourceName).then(function(resource) {
-                    var query = 'uuid IN (' + uuids.join(',') + ')',
-                        data = {
-                            'synchronized_on': synchronized_on,
-                            // don't change modified_on:
-                            'modified_on': undefined
-                        };
-                    resource.update(data, query, function() {
-                        deferred.resolve();
-                    });
-                });
-            } else {
-                deferred.resolve();
-            }
-
-            return deferred.promise;
         };
 
         // ====================================================================

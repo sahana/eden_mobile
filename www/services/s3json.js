@@ -23,8 +23,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
-
 /**
  * Service to convert S3JSON <=> Internal Data Format
  *
@@ -34,6 +32,26 @@
 EdenMobile.factory('emS3JSON', [
     '$q', 'emDB', 'emUtils',
     function ($q, emDB, emUtils) {
+
+        "use strict";
+
+        // ====================================================================
+        /**
+         * Parse a datetime string: prevent inconsistent interpretations of
+         * ISO format strings without explicit time zone indicator (some JS
+         * implementations treat those as UTC, others as local time)
+         *
+         * @param {string} dtStr - the datetime string
+         */
+        var parseUTCDateTime = function(dtStr) {
+
+            if (dtStr.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/g)) {
+                // ISO DateTime string without time zone indicator
+                // => append a trailing Z to indicate UTC
+                dtStr += 'Z';
+            }
+            return new Date(dtStr);
+        };
 
         // ====================================================================
         /**
@@ -80,7 +98,7 @@ EdenMobile.factory('emS3JSON', [
                             break;
                         case 'created_on':
                         case 'modified_on':
-                            this.data[fieldName] = new Date(value);
+                            this.data[fieldName] = parseUTCDateTime(value);
                             break;
                         default:
                             break;
@@ -96,7 +114,7 @@ EdenMobile.factory('emS3JSON', [
             // If no UUID in the source => generate one now
             if (!this.uuid) {
                 this.uuid = emUtils.uuid();
-                this.data['uuid'] = this.uuid;
+                this.data.uuid = this.uuid;
             }
         }
 
@@ -151,7 +169,7 @@ EdenMobile.factory('emS3JSON', [
                 if (value.hasOwnProperty('@value')) {
                     value = value['@value'];
                 } else if (value.hasOwnProperty('$')) {
-                    value = value['$'];
+                    value = value.$;
                 }
             }
 
@@ -179,9 +197,14 @@ EdenMobile.factory('emS3JSON', [
                     }
                     break;
                 case 'date':
-                case 'datetime':
-                    // Investigate
+                    // S3JSON format: YYYY-MM-DD
+                    // => date-only in ISO format is assumed to be UTC
                     this.data[fieldName] = new Date(value);
+                    break;
+                case 'datetime':
+                    // S3JSON format: YYYY-MM-DDThh:mm:ss
+                    // => must convert to UTC explicitly
+                    this.data[fieldName] = parseUTCDateTime(value);
                     break;
                 case 'string':
                 case 'text':

@@ -42,81 +42,6 @@ EdenMobile.factory('emResources', [
 
         // ====================================================================
         /**
-         * ImportItem Constructor
-         *
-         * @param {object} data - the record data to import
-         */
-        function ImportItem(resource, data) {
-
-            this.resource = resource;
-
-            this.data = data;
-            this.recordID = null;
-
-            this.status = null;
-        }
-
-        // --------------------------------------------------------------------
-        /**
-         * Commit this import item
-         *
-         * @param {Date} syncDate - the synchronization date/time
-         * @returns {promise} - a promise that is resolved with this
-         *                      item when its processing is complete
-         *                      (for queue handling)
-         */
-        ImportItem.prototype.commit = function(syncDate) {
-
-            var resource = this.resource,
-                record = resource.deserialize(this.data),
-                self = this,
-                committed = $q.defer();
-
-            if (syncDate === undefined) {
-                syncDate = new Date();
-            }
-
-            resource.identify(record).then(function(recordID) {
-
-                record.synchronized_on = syncDate;
-                record.modified_on = syncDate;
-
-                if (!!recordID) {
-                    // Update existing record
-                    var query = 'id=' + recordID;
-
-                    self.recordID = recordID;
-
-                    resource.update(record, query, function(numRowsAffected) {
-                        if (!!numRowsAffected) {
-                            self.status = 'updated';
-                        } else {
-                            self.status = 'failed';
-                        }
-                        committed.resolve(self);
-                    });
-
-                } else {
-                    // Create new record
-                    record.created_on = syncDate;
-
-                    resource.insert(record, function(insertID) {
-                        if (!!insertID) {
-                            self.recordID = insertID;
-                            self.status = 'created';
-                        } else {
-                            self.status = 'failed';
-                        }
-                        committed.resolve(self);
-                    });
-                }
-            });
-
-            return committed.promise;
-        };
-
-        // ====================================================================
-        /**
          * Establish the resource name from the resource options
          *
          * @param {Table} table - the Table
@@ -321,26 +246,6 @@ EdenMobile.factory('emResources', [
             var record = this.addDefaults(data, false, false);
 
             this.table.insert(record, callback);
-        };
-
-        // --------------------------------------------------------------------
-        /**
-         * Update records in this resource
-         *
-         * @param {object} data - the data to update {fieldName: value}
-         * @param {string} query - SQL WHERE expression
-         * @param {function} callback - callback function: function(numRowsAffected)
-         */
-        Resource.prototype.update = function(data, query, callback) {
-
-            var record = this.addDefaults(data, false, true);
-
-            if (arguments.length == 2) {
-                callback = query;
-                query = null;
-            }
-
-            this.table.update(data, this.extendQuery(query), callback);
         };
 
         // --------------------------------------------------------------------
@@ -557,152 +462,6 @@ EdenMobile.factory('emResources', [
 
         // --------------------------------------------------------------------
         /**
-         * Export records from this resource for upload to Sahana server
-         *
-         * @param {Array} fields - array of field names (optional)
-         * @param {string} query - SQL WHERE expression to select the records
-         * @param {function} callback - callback function: function(data, files)
-         */
-        Resource.prototype.exportJSON = function(fields, query, callback) {
-
-            var self = this;
-
-            switch(arguments.length) {
-                case 1:
-                    callback = fields;
-                    fields = null;
-                    query = null;
-                    break;
-                case 2:
-                    callback = query;
-                    query = fields;
-                    fields = null;
-                    break;
-                default:
-                    break;
-            }
-
-            if (!fields) {
-                fields = Object.keys(self.fields);
-            }
-
-            var requiredFields = ['uuid', 'created_on', 'modified_on'];
-            requiredFields.forEach(function(fieldName) {
-                if (fields.indexOf(fieldName) == -1) {
-                    fields.push(fieldName);
-                }
-            });
-
-            self.select(fields, query, function(records) {
-
-                var output = {},
-                    rows = [],
-                    files = [],
-                    record;
-
-                if (!records.length) {
-                    // No data
-                    if (callback) {
-                        callback();
-                    }
-                } else {
-                    // Collect rows and files
-                    for (var i=0, len=records.length; i<len; i++) {
-                        record = self.serialize(records[i]);
-                        rows.push(record.data);
-                        files = files.concat(record.files);
-                    }
-
-                    // Execute callback
-                    output[self.tableName] = rows;
-                    if (callback) {
-                        callback(JSON.stringify(output), files);
-                    }
-                }
-            });
-        };
-
-        // --------------------------------------------------------------------
-        /**
-         * Import data from the Sahana server (WIP)
-         *
-         * @param {object} data - the JSON data from the server
-         * @param {function} callback - callback function that is invoked
-         *                              when the import has completed,
-         *                              receives a result counter object as
-         *                              parameter:
-         *                                  {created: number,
-         *                                   updated: number,
-         *                                   failed: number
-         *                                   }
-         */
-        Resource.prototype.importJSON = function(data, callback) {
-
-            var rows = data[this.tableName],
-                result = {
-                    updated: 0,
-                    created: 0,
-                    failed: 0
-                };
-
-            if (rows) {
-
-                var importQueue = [];
-
-                // Queue handler
-                var checkQueue = function(item) {
-
-                    // Update counters
-                    switch(item.status) {
-                        case 'updated':
-                            result.updated++;
-                            break;
-                        case 'created':
-                            result.created++;
-                            break;
-                        default:
-                            result.failed++;
-                            break;
-                    }
-
-                    // Check queue status
-                    var ready = true;
-                    for (var i=importQueue.length; --i;) {
-                        if (!importQueue[i].status) {
-                            ready = false;
-                            break;
-                        }
-                    }
-
-                    // Run callback when done
-                    if (ready && !!callback) {
-                        callback(result);
-                    }
-                };
-
-                // Schedule all rows
-                var self = this;
-                rows.forEach(function(row) {
-                    importQueue.push(new ImportItem(self, row));
-                });
-
-                // Run the queue
-                var now = new Date();
-                importQueue.forEach(function(item) {
-                    item.commit(now).then(checkQueue);
-                });
-
-            } else {
-
-                // Nothing to import => run callback immediately
-                if (!!callback) {
-                    callback(result);
-                }
-            }
-        };
-
-        // --------------------------------------------------------------------
-        /**
          * Setter for schema date
          *
          * @param {Date} timeStamp - the new schema date
@@ -714,12 +473,13 @@ EdenMobile.factory('emResources', [
 
             emDB.table('em_resource').then(function(table) {
 
-                var query = 'em_resource.name="' + name + '"',
-                    data = {'schema_date': timeStamp};
-
-                table.update(data, query, function(numRowsAffected) {
-                    self.schemaDate = timeStamp;
-                });
+                table.where(table.$('name').equals(name)).update(
+                    {
+                        schema_date: timeStamp
+                    },
+                    function(numRowsAffected) {
+                        self.schemaDate = timeStamp;
+                    });
             });
         };
 
@@ -747,12 +507,13 @@ EdenMobile.factory('emResources', [
 
             emDB.table('em_resource').then(function(table) {
 
-                var query = 'em_resource.name="' + name + '"',
-                    data = {'lastsync': timeStamp};
-
-                table.update(data, query, function(numRowsAffected) {
-                    self.lastSync = timeStamp;
-                });
+                table.where(table.$('name').equals(name)).update(
+                    {
+                        lastsync: timeStamp
+                    },
+                    function(numRowsAffected) {
+                        self.lastSync = timeStamp;
+                    });
             });
         };
 

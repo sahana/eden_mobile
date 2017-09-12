@@ -23,8 +23,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
-
 // ============================================================================
 /**
  * Update-Form Controller
@@ -35,6 +33,8 @@
 EdenMobile.controller("EMDataUpdate", [
     '$scope', '$state', '$stateParams', 'emDialogs', 'emFiles', 'emResources',
     function($scope, $state, $stateParams, emDialogs, emFiles, emResources) {
+
+        "use strict";
 
         // --------------------------------------------------------------------
         /**
@@ -144,10 +144,11 @@ EdenMobile.controller("EMDataUpdate", [
                 }
                 if (!empty) {
                     // Commit to database, then redirect
-                    var query = tableName + '.id=' + targetID;
-                    targetResource.update(form, query, function() {
-                        confirmAction('Record updated', resourceName, recordID, componentName);
-                    });
+                    var table = targetResource.table;
+                    table.where(table.$('id').equals(targetID)).update(form,
+                        function() {
+                            onUpdate();
+                        });
                 }
             };
 
@@ -157,13 +158,11 @@ EdenMobile.controller("EMDataUpdate", [
                     'Delete Record',
                     'Are you sure you want to delete this record?',
                     function() {
-                        var table = targetResource.table,
-                            id = table.$('id');
-                        if (id) {
-                            table.where(id.equals(targetID)).delete(function() {
+                        var table = targetResource.table;
+                        table.where(table.$('id').equals(targetID)).delete(
+                            function() {
                                 onDelete();
                             });
-                        }
                     });
             };
 
