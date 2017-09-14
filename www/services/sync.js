@@ -431,9 +431,9 @@ EdenMobile.factory('emSync', [
             if (this.uuid) {
                 this.tableCreated = true;
                 this.recordID = ref;
-            } else if (self.tableName) {
+            } else if (this.tableName) {
                 this.tableCreated = true;
-            } else if (self.url) {
+            } else if (this.url) {
                 this.fileURI = ref;
             }
 
@@ -540,7 +540,7 @@ EdenMobile.factory('emSync', [
 
             } else if (url) {
                 // File dependency
-                files = currentDependencies.files;
+                var files = currentDependencies.files;
                 if (files.hasOwnProperty(url)) {
                     dependency = files[url];
                 } else {
@@ -851,7 +851,6 @@ EdenMobile.factory('emSync', [
                     var jsonData = {},
                         references = self.references,
                         tableName,
-                        refMap,
                         items,
                         data;
 
@@ -1016,7 +1015,7 @@ EdenMobile.factory('emSync', [
                     self.resolve();
                 },
                 function(error) {
-                    self.reject(emServer.parseServerError(response));
+                    self.reject(emServer.parseServerError(error));
                 });
 
             return deferred.promise;
@@ -2488,7 +2487,6 @@ EdenMobile.factory('emSync', [
                 emDB.table(tableName).then(function(table) {
 
                     var deps = recordDependencies[tableName],
-                        dependency,
                         uuid;
 
                     if (!table) {
@@ -2655,11 +2653,11 @@ EdenMobile.factory('emSync', [
         /**
          * @todo: docstring
          */
-        var downloadFiles = function() {
+        /* var downloadFiles = function() {
 
             // @todo: concept
             // @todo: implement this
-        };
+        }; */
 
         // --------------------------------------------------------------------
         /**
@@ -2691,12 +2689,11 @@ EdenMobile.factory('emSync', [
                                         tableNames);
                     if (resolvable) {
 
-                        importSchemas(schemaImports).then(function(result) {
-
-                            var dataImports = result[0],
-                                filesRequired = result[1];
+                        importSchemas(schemaImports).then(function(/* result */) {
 
                             // @todo: execute dataImports + download filesRequired
+                            //var dataImports = result[0],
+                            //    filesRequired = result[1];
 
                             jobs.forEach(function(job) {
                                 if (!job.$result) {
@@ -2747,8 +2744,8 @@ EdenMobile.factory('emSync', [
 
             downloadData(jobs).then(function(result) {
 
-                var dataImports = result[0],
-                    filesRequired = result[1];
+                var dataImports = result[0];
+                    //filesRequired = result[1];
 
                 importData(dataImports).then(function() {
 

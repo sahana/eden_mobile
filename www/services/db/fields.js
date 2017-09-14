@@ -424,7 +424,7 @@ EdenMobile.factory('Field', [
                     }
 
                     // Select records
-                    resource.select(fields, function(records, result) {
+                    resource.select(fields, function(records) {
 
                         // Build options array
                         var options = [],

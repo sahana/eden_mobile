@@ -119,7 +119,7 @@
 
             for (colName in data) {
                 if (colName.startsWith(tableName + '.')) {
-                    fieldName = substring(colName.indexOf('.') + 1);
+                    fieldName = colName.substring(colName.indexOf('.') + 1);
                 } else {
                     fieldName = colName;
                 }
@@ -506,7 +506,6 @@
         if (sql) {
 
             var db = this._db,
-                table = this.table,
                 self = this;
 
             db._adapter.executeSql(sql, [],
@@ -582,9 +581,7 @@
         // Execute SQL query
         if (sql) {
 
-            var db = this._db,
-                table = this.table,
-                self = this;
+            var db = this._db;
 
             db._adapter.executeSql(sql, [],
                 function(result) {

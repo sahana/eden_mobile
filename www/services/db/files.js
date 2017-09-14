@@ -217,7 +217,7 @@
         getFile(fileURI, function(fileName, file) {
 
             var reader = new FileReader();
-            reader.onloadend = function(e) {
+            reader.onloadend = function() {
                 var blob = new Blob([this.result], {type: "application/octet-stream"});
                 onSuccess(fileName, blob);
             };

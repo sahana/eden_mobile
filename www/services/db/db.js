@@ -143,7 +143,7 @@ EdenMobile.factory('emDB', [
 
             // Enable foreign key support
             var sql = 'PRAGMA foreign_keys = ON;';
-            adapter.executeSql(sql, [], function(result) {
+            adapter.executeSql(sql, [], function() {
 
                 sql = 'SELECT DISTINCT tbl_name FROM sqlite_master WHERE tbl_name = "em_version"';
                 adapter.executeSql(sql, [], function(result) {
