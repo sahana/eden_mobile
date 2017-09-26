@@ -308,34 +308,56 @@ EdenMobile.factory('Table', [
          * Populate this table with records
          *
          * @param {Array} records - Array of records to populate the table with
-         * @param {function} callback - callback function: function(tableName)
+         * @param {function} onSuccess - success callback: function(tableName)
+         * @param {function} onError - error callback: function(error)
          */
-        Table.prototype.populate = function(records, callback) {
-
-            var sql = [];
-
-            if (records) {
-                for (var i = 0, len = records.length; i < len; i++) {
-                    var insertSQL = this._insert(records[i]);
-                    if (insertSQL) {
-                        sql.push(insertSQL);
-                    }
-                }
-            }
+        Table.prototype.populate = function(records, onSuccess, onError) {
 
             var tableName = this.name,
                 db = this._db,
-                adapter = db._adapter;
+                adapter = db._adapter,
+                self = this;
 
-            if (sql.length) {
-                adapter.sqlBatch(sql, function() {
-                    if (callback) {
-                        callback(tableName);
+            var insertRecord = function(tx, record) {
+                var sql = self._insert(record);
+                if (sql) {
+                    tx.executeSql(sql[0], sql[1]);
+                }
+            };
+
+            var fields = this.fields,
+                createObjects = !!(fields.uuid && fields.em_object_id);
+
+            adapter.transaction(
+                function(tx) {
+                    records.forEach(function(data) {
+                        var record = self.addDefaults(data, false, false);
+                        if (createObjects) {
+                            var sql = db.tables.em_object._insert({
+                                tablename: self.name,
+                                uuid: record.uuid
+                            });
+                            tx.executeSql(sql[0], sql[1], function(tx, result) {
+                                record.em_object_id = result.insertId;
+                                insertRecord(tx, record);
+                            });
+                        } else {
+                            insertRecord(tx, record);
+                        }
+                    });
+                },
+                function(error) {
+                    if (onError) {
+                        onError(error);
+                    } else {
+                        db.sqlError(error);
                     }
-                }, db.sqlError);
-            } else if (callback) {
-                callback(tableName);
-            }
+                },
+                function() {
+                    if (onSuccess) {
+                        onSuccess(tableName);
+                    }
+                });
         };
 
         // --------------------------------------------------------------------
@@ -486,14 +508,37 @@ EdenMobile.factory('Table', [
         Table.prototype.insert = function(data, onSuccess, onError) {
 
             var record = this.addDefaults(data, false, false),
-                sql = this._insert(record),
                 db = this._db,
-                adapter = db._adapter;
+                adapter = db._adapter,
+                fields = this.fields,
+                self = this;
 
-            adapter.executeSql(sql[0], sql[1],
-                function(result) {
-                    if (onSuccess) {
-                        onSuccess(result.insertId);
+            var insertRecord = function(tx, record) {
+                var sql = self._insert(record);
+                if (!sql) {
+                    tx.abort('no data');
+                } else {
+                    tx.executeSql(sql[0], sql[1], function(tx, result) {
+                        if (onSuccess) {
+                            onSuccess(result.insertId);
+                        }
+                    });
+                }
+            };
+
+            adapter.transaction(
+                function(tx) {
+                    if (fields.uuid && fields.em_object_id) {
+                        var sql = db.tables.em_object._insert({
+                            tablename: self.name,
+                            uuid: record.uuid
+                        });
+                        tx.executeSql(sql[0], sql[1], function(tx, result) {
+                            record.em_object_id = result.insertId;
+                            insertRecord(tx, record);
+                        });
+                    } else {
+                        insertRecord(tx, record);
                     }
                 },
                 function(error) {
