@@ -207,9 +207,14 @@ EdenMobile.factory('emResources', [
 
             // Get the Component
             var hook = this._hooks[alias],
-                component;
+                component = this._components[alias];
 
-            if (hook) {
+            if (component) {
+
+                // Already attached
+                return component;
+
+            } else if (hook) {
 
                 var tables = this._db.tables,
                     table = tables[hook.tableName];
@@ -262,6 +267,57 @@ EdenMobile.factory('emResources', [
             }
 
             return component;
+        };
+
+        // --------------------------------------------------------------------
+        // TODO: docstring
+        // TODO: test this
+        Resource.prototype.component = function(alias) {
+
+            var components = this._components,
+                component = components[alias] || this._attachComponent(alias);
+
+            if (component) {
+                return component;
+            }
+
+            // Attached link table?
+            component = this._links[alias];
+            if (component) {
+                return component;
+            }
+
+            var componentAlias,
+                hooks = this._hooks;
+
+            // Unattached link table?
+            if (alias.slice(-6) == '__link') {
+                componentAlias = alias.slice(0, -6);
+                var hook = hooks[componentAlias];
+                if (hook && hook.linkName) {
+                    component = this._attachComponent(componentAlias);
+                    return component && component.link;
+                } else {
+                    return component; // undefined
+                }
+            }
+
+            // Link table name suffix?
+            var suffix = function(n) { return n && n.slice(n.indexOf('_') + 1); };
+            for (componentAlias in components) {
+                var link = components[componentAlias].link;
+                if (link && suffix(link.tableName) == alias) {
+                    return link;
+                }
+            }
+            for (componentAlias in hooks) {
+                if (suffix(hooks[componentAlias].linkName) == alias) {
+                    component = this._attachComponent(componentAlias);
+                    return component && component.link;
+                }
+            }
+
+            return component; // undefined
         };
 
         // --------------------------------------------------------------------

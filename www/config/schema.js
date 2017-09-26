@@ -26,7 +26,7 @@
 /**
  * The version number for the default schema
  */
-var emSchemaVersion = '3';
+var emSchemaVersion = '4';
 
 /**
  * The default schema for the local database
@@ -68,6 +68,23 @@ EdenMobile.factory('emDefaultSchema', ['emUtils', function (emUtils) {
             'settings': {
                 type: 'json',
                 label: 'Settings'
+            }
+        },
+
+        /**
+         * Table to store object keys
+         */
+        {
+            _name: 'em_object',
+            'tablename': {
+                type: 'string',
+                label: 'Table Name',
+                notnull: true
+            },
+            'uuid': {
+                type: 'string',
+                readable: false,
+                writable: false
             }
         },
 
@@ -232,6 +249,11 @@ EdenMobile.factory('emDefaultSchema', ['emUtils', function (emUtils) {
             defaultValue: function() {
                 return emUtils.uuid().urn();
             }
+        },
+        'em_object_id': {
+            type: 'reference em_object',
+            readable: false,
+            writable: false
         },
         'created_on': {
             type: 'datetime',
