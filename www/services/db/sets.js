@@ -714,8 +714,7 @@
         }
 
         // Construct the SQL
-        var db = this._db,
-            table = this.table,
+        var table = this.table,
             sql = ['DELETE FROM', quoted(table.toSQL())],
             query = this.query;
 
@@ -723,24 +722,45 @@
             sql.push('WHERE');
             sql.push(query.toSQL());
         }
+        sql = sql.join(' ');
 
-        // Remember the URIs of files linked to this set,
-        // to remove them after successful deletion of records
+        // Helper method to remove orphaned files
+        var removeFiles = function(fileURIs) {
+            fileURIs.forEach(function(fileURI) {
+                window.resolveLocalFileSystemURL(fileURI, function(fileEntry) {
+                    fileEntry.remove();
+                });
+            });
+        };
+
+        var fields = table.fields,
+            isObjectType = !!(fields.uuid && fields.em_object_id),
+            db = this._db,
+            self = this;
+
+        // Get the URIs of all files linked to this set
         table.getFiles(query).then(function(orphanedFiles) {
 
-            db._adapter.executeSql(sql.join(' '), [],
-                function(result) {
-
-                    // Delete now-orphaned files
-                    orphanedFiles.forEach(function(fileURI) {
-                        window.resolveLocalFileSystemURL(fileURI, function(fileEntry) {
-                            fileEntry.remove();
+            db._adapter.transaction(
+                function(tx) {
+                    if (isObjectType) {
+                        self._getObjectIDs(tx, function(objectIDs) {
+                            tx.executeSql(sql, [], function(tx, result) {
+                                removeFiles(orphanedFiles);
+                                self._deleteObjectIDs(tx, objectIDs, function() {
+                                    if (typeof onSuccess == 'function') {
+                                        onSuccess(result.rowsAffected);
+                                    }
+                                });
+                            });
                         });
-                    });
-
-                    // Execute callback
-                    if (onSuccess) {
-                        onSuccess(result.rowsAffected);
+                    } else {
+                        tx.executeSql(sql, [], function(result) {
+                            removeFiles(orphanedFiles);
+                            if (typeof onSuccess == 'function') {
+                                onSuccess(result.rowsAffected);
+                            }
+                        });
                     }
                 },
                 function(error) {
@@ -751,6 +771,57 @@
                         db.sqlError(error);
                     }
                 });
+        });
+    };
+
+    // ------------------------------------------------------------------------
+    /**
+     * Transaction helper to remove em_object entries linked to this Set
+     *
+     * @param {Transaction} tx - the database transaction
+     * @param {Array} objectIDs - array of em_object IDs
+     * @param {function} callback - callback function
+     */
+    Set.prototype._deleteObjectIDs = function(tx, objectIDs, callback) {
+
+        var db = this._db,
+            table = db.tables.em_object,
+            query = table.$('id').in(objectIDs),
+            sql = ['DELETE FROM', quoted(table.toSQL()), 'WHERE', query.toSQL()];
+
+        tx.executeSql(sql.join(' '), [], function() { callback(); });
+    };
+
+    // ------------------------------------------------------------------------
+    /**
+     * Transaction helper to extract the em_object IDs of this Set
+     *
+     * @param {Transaction} tx - the database transaction
+     * @param {function} callback - callback function: function(objectIDs)
+     */
+    Set.prototype._getObjectIDs = function(tx, callback) {
+
+        var table = this.table,
+            field = table.fields.em_object_id;
+
+        if (!field) {
+            callback([]);
+        }
+
+        var sql = ['SELECT', field.toSQL(), 'FROM', quoted(table.toSQL())],
+            query = this.query;
+
+        if (query) {
+            sql = sql.concat(['WHERE', query.toSQL()]);
+        }
+
+        tx.executeSql(sql.join(' '), [], function(tx, result) {
+            var rows = result.rows,
+                objectIDs = [];
+            for (var i = 0, len = rows.length; i < len; i++) {
+                objectIDs.push(rows.item(i).em_object_id);
+            }
+            callback(objectIDs);
         });
     };
 
