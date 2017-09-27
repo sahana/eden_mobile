@@ -1578,21 +1578,20 @@ EdenMobile.factory('emSync', [
                 type: fieldDescription.type || 'string',
             };
 
-            if (!!fieldDescription.label) {
-                spec.label = fieldDescription.label;
-            }
-            if (!!fieldDescription.options) {
-                spec.options = fieldDescription.options;
-            }
-            if (fieldDescription.hasOwnProperty('default')) {
-                spec.defaultValue = fieldDescription.default;
-            }
+            for (var keyword in fieldDescription) {
 
-            var settings = fieldDescription.settings;
-            for (var keyword in fieldDescription.settings) {
-                if (!spec.hasOwnProperty(keyword)) {
-                    spec[keyword] = settings[keyword];
+                // Translate server-side keywords into keys used internally
+                var key = keyword;
+                switch(keyword) {
+                    case 'default':
+                        key = 'defaultValue';
+                        break;
+                    default:
+                        break;
                 }
+
+                // Add to field spec
+                spec[key] = fieldDescription[keyword];
             }
 
             return spec;

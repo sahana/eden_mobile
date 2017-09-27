@@ -68,7 +68,7 @@ EdenMobile.factory('Field', [
                 exprType: 'field',
                 isForeignKey: !!reference,
                 isObjectKey: isObjectKey,
-                refType: description.ref_type,
+                refType: description.reftype,
                 meta: !!meta
             });
 
