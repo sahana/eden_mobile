@@ -44,19 +44,36 @@ EdenMobile.factory('Field', [
 
             // Field name and type
             this.name = name;
-            this.type = description.type || 'string';
 
-            // Expression type
-            Object.defineProperty(this, 'exprType', {
-                value: 'field',
-                writable: false
+            // Evaluate the field type
+            var type = description.type || 'string';
+            if (type == 'objectkey') {
+                type = 'reference em_object';
+            }
+            var reference = emUtils.getReference(type),
+                isObjectKey = false;
+            if (reference) {
+                var lookupTable = reference[1],
+                    key = reference[2] | 'id';
+                if (lookupTable == 'em_object' && key == 'id') {
+                    // All em_object references are object lookup keys,
+                    // except the objectID (which is a self-reference)
+                    isObjectKey = name != 'em_object_id';
+                }
+            }
+
+            // Set read-only properties
+            this._setProperties({
+                type: type,
+                exprType: 'field',
+                isForeignKey: !!reference,
+                isObjectKey: isObjectKey,
+                refType: description.ref_type,
+                meta: !!meta
             });
 
             // Field description
             this._description = description || {};
-
-            // Meta-field?
-            this.meta = !!meta;
 
             // Readable/writable options
             this.readable = true;
@@ -553,8 +570,13 @@ EdenMobile.factory('Field', [
 
             // Attributes with mandatory inheritance
             this.name = field.name;
-            this.type = field.type;
-            this.meta = field.meta;
+            this._setProperties({
+                type: field.type,
+                meta: field.meta,
+                isForeignKey: field.isForeignKey,
+                isObjectKey: field.isObjectKey,
+                refType: field.refType
+            });
 
             var description = this._description;
 
@@ -591,8 +613,12 @@ EdenMobile.factory('Field', [
             var description = angular.extend({}, this._description),
                 field = new Field(null, this.name, description, this.meta);
 
-            field.type = this.type;
-
+            field._setProperties({
+                type: this.type,
+                isForeignKey: this.isForeignKey,
+                isObjectKey: this.isObjectKey,
+                refType: this.refType
+            });
             field.readable = this.readable;
             field.writable = this.writable;
 

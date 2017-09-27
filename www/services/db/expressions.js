@@ -64,15 +64,10 @@
             case 'join':
             case 'orderby':
             case 'transform':
-
                 this.op = op;
                 this.left = left;
                 this.right = right;
-
-                Object.defineProperty(this, 'exprType', {
-                    value: exprType,
-                    writable: false
-                });
+                this._setProperties({exprType: exprType});
                 break;
 
             default:
@@ -490,6 +485,22 @@
             value = this.decode(value);
         }
         return value;
+    };
+
+    // --------------------------------------------------------------------
+    /**
+     * Set read-only properties
+     *
+     * @param {object} properties - object {key: value}
+     */
+    Expression.prototype._setProperties = function(properties) {
+
+        for (var key in properties) {
+            Object.defineProperty(this, key, {
+                value: properties[key],
+                writable: false
+            });
+        }
     };
 
     // ------------------------------------------------------------------------
