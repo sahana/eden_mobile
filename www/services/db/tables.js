@@ -81,7 +81,7 @@ EdenMobile.factory('Table', [
 
             var field = this.fields[fieldName];
 
-            if (!field && this.objectTypes.hasOwnProperty(fieldName)) {
+            if (!field && Object.values(this.objectTypes).indexOf(fieldName) != -1) {
                 field = this.fields.em_object_id;
             }
 
