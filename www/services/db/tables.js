@@ -43,6 +43,10 @@ EdenMobile.factory('Table', [
             this._db = db;
             this.name = tableName;
 
+            if (!settings) {
+                settings = {};
+            }
+
             var field,
                 fieldName,
                 tableFields = {};
@@ -59,12 +63,14 @@ EdenMobile.factory('Table', [
             this.fields = tableFields;
             this.settings = settings;
 
+            this.objectTypes = settings.types || {};
+
             this.resources = {};
         }
 
         // --------------------------------------------------------------------
         /**
-         * Shortcut for Table.fields["fieldName"]: Table.$("fieldName")
+         * Access a Field in this table; maps valid object IDs to em_object_id
          *
          * @param {string} fieldName - the field name
          *
@@ -73,7 +79,13 @@ EdenMobile.factory('Table', [
          */
         Table.prototype.$ = function(fieldName) {
 
-            return this.fields[fieldName];
+            var field = this.fields[fieldName];
+
+            if (!field && this.objectTypes.hasOwnProperty(fieldName)) {
+                field = this.fields.em_object_id;
+            }
+
+            return field;
         };
 
         // --------------------------------------------------------------------
@@ -313,19 +325,26 @@ EdenMobile.factory('Table', [
          */
         Table.prototype.populate = function(records, onSuccess, onError) {
 
-            var tableName = this.name,
-                db = this._db,
-                adapter = db._adapter,
-                self = this;
+            var tableName = this.name;
 
-            var insertRecord = function(tx, record) {
-                var sql = self._insert(record);
-                if (sql) {
-                    tx.executeSql(sql[0], sql[1]);
+            if (!records || !records.length) {
+                if (onSuccess) {
+                    onSuccess(tableName);
+                    return;
                 }
-            };
+            }
 
-            var fields = this.fields,
+            var self = this,
+                insertRecord = function(tx, record) {
+                    var sql = self._insert(record);
+                    if (sql) {
+                        tx.executeSql(sql[0], sql[1]);
+                    }
+                };
+
+            var db = this._db,
+                adapter = db._adapter,
+                fields = this.fields,
                 createObjects = !!(fields.uuid && fields.em_object_id);
 
             adapter.transaction(

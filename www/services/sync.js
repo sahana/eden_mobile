@@ -1526,15 +1526,19 @@ EdenMobile.factory('emSync', [
 
             // Table settings
             // @todo: component declarations, data card format...
-            if (schemaData.form) {
-                schema._form = schemaData.form;
-            }
-            if (schemaData.subheadings) {
-                schema._subheadings = schemaData.subheadings;
-            }
-            if (schemaData.strings) {
-                schema._strings = schemaData.strings;
-            }
+            var validSettings = [
+                "form",
+                "subheadings",
+                "strings",
+                "types"
+            ];
+
+            validSettings.forEach(function(key) {
+                var value = schemaData[key];
+                if (value) {
+                    schema['_' + key] = value;
+                }
+            });
 
             if (this.provides == job.tableName) {
 
