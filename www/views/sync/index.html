@@ -24,6 +24,7 @@
             <ion-spinner class="icon" icon="dots"></ion-spinner>
             <span>{{syncStage}}</span>
             <span ng-show="!!syncProgress">{{syncProgress[0]}} / {{syncProgress[1]}}</span>
+            <span ng-show="!!syncActivity">({{syncActivity}})</span>
         </div>
         <div class="list card">
             <div type="button" class="item item-icon-right" ng-click="!syncInProgress && !syncLogLoading && viewResults()">

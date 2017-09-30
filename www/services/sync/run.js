@@ -125,9 +125,6 @@ EdenMobile.factory('SyncRun', [
 
             var completion = this.completion;
 
-            // Final progress update
-            completion.notify({});
-
             // Resolve completion promise
             completion.resolve();
         };
@@ -505,7 +502,7 @@ EdenMobile.factory('SyncRun', [
                 return $q.resolve([]);
             }
 
-            this.currentStage(stage, 'downloading', downloads);
+            this.currentStage(stage, null, downloads);
 
             // Process download-queue
             var deferred = $q.defer(),
@@ -661,7 +658,7 @@ EdenMobile.factory('SyncRun', [
                 return $q.resolve();
             }
 
-            this.currentStage('Schema Import', 'importing', schemaImports);
+            this.currentStage('Schema Import', null, schemaImports);
 
             var deferred = $q.defer(),
                 self = this,
@@ -731,7 +728,7 @@ EdenMobile.factory('SyncRun', [
                 return $q.resolve([[], []]);
             }
 
-            this.currentStage(stage, 'downloading', downloads);
+            this.currentStage(stage, null, downloads);
 
             var deferred = $q.defer(),
                 self = this,
@@ -861,7 +858,7 @@ EdenMobile.factory('SyncRun', [
 
             this.resolveRecordDependencies().then(function(){
 
-                self.currentStage('Data Import', 'importing', dataImports);
+                self.currentStage('Data Import', null, dataImports);
 
                 dataImports.forEach(function(dataImport) {
                     dataImport.done().finally(function() {
@@ -904,7 +901,7 @@ EdenMobile.factory('SyncRun', [
                 return $q.resolve([]);
             }
 
-            this.currentStage('Data Export', 'exporting', dataExports);
+            this.currentStage('Data Export', null, dataExports);
 
             var deferred = $q.defer(),
                 self = this;
@@ -940,7 +937,7 @@ EdenMobile.factory('SyncRun', [
                 return $q.resolve();
             }
 
-            this.currentStage('Data Upload', 'uploading', dataUploads);
+            this.currentStage('Data Upload', null, dataUploads);
 
             var deferred = $q.defer(),
                 self = this;

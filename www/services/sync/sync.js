@@ -237,11 +237,7 @@ EdenMobile.factory('emSync', [
                         // Failure
                     },
                     function(progress) {
-                        if (!progress) {
-                            $rootScope.syncStage = null;
-                            $rootScope.syncActivity = null;
-                            $rootScope.syncProgress = null;
-                        } else {
+                        if (progress) {
                             // Progress Notification
                             $rootScope.syncStage = progress.stage;
                             $rootScope.syncActivity = progress.activity;
@@ -253,6 +249,10 @@ EdenMobile.factory('emSync', [
                     });
 
             }).finally(function() {
+
+                $rootScope.syncStage = null;
+                $rootScope.syncActivity = null;
+                $rootScope.syncProgress = null;
 
                 $rootScope.syncInProgress = false;
             });
