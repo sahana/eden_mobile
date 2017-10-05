@@ -120,17 +120,33 @@ EdenMobile.factory('Table', [
          */
         Table.prototype.toSQL = function() {
 
-            return this.name;
+            var original = this._original,
+                sql;
+
+            if (original) {
+                sql = original.name + ' AS "' + this.name + '"';
+            } else {
+                sql = this.name;
+            }
+            return sql;
         };
 
         // --------------------------------------------------------------------
         /**
-         * @todo: implement this
-         * @todo: docstring
+         * Get an aliased clone of the table
+         *
+         * @param {string} alias - the table alias
+         *
+         * @returns {Table} - the aliased clone of the table
          */
-        //Table.prototype.as = function() {
-        //
-        //};
+        Table.prototype.as = function(alias) {
+
+            var aliased = new Table(this._db, alias, this.fields, this.settings);
+
+            aliased._original = this;
+
+            return aliased;
+        };
 
         // --------------------------------------------------------------------
         /**

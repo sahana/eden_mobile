@@ -161,7 +161,7 @@
      */
     Join.prototype.getAlias = function() {
 
-        var alias = this.tableName,
+        var alias,
             parent = this.parent;
 
         if (parent) {
@@ -181,46 +181,29 @@
 
     // ------------------------------------------------------------------------
     /**
-     * Convert this join into a Set (DRAFT!)
+     * Apply this join to a set
      *
      * @todo: call with Table (Set) instance
      * @todo: construct a Set rather than SQL
      */
-    Join.prototype.getSet = function() {
+    Join.prototype.extendSet = function(set, parentTable) {
 
-        var set = [],
-            alias;
+        var db = set._db,
+            table = db.tables[this.tableName],
+            alias = this.getAlias();
+
+        if (alias) {
+            table = table.as(alias);
+        }
 
         if (this.parent) {
-
-            // @todo: produce Table.as (when implemented)
-            alias = this.getAlias();
-            var aliasExpr = '';
-            if (this.useAlias || alias != this.tableName) {
-                alias = '"' + alias + '"';
-                aliasExpr = ' AS ' + alias;
-            }
-
-            // @todo: produce actual ON-Expression
-            var on = alias + '.' + this.rKey,
-                parentAlias = this.parent.getAlias();
-            if (parentAlias != this.parent.tableName) {
-                parentAlias = '"' + parentAlias + '"';
-            }
-            on += '=' + parentAlias + '.' + this.lKey;
-
-            // @todo: extend passed-in Set
-            set.push('LEFT JOIN ' + this.tableName + aliasExpr + ' ON ' + on);
-
-        } else {
-            // @todo: remove this part
-            set.push(this.tableName);
+            var cond = table.$(this.rKey).equals(parentTable.$(this.lKey));
+            set = set.left(table.on(cond));
         }
 
         var joins = this.joins;
         for (alias in joins) {
-            // @todo: call getSet of sub-joins with (extended) set
-            set = set.concat(joins[alias].getSet());
+            set = joins[alias].extendSet(set, table);
         }
 
         return set;

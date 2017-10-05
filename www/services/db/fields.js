@@ -118,7 +118,18 @@ EdenMobile.factory('Field', [
          */
         Field.prototype.toSQL = function() {
 
-            return (this.table || '<no table>') + '.' + this.name;
+            var table = this.table,
+                prefix;
+            if (table) {
+                prefix = '' + table;
+                if (table._original) {
+                    prefix = '"' + prefix + '"';
+                }
+            } else {
+                prefix = '<no table>';
+            }
+
+            return prefix + '.' + this.name;
         };
 
         // --------------------------------------------------------------------
