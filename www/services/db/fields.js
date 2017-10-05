@@ -106,7 +106,8 @@ EdenMobile.factory('Field', [
          */
         Field.prototype.toString = function() {
 
-            return this.toSQL();
+            // Use column alias with mandatory tablename prefix
+            return this.columnAlias(true);
         };
 
         // --------------------------------------------------------------------
@@ -123,9 +124,12 @@ EdenMobile.factory('Field', [
             if (table) {
                 prefix = '' + table;
                 if (table._original) {
+                    // Always quote table aliases
                     prefix = '"' + prefix + '"';
                 }
             } else {
+                // There can be no valid SQL for table-less Fields,
+                // so this is for debugging purposes only
                 prefix = '<no table>';
             }
 
@@ -137,7 +141,7 @@ EdenMobile.factory('Field', [
          * Override Expression.prototype.columnAlias:
          * - provide a column alias for this field
          * - use simple field name for fields in the primary table of a set
-         * - use prefixed SQL identifier for all other cases
+         * - use prefixed field name for all other cases
          *
          * @param {string} tableName - the name of the primary table name
          *
@@ -145,9 +149,16 @@ EdenMobile.factory('Field', [
          */
         Field.prototype.columnAlias = function(tableName) {
 
-            var alias = this.name;
-            if (tableName && this.table.name !== tableName) {
-                alias = this.toSQL();
+            var alias = this.name,
+                table = this.table;
+            if (table) {
+                if (tableName && table.name !== tableName) {
+                    alias = table.name + '.' + alias;
+                }
+            } else {
+                // There can be no valid SQL for table-less Fields,
+                // so this is for debugging purposes only
+                alias = '<no table>.' + alias;
             }
             return alias;
         };

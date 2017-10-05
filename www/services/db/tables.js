@@ -310,6 +310,11 @@ EdenMobile.factory('Table', [
                 sql = [this._drop(), this._create()],
                 self = this;
 
+            if (this._original) {
+                // Trying to create from clone
+                throw new Error('Table.create must be called for original table');
+            }
+
             adapter.sqlBatch(sql, function() {
 
                 var tableName = self.name;
@@ -342,6 +347,11 @@ EdenMobile.factory('Table', [
         Table.prototype.populate = function(records, onSuccess, onError) {
 
             var tableName = this.name;
+
+            if (this._original) {
+                // Trying to populate clone
+                throw new Error('Table.populate must be called for original table');
+            }
 
             if (!records || !records.length) {
                 if (onSuccess) {
@@ -402,6 +412,11 @@ EdenMobile.factory('Table', [
         Table.prototype.saveSchema = function() {
 
             var db = this._db;
+
+            if (this._original) {
+                // Trying to write schema of clone
+                throw new Error('Table.saveSchema must be called for original table');
+            }
 
             var schemaTable = db.tables.em_schema;
             if (schemaTable === undefined) {
