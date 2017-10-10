@@ -156,8 +156,6 @@
      * Get a table alias for this join
      *
      * @returns {string} - the table alias
-     *
-     * @todo: consider returning undefined if no alias shall be used
      */
     Join.prototype.getAlias = function() {
 
@@ -181,7 +179,30 @@
 
     // ------------------------------------------------------------------------
     /**
-     * Apply this join to a set
+     * Resolve a path array into the corresponding sub-join
+     *
+     * @param {Array} path - array of path names
+     *
+     * @returns {Join} - the corresponding sub-join
+     */
+    Join.prototype.resolvePath = function(path) {
+
+        var join = this;
+
+        if (path && path.length) {
+            var head = path[0],
+                tail = path.slice(1);
+            join = this.joins[head];
+            if (join && tail.length) {
+                join = join.resolvePath(tail);
+            }
+        }
+        return join;
+    };
+
+    // ------------------------------------------------------------------------
+    /**
+     * Add this join tree to a set
      *
      * @todo: call with Table (Set) instance
      * @todo: construct a Set rather than SQL

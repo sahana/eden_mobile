@@ -536,10 +536,16 @@ EdenMobile.factory('Table', [
                 }
             }
 
+            var tableName = this.name;
+            if (this._original) {
+                // Always use the original table
+                tableName = this._original.name;
+            }
+
             // Construct SQL statement
             var placeholders = cols.map(function() { return '?'; }).join(','),
                 sql = [
-                    'INSERT INTO ' + quoted(this.name),
+                    'INSERT INTO ' + quoted(tableName),
                     '(' + cols.join(',') + ')',
                     'VALUES (' + placeholders + ')'
                 ];

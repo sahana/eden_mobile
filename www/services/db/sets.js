@@ -618,6 +618,12 @@
             throw new Error('Cannot update a join');
         }
 
+        // Check the table
+        var table = this.table;
+        if (table._original) {
+            throw new Error('Update must use the original table, not an alias');
+        }
+
         // Flexible argument list (options and callbacks can be omitted)
         if (typeof options == 'function') {
             onError = onSuccess;
@@ -626,8 +632,7 @@
         }
 
         // Add defaults
-        var table = this.table,
-            record;
+        var record;
         if (options && options.noDefaults) {
             record = data;
         } else {
@@ -706,6 +711,12 @@
             throw new Error('Cannot delete from a join');
         }
 
+        // Check the table
+        var table = this.table;
+        if (table._original) {
+            throw new Error('Delete must use the original table, not an alias');
+        }
+
         // Flexible arguments list
         if (typeof options == 'function') {
             onError = onSuccess;
@@ -714,8 +725,7 @@
         }
 
         // Construct the SQL
-        var table = this.table,
-            sql = ['DELETE FROM', quoted(table.toSQL())],
+        var sql = ['DELETE FROM', quoted(table.toSQL())],
             query = this.query;
 
         if (query) {
