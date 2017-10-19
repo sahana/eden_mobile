@@ -23,12 +23,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/**
- * emConfig - Service providing access to user settings
- *
- * @class emConfig
- * @memberof EdenMobile
- */
 EdenMobile.factory('emConfig', [
     '$q', 'emDB', 'emSettings',
     function ($q, emDB, emSettings) {
@@ -44,9 +38,10 @@ EdenMobile.factory('emConfig', [
             settingsChanged = false,
             settingsID = null;
 
+        // --------------------------------------------------------------------
         /**
-         * Load the default values for all settings, called during
-         * initialization
+         * Load the structure and default values for all settings,
+         * called during app initialization
          */
         var loadDefaults = function() {
 
@@ -74,6 +69,44 @@ EdenMobile.factory('emConfig', [
             }
         };
 
+        // Load the structure and defaults
+        loadDefaults();
+
+        // --------------------------------------------------------------------
+        /**
+         * Load local defaults from config/local.json, called during
+         * app initialization
+         *
+         * @returns {promise} - a promise that will resolve into an object
+         *                      with local defaults for settings
+         */
+        var loadLocalDefaults = function() {
+
+            var localSettingsURL = 'config/local.json',
+                request = new XMLHttpRequest(),
+                localDefaults = {},
+                deferred = $q.defer();
+
+            request.open('GET', localSettingsURL);
+            request.onreadystatechange = function() {
+                if (request.readyState == 4) {
+                    if (request.status == 200) {
+                        try {
+                            localDefaults = JSON.parse(request.responseText);
+                        } catch(e) {
+                            console.log(e);
+                            localDefaults = {};
+                        }
+                    }
+                    deferred.resolve(localDefaults);
+                }
+            };
+            request.send(null);
+
+            return deferred.promise;
+        };
+
+        // --------------------------------------------------------------------
         /**
          * Read the current values of configuration settings from
          * the database, called during initialization
@@ -124,14 +157,28 @@ EdenMobile.factory('emConfig', [
             settingsStatus.resolve(currentSettings);
         };
 
-        // Load the defaults
-        loadDefaults();
+        // Load local defaults, then read the current settings from the database
+        loadLocalDefaults().then(function(localDefaults) {
 
-        // Initial loading of the current configuration values from the database:
-        emDB.table('em_config').then(function(table) {
-            table.select(['id', 'settings'], {limitby: 1}, loadSettings);
+            console.log(localDefaults);
+            for (var sectionName in localDefaults) {
+                var section = currentSettings[sectionName];
+                if (section) {
+                    var localSettings = localDefaults[sectionName];
+                    for (var key in localSettings) {
+                        if (section.hasOwnProperty(key)) {
+                            section[key] = localSettings[key];
+                        }
+                    }
+                }
+            }
+
+            emDB.table('em_config').then(function(table) {
+                table.select(['id', 'settings'], {limitby: 1}, loadSettings);
+            });
         });
 
+        // ====================================================================
         /**
          * Settings API Prototype
          */
@@ -147,6 +194,7 @@ EdenMobile.factory('emConfig', [
             return angular.copy(currentSettings);
         };
 
+        // --------------------------------------------------------------------
         /**
          * Getter for individual settings
          *
@@ -167,8 +215,7 @@ EdenMobile.factory('emConfig', [
 
                 var sectionKey = keys[0],
                     settingKey = keys[1],
-                    section = currentSettings[sectionKey],
-                    setting;
+                    section = currentSettings[sectionKey];
 
                 if (section !== undefined) {
                     currentValue = section[settingKey];
@@ -177,6 +224,7 @@ EdenMobile.factory('emConfig', [
             return currentValue;
         };
 
+        // --------------------------------------------------------------------
         /**
          * Setter for individual settings
          *
@@ -194,7 +242,7 @@ EdenMobile.factory('emConfig', [
 
                 var sectionKey = keys[0],
                     settingKey = keys[1],
-                    section = settings[sectionKey];
+                    section = currentSettings[sectionKey];
 
                 if (section) {
                     section[settingKey] = value;
@@ -203,6 +251,7 @@ EdenMobile.factory('emConfig', [
             }
         };
 
+        // --------------------------------------------------------------------
         /**
          * Update the current settings (multiple)
          *
@@ -241,6 +290,7 @@ EdenMobile.factory('emConfig', [
             }
         };
 
+        // --------------------------------------------------------------------
         /**
          * Save the current settings in the database
          *
@@ -300,6 +350,9 @@ EdenMobile.factory('emConfig', [
             }
         };
 
+        // ====================================================================
+        // Expose API
+        //
         var api = {
 
             /**
@@ -323,7 +376,7 @@ EdenMobile.factory('emConfig', [
                     }
 
                     if (settingsChanged) {
-                        SettingsAPI.save();
+                        settingsAPI.save();
                     }
                 });
             }
@@ -332,3 +385,5 @@ EdenMobile.factory('emConfig', [
         return api;
     }
 ]);
+
+// END ========================================================================
