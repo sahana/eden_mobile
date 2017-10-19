@@ -192,11 +192,19 @@ EdenMobile.factory('emForms', [
                         attr.placeholder = placeholder;
                     }
 
-                    // Add Subheading if-defined
-                    // @ToDo: Update to allow a hierarchical structure of nested subheadings (as-used by DC)
+                    // Add Subheading(s) if-defined
                     var subheading = subheadings[fieldName];
                     if (subheading) {
-                        formRows.append(angular.element('<div class="subheading">').html(subheading));
+                        if (typeof subheading == 'string' || subheading instanceof String) {
+                            // 1 subheading
+                            formRows.append(angular.element('<div class="subheading">').html(subheading));
+                        } else {
+                            // Multiple subheadings
+                            var subheadingLength = subheading.length;
+                            for (var i = 0; i < subheadingLength; i++) {
+                                formRows.append(angular.element('<div class="subheading">').html(subheading[i]));
+                            }
+                        }
                     }
 
                     // Instantiate the widget and append it to the form rows
