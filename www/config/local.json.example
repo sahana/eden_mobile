@@ -1,0 +1,7 @@
+{
+  "server": {
+    "url": "http://localhost:8000/eden",
+    "username": "admin@example.com",
+    "password": "testing"
+  }
+}
