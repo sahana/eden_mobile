@@ -436,10 +436,19 @@ EdenMobile.factory('Table', [
                 }
             }
 
-            schemaTable.insert({
+            var schema = {
                 name: this.name,
                 fields: fieldDef,
                 settings: settings
+            };
+
+            var dbSet = schemaTable.where(schemaTable.$('name').equals(this.name));
+            dbSet.select(['id'], {limit: 1}, function(rows) {
+                if (rows.length) {
+                    dbSet.update(schema);
+                } else {
+                    schemaTable.insert(schema);
+                }
             });
         };
 

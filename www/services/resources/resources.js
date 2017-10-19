@@ -917,11 +917,21 @@ EdenMobile.factory('emResources', [
                         // New resource
                         resource = new Resource(table, options);
                     } else {
-                        // Update
+                        // Update resource
                         if (options.main) {
                             resource.main = true;
                         }
-                        // @todo: migrate schema, update settings, etc.
+
+                        // Update settings
+                        if (resource.name == table.name) {
+                            table.settings = angular.extend({}, table.settings, schema.settings);
+                            table.saveSchema();
+                            resource.settings = table.settings;
+                        } else {
+                            resource.settings = angular.extend({}, table.settings, schema.settings);
+                        }
+
+                        // @todo: migrate schema
                     }
 
                     // Register and save schema
