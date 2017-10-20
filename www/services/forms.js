@@ -138,6 +138,7 @@ EdenMobile.factory('emForms', [
             }
 
             var resource = this.resource,
+                settings = resource.settings,
                 fieldNames = this.fieldNames,
                 componentKey = this.componentKey,
                 form = angular.element('<form>')
@@ -159,8 +160,39 @@ EdenMobile.factory('emForms', [
                 }
             }
 
-            // SubHeadings (if-defined)
-            var subheadings = resource.settings.subheadings || {};
+            var i,
+                j,
+                attr,
+                description,
+                placeholder,
+                subheadings = settings.subheadings || {},
+                widget;
+
+            // Grids (if-defined)
+            var grids = settings.grids || {},
+                gridChildren = []; // Which fields we skip from the normal processing
+            if (grids) {
+                var grid,
+                    table,
+                    cell,
+                    row,
+                    row1,
+                    rows,
+                    rowsLength,
+                    cols,
+                    colsLength;
+                for (grid in grids) {
+                    rows = grids[grid].f;
+                    rowsLength = rows.length;
+                    for (i = 0; i < rowsLength; i++) {
+                        cols = rows[i];
+                        colsLength = cols.length;
+                        for (j = 0; j < colsLength; j++) {
+                            gridChildren.push(cols[j]);
+                        }
+                    }
+                }
+            }
 
             fieldNames.forEach(function(fieldName) {
 
@@ -169,47 +201,102 @@ EdenMobile.factory('emForms', [
                     return;
                 }
 
-                field = resource.fields[fieldName];
-                if (field) {
+                // Skip grid children
+                if (gridChildren.indexOf(fieldName) > -1) {
+                    return;
+                }
 
-                    // Field must be readable
-                    if (!field.readable) {
-                        return;
+                // Add Subheading(s) if-defined
+                var subheading = subheadings[fieldName];
+                if (subheading) {
+                    if (typeof subheading == 'string' || subheading instanceof String) {
+                        // 1 subheading
+                        formRows.append(angular.element('<div class="subheading">').html(subheading));
+                    } else {
+                        // Multiple subheadings
+                        var subheadingLength = subheading.length;
+                        for (i = 0; i < subheadingLength; i++) {
+                            formRows.append(angular.element('<div class="subheading">').html(subheading[i]));
+                        }
                     }
+                }
 
-                    description = field._description;
+                var addField = function(fieldName, label) {
+                    field = resource.fields[fieldName];
+                    if (field) {
 
-                    // Label and model-link
-                    var description = field._description,
+                        // Field must be readable
+                        if (!field.readable) {
+                            return;
+                        }
+
+                        // Model-link
                         attr = {
-                            'label': description.label || fieldName,
                             'ng-model': scopeName + '.' + fieldName
                         };
 
-                    // Placeholder (for text input)
-                    var placeholder = description.placeholder;
-                    if (placeholder) {
-                        attr.placeholder = placeholder;
-                    }
-
-                    // Add Subheading(s) if-defined
-                    var subheading = subheadings[fieldName];
-                    if (subheading) {
-                        if (typeof subheading == 'string' || subheading instanceof String) {
-                            // 1 subheading
-                            formRows.append(angular.element('<div class="subheading">').html(subheading));
-                        } else {
-                            // Multiple subheadings
-                            var subheadingLength = subheading.length;
-                            for (var i = 0; i < subheadingLength; i++) {
-                                formRows.append(angular.element('<div class="subheading">').html(subheading[i]));
-                            }
+                        // Label
+                        description = field._description;
+                        if (label) {
+                            attr.label = description.label || fieldName;
                         }
-                    }
 
-                    // Instantiate the widget and append it to the form rows
-                    var widget = createWidget(resource, field, attr);
-                    formRows.append(widget);
+                        // Placeholder (for text input)
+                        placeholder = description.placeholder;
+                        if (placeholder) {
+                            attr.placeholder = placeholder;
+                        }
+
+                        // Instantiate the widget and append it to the form rows
+                        widget = createWidget(resource, field, attr);
+                        return widget;
+                    }
+                    return false;
+                };
+
+                if (grids.hasOwnProperty(fieldName)) {
+                    // Grid
+                    table = angular.element('<div>');
+                    grid = grids[fieldName];
+                    rows = grid.f;
+                    rowsLength = rows.length;
+                    for (i = 0; i < rowsLength; i++) {
+                        cols = rows[i];
+                        colsLength = cols.length;
+                        if (i == 0) {
+                            // Start Column Labels row with empty cell at top-left
+                            row1 = angular.element('<div class="row">');
+                            row1.append(angular.element('<div class="col">'));
+                            for (j = 0; j < colsLength; j++) {
+                                // ...continue Column Labels row
+                                row1.append(angular.element('<div class="col th">')
+                                                   .html(grid.c[j]));
+                            }
+                            table.append(row1);
+                        }
+                        // Start Row with Row Label
+                        row = angular.element('<div class="row">');
+                        row.append(angular.element('<div class="col th">')
+                                          .html(grid.r[i]));
+                        for (j = 0; j < colsLength; j++) {
+                            // ...continue with field cells
+                            fieldName = grid.f[i][j];
+                            widget = addField(fieldName, false);
+                            cell = angular.element('<div class="col">');
+                            if (widget) {
+                                cell.append(widget);
+                            }
+                            row.append(cell);
+                        }
+                        table.append(row);
+                    }
+                    formRows.append(table);
+                } else {
+                    // Normal field
+                    widget = addField(fieldName, true);
+                    if (widget) {
+                        formRows.append(widget);
+                    }
                 }
             });
 

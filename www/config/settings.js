@@ -39,6 +39,7 @@ EdenMobile.value('emSettings', {
         'url': {
             type: 'url',
             // Useful for local debugging (use Port Forwarding in Chrome's Developer Tools):
+            // - although better to use local.json (copy from local.json.example)
             //defaultValue: 'http://localhost:8000/eden',
             // Can hardcode a value for a Production instance like this:
             //defaultValue: 'http://sahana.example.com/eden',
