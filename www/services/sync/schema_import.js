@@ -168,17 +168,30 @@ EdenMobile.factory('SchemaImport', [
                 }
             }
 
-            // Table settings
+            // Settings
+            var jsonOpts = schemaData.settings,
+                key,
+                value;
+            if (jsonOpts) {
+                for (key in jsonOpts) {
+                    value = jsonOpts[key];
+                    if (value) {
+                        schema['_' + key] = value;
+                    }
+                }
+            }
+
+            // Other schema options
             // @todo: component declarations, data card format...
-            var validSettings = [
+            var schemaOptions = [
                 "form",
                 "subheadings",
                 "strings",
                 "types"
             ];
 
-            validSettings.forEach(function(key) {
-                var value = schemaData[key];
+            schemaOptions.forEach(function(key) {
+                value = schemaData[key];
                 if (value) {
                     schema['_' + key] = value;
                 }
