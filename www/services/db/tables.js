@@ -222,6 +222,32 @@ EdenMobile.factory('Table', [
 
         // --------------------------------------------------------------------
         /**
+         * Get the object type name for an object type key
+         *
+         * @param {string} key - the object type key
+         *
+         * @returns {string} - the object type name
+         *
+         * @example
+         *  table.getObjectType('pe_id'); // returns 'pr_pentity'
+         */
+        Table.prototype.getObjectType = function(key) {
+
+            var objectType,
+                objectTypes = this.objectTypes;
+
+            for (var name in objectTypes) {
+                if (objectTypes[name] == key) {
+                    objectType = name;
+                    break;
+                }
+            }
+
+            return objectType;
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Add the standard meta fields to this table (as defined in emDefaultSchema)
          */
         Table.prototype.addMetaFields = function() {

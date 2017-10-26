@@ -3,4 +3,4 @@ bower_components
 getAppVersion.js
 platforms
 node_modules
-config/local.json
+www/config/local.json

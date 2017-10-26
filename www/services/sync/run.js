@@ -617,7 +617,7 @@ EdenMobile.factory('SyncRun', [
 
                 // Check which schemaImports can be resolved with the
                 // currently known tables
-                check.forEach(checkResolvable);
+                check.forEach(checkResolvable, this);
 
                 if (!resolved && unknownTables.length) {
                     // ERROR: unresolvable dependencies

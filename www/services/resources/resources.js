@@ -975,6 +975,10 @@ EdenMobile.factory('emResources', [
                     names[resourceName] = null;
                 }
 
+                if (!Object.keys(names).length) {
+                    callback(resourceList);
+                }
+
                 var addResourceInfo = function(resourceName, numRows) {
                     resourceList.push({
                         resource: resources[resourceName],

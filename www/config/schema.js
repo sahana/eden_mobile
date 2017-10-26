@@ -36,8 +36,8 @@ EdenMobile.factory('emDefaultSchema', ['emUtils', function (emUtils) {
     var tables = [
 
         /**
-        * Table to store the current schema version
-        */
+         * Table to store the current schema version
+         */
         {
             _name: 'em_version',
             'version': {
@@ -181,58 +181,6 @@ EdenMobile.factory('emDefaultSchema', ['emUtils', function (emUtils) {
             'current': {
                 type: 'boolean',
                 defaultValue: true
-            }
-        },
-
-        /**
-        * Default schema for person records (for testing)
-        */
-        {
-            _name: 'person',
-            'first_name': {
-                type: 'string',
-                label: 'First Name',
-                placeholder: 'Jane',
-                notnull: true
-            },
-            'last_name': {
-                type: 'string',
-                label: 'Last Name',
-                placeholder: 'Doe'
-            },
-            'date_of_birth': {
-                type: 'date',
-                label: 'Date of Birth'
-            },
-            'missing': {
-                type: 'boolean',
-                label: 'Missing'
-            },
-            'gender': {
-                type: 'integer',
-                label: 'Gender',
-                options: {//1: '',
-                        2: 'female',
-                        3: 'male'
-                        //4: 'other',
-                        },
-                defaultValue: 2
-            },
-            _form: [
-                'first_name',
-                'last_name',
-                'gender',
-                'missing',
-                'date_of_birth'
-            ],
-            _card: {
-                fields: ['first_name', 'last_name'],
-                title: '{{record.first_name}} {{record.last_name}}'
-            },
-            _strings: {
-                name: 'Person',
-                namePlural: 'Persons',
-                icon: 'ion-person-stalker'
             }
         }
     ];
