@@ -31,60 +31,14 @@
  * @memberof EdenMobile.Services
  */
 EdenMobile.factory('emResources', [
-    '$q', 'emComponents', 'emDB',
-    function ($q, emComponents, emDB) {
+    '$q', 'emComponents', 'emDB', 'emUtils',
+    function ($q, emComponents, emDB, emUtils) {
 
         "use strict";
 
         var resources = {},
             status = $q.defer(),
             resourcesLoaded = status.promise;
-
-        // ====================================================================
-        /**
-         * Helper function to transform an underscore-separated name phrase
-         * into a human-readable label
-         *
-         * @param {string} phrase - the name phrase
-         *
-         * @example
-         *  capitalize("human_resource"); // returns "Human Resource"
-         *
-         * @returns {string} - the capitalized phrase
-         *
-         * @todo: move into emUtils?
-         */
-        var capitalize = function(phrase) {
-
-            return phrase.split('_').map(function(word) {
-                return word[0].toUpperCase() + word.slice(1);
-            }).join(' ');
-        };
-
-        // ====================================================================
-        /**
-         * Helper function to establish the resource name from the resource
-         * options
-         *
-         * @param {Table} table - the Table
-         * @param {object} options - the resource options
-         *
-         * @returns {string} - the resource name
-         */
-        var resourceName = function(table, options) {
-
-            var name = options.name;
-            if (!name) {
-                var c = options.controller,
-                    f = options.function;
-                if (c && f) {
-                    name = c + '_' + f.replace('/', '_');
-                } else {
-                    name = table.name;
-                }
-            }
-            return name;
-        };
 
         // ====================================================================
         /**
@@ -105,7 +59,7 @@ EdenMobile.factory('emResources', [
             this._db = table._db;
 
             // Resource name
-            var name = resourceName(table, options);
+            var name = this.getName(table, options);
             this.name = name;
 
             // Table Name
@@ -169,6 +123,30 @@ EdenMobile.factory('emResources', [
 
         // --------------------------------------------------------------------
         /**
+         * Establish the resource name
+         *
+         * @param {Table} table - the Table
+         * @param {object} options - the resource options
+         *
+         * @returns {string} - the resource name
+         */
+        Resource.prototype.getName = function(table, options) {
+
+            var name = options.name;
+            if (!name) {
+                var c = options.controller,
+                    f = options.function;
+                if (c && f) {
+                    name = c + '_' + f.replace('/', '_');
+                } else {
+                    name = table.name;
+                }
+            }
+            return name;
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Register components for this resource
          */
         Resource.prototype.registerComponents = function() {
@@ -187,8 +165,8 @@ EdenMobile.factory('emResources', [
                 description = descriptions[alias];
                 emComponents.addComponent(table, alias, description);
                 activeComponent = {
-                    label: description.label || capitalize(alias),
-                    labelPlural: description.plural || capitalize(alias)
+                    label: description.label || emUtils.capitalize(alias),
+                    labelPlural: description.plural || emUtils.capitalize(alias)
                 };
                 activeComponents[alias] = activeComponent;
             }
@@ -916,7 +894,7 @@ EdenMobile.factory('emResources', [
                 var installResource = function(table) {
 
                     // Find the resource
-                    var name = resourceName(table, options),
+                    var name = Resource.prototype.getName(table, options),
                         resource = table.resources[name];
 
                     if (!resource) {
