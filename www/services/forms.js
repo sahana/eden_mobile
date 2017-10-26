@@ -173,21 +173,35 @@ EdenMobile.factory('emForms', [
 
             // Auto-Totals (if-defined)
             if (Object.keys(autototals).length) {
+                var input,
+                    inputs,
+                    sourceFieldsLength,
+                    total,
+                    value;
                 $scope.autoTotals = function(sumField, sourceFields) {
                     // Read all the Source Fields & Total them
+                    // this == $scope
                     sourceFieldsLength = sourceFields.length;
                     total = 0;
                     for (i = 0; i < sourceFieldsLength; i++) {
-                        total += $scope[scopeName][sourceFields[i]];
+                        value = this[scopeName][sourceFields[i]];
+                        if (value) {
+                            total += value;
+                        }
                     }
                     // Apply Total
-                    $scope[scopeName][sumField] = total;
+                    this[scopeName][sumField] = total;
                     // Propagate Change
-                    // @ToDo
+                    inputs = angular.element(document).find('input');
+                    for (i = 0; i < inputs.length; i++) {
+                        input = angular.element(inputs[i]);
+                        if (input.attr('ng-model') == scopeName + '.' + sumField) {
+                            input.controller('ngModel').$viewChangeListeners[0]();
+                            break;
+                        }
+                    }
                 };
-                var sourceFieldsLength,
-                    total,
-                    autotal,
+                var autotal,
                     autototalSources = {},
                     sourceFields,
                     sumField;
