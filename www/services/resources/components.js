@@ -54,11 +54,20 @@ EdenMobile.factory('emComponents', [
 
                 if (!tableHooks.hasOwnProperty(alias)) {
 
+                    var multiple = description.multiple;
+                    if (multiple === undefined) {
+                        // Default true
+                        multiple = true;
+                    } else {
+                        // Enforce boolean
+                        multiple = !!multiple;
+                    }
+
                     var link = description.link,
                         hook = {
                             tableName: description.resource,
                             pkey: pkey,
-                            multiple: !!description.multiple
+                            multiple: multiple
                         };
 
                     if (link) {

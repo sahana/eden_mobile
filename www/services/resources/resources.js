@@ -91,9 +91,10 @@ EdenMobile.factory('emResources', [
          * Resource constructor
          *
          * @param {Table} table - the database table for this resource
-         * @param {object} options - the options (@todo: rename as description)
+         * @param {object} options - the options
+         * @param {Resource} parent - the parent resource (for components/links)
          */
-        function Resource(table, options) {
+        function Resource(table, options, parent) {
 
             if (options === undefined) {
                 options = {};
@@ -102,7 +103,6 @@ EdenMobile.factory('emResources', [
             // Table and Database
             this.table = table;
             this._db = table._db;
-
 
             // Resource name
             var name = resourceName(table, options);
@@ -141,6 +141,9 @@ EdenMobile.factory('emResources', [
             }
             this.fields = fields;
 
+            // The parent resource
+            this.parent = parent;
+
             // Attached Components
             this._components = {};
             this._links = {};
@@ -153,7 +156,9 @@ EdenMobile.factory('emResources', [
             this.settings = settings;
 
             // Register Components
-            this.registerComponents();
+            if (!parent) {
+                this.registerComponents();
+            }
             this.components = settings.components || {}; // @todo: obsolete
 
             // UI Configuration
@@ -231,8 +236,7 @@ EdenMobile.factory('emResources', [
                             pkey = hook.pkey,
                             fkey = hook.fkey;
 
-                        component = new Resource(table, {name: name});
-                        component.parent = this;
+                        component = new Resource(table, {name: name}, this);
                         component.alias = alias;
                         component.pkey = pkey;
                         component.fkey = fkey;
@@ -241,9 +245,8 @@ EdenMobile.factory('emResources', [
 
                             var linkAlias = alias + '__link';
 
-                            var link = new Resource(linkTable, {name: name + '__link'});
+                            var link = new Resource(linkTable, {name: name + '__link'}, this);
                             link.alias = linkAlias;
-                            link.parent = this;
                             link.linked = component;
 
                             component.link = link;
