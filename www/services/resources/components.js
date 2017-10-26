@@ -77,6 +77,39 @@ EdenMobile.factory('emComponents', [
 
         // --------------------------------------------------------------------
         /**
+         * Look up all component hooks for a table (including object hooks)
+         *
+         * @param {Table} table - the master table
+         *
+         * @returns {object} - the component hooks {alias: description}
+         */
+        var getHooks = function(table) {
+
+            var allHooks = {},
+                tableHooks = hooks[table.name],
+                objectHooks,
+                alias;
+
+            for (var objectType in table.objectTypes) {
+                objectHooks = hooks[objectType];
+                if (objectHooks) {
+                    for (alias in objectHooks) {
+                        allHooks[alias] = objectHooks[alias];
+                    }
+                }
+            }
+
+            if (tableHooks) {
+                for (alias in tableHooks) {
+                    allHooks[alias] = tableHooks[alias];
+                }
+            }
+
+            return allHooks;
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Look up a component description ("hook")
          *
          * @param {Table} table - the master table
@@ -114,6 +147,7 @@ EdenMobile.factory('emComponents', [
         var api = {
 
             addComponent: addComponent,
+            getHooks: getHooks,
             getComponent: getComponent
         };
 

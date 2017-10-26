@@ -31,8 +31,8 @@
  * @memberof EdenMobile.Services
  */
 EdenMobile.factory('emResources', [
-    '$q', 'emDB',
-    function ($q, emDB) {
+    '$q', 'emComponents', 'emDB',
+    function ($q, emComponents, emDB) {
 
         "use strict";
 
@@ -85,41 +85,6 @@ EdenMobile.factory('emResources', [
             }
             return name;
         };
-
-        // ====================================================================
-        /**
-         * Class representing a component hook
-         *
-         * @param {Resource} resource - the master resource
-         * @param {string} alias - the component alias
-         * @param {object} description - the component hook description
-         *                               (JSON object from Sahana server)
-         */
-        function Component(resource, alias, description) {
-
-            this.resource = resource;
-            this.alias = alias;
-
-            this.tableName = description.resource;
-
-            var linkName = description.link;
-            this.linkName = linkName;
-
-            this.pkey = description.pkey || 'id';
-            if (linkName) {
-                this.lkey = description.joinby;
-                this.rkey = description.key;
-                this.fkey = description.fkey || 'id';
-            } else {
-                // this.lkey = null;
-                // this.rkey = null;
-                this.fkey = description.joinby;
-            }
-            this.multiple = description.multiple;
-
-            this.label = description.label || capitalize(alias);
-            this.labelPlural = description.plural || capitalize(alias);
-        }
 
         // ====================================================================
         /**
@@ -205,23 +170,26 @@ EdenMobile.factory('emResources', [
          */
         Resource.prototype._attachComponent = function(alias) {
 
-            // Get the Component
-            var hook = this._hooks[alias],
-                component = this._components[alias];
+            var component = this._components[alias];
 
             if (component) {
 
                 // Already attached
                 return component;
 
-            } else if (hook) {
+            } else {
+
+                var hook = emComponents.getComponent(this.table, alias);
+                if (!hook) {
+                    return component;
+                }
 
                 var tables = this._db.tables,
                     table = tables[hook.tableName];
 
                 if (table) {
 
-                    var linkName = hook.linkName,
+                    var linkName = hook.link,
                         linkTable;
 
                     if (linkName) {
@@ -288,13 +256,13 @@ EdenMobile.factory('emResources', [
             }
 
             var componentAlias,
-                hooks = this._hooks;
+                hooks = emComponents.getHooks(this.table);
 
             // Unattached link table?
             if (alias.slice(-6) == '__link') {
                 componentAlias = alias.slice(0, -6);
                 var hook = hooks[componentAlias];
-                if (hook && hook.linkName) {
+                if (hook && hook.link) {
                     component = this._attachComponent(componentAlias);
                     return component && component.link;
                 } else {
@@ -311,7 +279,7 @@ EdenMobile.factory('emResources', [
                 }
             }
             for (componentAlias in hooks) {
-                if (suffix(hooks[componentAlias].linkName) == alias) {
+                if (suffix(hooks[componentAlias].link) == alias) {
                     component = this._attachComponent(componentAlias);
                     return component && component.link;
                 }
