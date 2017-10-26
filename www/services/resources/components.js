@@ -30,9 +30,91 @@ EdenMobile.factory('emComponents', [
 
         var hooks = {};
 
+        // --------------------------------------------------------------------
+        /**
+         * Parse and register a component description
+         *
+         * @param {Table} table - the master table
+         * @param {string} alias - the component alias
+         * @param {object} description - the component description
+         *                               (as received from S3Mobile)
+         */
+        var addComponent = function(table, alias, description) {
+
+            var master = table.name,
+                pkey = description.pkey || 'id';
+
+            if (!table.fields.hasOwnProperty(pkey)) {
+                master = table.getObjectType(pkey);
+            }
+
+            if (master) {
+
+                var tableHooks = hooks[master] || {};
+
+                if (!tableHooks.hasOwnProperty(alias)) {
+
+                    var link = description.link,
+                        hook = {
+                            tableName: description.resource,
+                            pkey: pkey,
+                            multiple: !!description.multiple
+                        };
+
+                    if (link) {
+                        hook.link = link;
+                        hook.lkey = description.joinby;
+                        hook.rkey = description.key;
+                        hook.fkey = description.fkey || 'id';
+                    } else {
+                        hook.fkey = description.joinby;
+                    }
+                    tableHooks[alias] = hook;
+                }
+                hooks[master] = tableHooks;
+            }
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Look up a component description ("hook")
+         *
+         * @param {Table} table - the master table
+         * @param {string} alias - the component alias
+         *
+         * @returns {object} - the component description
+         */
+        var getComponent = function(table, alias) {
+
+            var hook,
+                tableHooks = hooks[table.name];
+
+            if (tableHooks) {
+                hook = tableHooks[alias];
+            }
+
+            if (!hook) {
+                var objectType,
+                    objectHooks;
+                for (objectType in table.objectTypes) {
+                    objectHooks = hooks[objectType];
+                    if (objectHooks) {
+                        hook = objectHooks[alias];
+                        if (hook) {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return hook;
+        };
+
         // ====================================================================
         var api = {
 
+            addComponent: addComponent,
+            getComponent: getComponent
         };
 
         return api;
