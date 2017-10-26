@@ -65,7 +65,7 @@ EdenMobile.directive('emDataForm', [
                         var hook = resource.components[componentName],
                             componentKey = hook.joinby;
                         form = emForms.form(component, componentKey);
-                        compiled = $compile(form.render('form'))($scope);
+                        compiled = $compile(form.render('form', $scope))($scope);
                         elem.replaceWith(compiled);
                     });
 
@@ -73,7 +73,7 @@ EdenMobile.directive('emDataForm', [
 
                     // Render form for master resource
                     form = emForms.form(resource);
-                    compiled = $compile(form.render('form'))($scope);
+                    compiled = $compile(form.render('form', $scope))($scope);
                     elem.replaceWith(compiled);
                 }
             });
@@ -103,16 +103,15 @@ EdenMobile.directive('emConfigForm', [
          * @param {DOMNode} elem - the angular-enhanced DOM node for
          *                         the element applying the directive
          * @param {object} attr - object containing the attributes of
-         *                        the element
+         *                        the element (unused)
          */
         var renderForm = function($scope, elem, attr) {
 
-            emConfig.apply(function(settings) {
+            emConfig.apply(function(settings) { // 'settings' is unused
 
-                var sections = [],
-                    sectionName,
-                    form = angular.element('<div class="list">'),
-                    section;
+                var form = angular.element('<div class="list">'),
+                    section,
+                    sectionName;
 
                 for (sectionName in emSettings) {
                     if (sectionName[0] != '_') {

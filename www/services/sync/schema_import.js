@@ -184,9 +184,7 @@ EdenMobile.factory('SchemaImport', [
             // Other schema options
             // @todo: component declarations, data card format...
             var schemaOptions = [
-                "autototals",
                 "form",
-                "grids",
                 "subheadings",
                 "strings",
                 "types"

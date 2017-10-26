@@ -154,6 +154,7 @@
 
                 // Input attributes
                 copyAttr(attr, input, [
+                    'ngChange',
                     'ngModel',
                     'disabled',
                     'placeholder'

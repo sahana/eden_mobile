@@ -131,7 +131,7 @@ EdenMobile.factory('emForms', [
          *                             holding the form data (default: 'form')
          * @returns {DOMNode} - the angular-enhanced DOM node for the form
          */
-        Form.prototype.render = function(scopeName) {
+        Form.prototype.render = function(scopeName, $scope) {
 
             if (!scopeName) {
                 scopeName = 'form';
@@ -163,15 +163,45 @@ EdenMobile.factory('emForms', [
             var i,
                 j,
                 attr,
+                autototals = settings.autototals || {},
                 description,
+                grids = settings.grids || {},
+                gridChildren = [], // Which fields we skip from the normal processing
                 placeholder,
                 subheadings = settings.subheadings || {},
                 widget;
 
+            // Auto-Totals (if-defined)
+            if (Object.keys(autototals).length) {
+                $scope.autoTotals = function(sumField, sourceFields) {
+                    // Read all the Source Fields & Total them
+                    sourceFieldsLength = sourceFields.length;
+                    total = 0;
+                    for (i = 0; i < sourceFieldsLength; i++) {
+                        total += $scope[scopeName][sourceFields[i]];
+                    }
+                    // Apply Total
+                    $scope[scopeName][sumField] = total;
+                    // Propagate Change
+                    // @ToDo
+                };
+                var sourceFieldsLength,
+                    total,
+                    autotal,
+                    autototalSources = {},
+                    sourceFields,
+                    sumField;
+                for (sumField in autototals) {
+                    sourceFields = autototals[sumField];
+                    sourceFieldsLength = sourceFields.length;
+                    for (i = 0; i < sourceFieldsLength; i++) {
+                        autototalSources[sourceFields[i]] = [sumField, sourceFields];
+                    }
+                }
+            }
+
             // Grids (if-defined)
-            var grids = settings.grids || {},
-                gridChildren = []; // Which fields we skip from the normal processing
-            if (grids) {
+            if (Object.keys(grids).length) {
                 var grid,
                     table,
                     cell,
@@ -245,6 +275,12 @@ EdenMobile.factory('emForms', [
                         placeholder = description.placeholder;
                         if (placeholder) {
                             attr.placeholder = placeholder;
+                        }
+
+                        // Auto-Totals
+                        if (autototalSources.hasOwnProperty(fieldName)) {
+                            autotal = autototalSources[fieldName]; // [0] = sumField, [1] = Array of sourceFields
+                            attr['ng-change'] = 'autoTotals("' + autotal[0] + '", ' + JSON.stringify(autotal[1]) + ')';
                         }
 
                         // Instantiate the widget and append it to the form rows
