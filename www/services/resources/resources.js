@@ -141,24 +141,53 @@ EdenMobile.factory('emResources', [
             }
             this.fields = fields;
 
+            // Attached Components
+            this._components = {};
+            this._links = {};
+
+            // Active Components ("tabs")
+            this.activeComponents = {};
+
             // Settings
             var settings = angular.extend({}, table.settings, (options.settings || {}));
             this.settings = settings;
 
-            // Component Hooks
-            // @todo: convert the setting into Component hooks
-            this.components = settings.components || {};
-            this._hooks = {};
-
-            // Attached Components
-            this._links = {};
-            this._components = {};
+            // Register Components
+            this.registerComponents();
+            this.components = settings.components || {}; // @todo: obsolete
 
             // UI Configuration
             this.strings = settings.strings || {};
             this.form = settings.form;
             this.card = settings.card;
         }
+
+        // --------------------------------------------------------------------
+        /**
+         * Register components for this resource
+         */
+        Resource.prototype.registerComponents = function() {
+
+            var descriptions = this.settings.components;
+            if (!descriptions) {
+                return;
+            }
+
+            var description,
+                table = this.table,
+                activeComponents = this.activeComponents,
+                activeComponent;
+
+            for (var alias in descriptions) {
+                description = descriptions[alias];
+                emComponents.addComponent(table, alias, description);
+                activeComponent = {
+                    label: description.label || capitalize(alias),
+                    labelPlural: description.plural || capitalize(alias)
+                };
+                activeComponents[alias] = activeComponent;
+            }
+        };
 
         // --------------------------------------------------------------------
         /**
@@ -238,8 +267,14 @@ EdenMobile.factory('emResources', [
         };
 
         // --------------------------------------------------------------------
-        // TODO: docstring
-        // TODO: test this
+        /**
+         * Access a component or link resource
+         *
+         * @param {string} alias - the component alias
+         *
+         * @returns {Resource} - the component resource, or undefined if
+         *                       the alias can not be resolved
+         */
         Resource.prototype.component = function(alias) {
 
             var components = this._components,
