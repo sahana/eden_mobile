@@ -164,6 +164,7 @@ EdenMobile.factory('emForms', [
                 j,
                 attr,
                 autototals = settings.autototals || {},
+                autototalSources = {},
                 description,
                 grids = settings.grids || {},
                 gridChildren = [], // Which fields we skip from the normal processing
@@ -202,7 +203,6 @@ EdenMobile.factory('emForms', [
                     }
                 };
                 var autotal,
-                    autototalSources = {},
                     sourceFields,
                     sumField;
                 for (sumField in autototals) {
