@@ -54,11 +54,20 @@ EdenMobile.factory('emComponents', [
 
                 if (!tableHooks.hasOwnProperty(alias)) {
 
+                    var multiple = description.multiple;
+                    if (multiple === undefined) {
+                        // Default true
+                        multiple = true;
+                    } else {
+                        // Enforce boolean
+                        multiple = !!multiple;
+                    }
+
                     var link = description.link,
                         hook = {
-                            tableName: description.resource,
+                            tableName: description.table,
                             pkey: pkey,
-                            multiple: !!description.multiple
+                            multiple: multiple
                         };
 
                     if (link) {
@@ -73,6 +82,39 @@ EdenMobile.factory('emComponents', [
                 }
                 hooks[master] = tableHooks;
             }
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Look up all component hooks for a table (including object hooks)
+         *
+         * @param {Table} table - the master table
+         *
+         * @returns {object} - the component hooks {alias: description}
+         */
+        var getHooks = function(table) {
+
+            var allHooks = {},
+                tableHooks = hooks[table.name],
+                objectHooks,
+                alias;
+
+            for (var objectType in table.objectTypes) {
+                objectHooks = hooks[objectType];
+                if (objectHooks) {
+                    for (alias in objectHooks) {
+                        allHooks[alias] = objectHooks[alias];
+                    }
+                }
+            }
+
+            if (tableHooks) {
+                for (alias in tableHooks) {
+                    allHooks[alias] = tableHooks[alias];
+                }
+            }
+
+            return allHooks;
         };
 
         // --------------------------------------------------------------------
@@ -114,6 +156,7 @@ EdenMobile.factory('emComponents', [
         var api = {
 
             addComponent: addComponent,
+            getHooks: getHooks,
             getComponent: getComponent
         };
 

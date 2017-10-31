@@ -162,7 +162,9 @@ EdenMobile.factory('SchemaImport', [
                 reference = emUtils.getReference(fieldType);
                 if (reference) {
                     lookupTable = reference[1];
-                    if (lookupTable && requires.indexOf(lookupTable) == -1) {
+                    if (lookupTable &&
+                        lookupTable != this.tableName &&
+                        requires.indexOf(lookupTable) == -1) {
                         requires.push(lookupTable);
                     }
                 }

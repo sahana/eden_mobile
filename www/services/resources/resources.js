@@ -31,8 +31,8 @@
  * @memberof EdenMobile.Services
  */
 EdenMobile.factory('emResources', [
-    '$q', 'emDB',
-    function ($q, emDB) {
+    '$q', 'emComponents', 'emDB', 'emUtils',
+    function ($q, emComponents, emDB, emUtils) {
 
         "use strict";
 
@@ -42,93 +42,13 @@ EdenMobile.factory('emResources', [
 
         // ====================================================================
         /**
-         * Helper function to transform an underscore-separated name phrase
-         * into a human-readable label
-         *
-         * @param {string} phrase - the name phrase
-         *
-         * @example
-         *  capitalize("human_resource"); // returns "Human Resource"
-         *
-         * @returns {string} - the capitalized phrase
-         *
-         * @todo: move into emUtils?
-         */
-        var capitalize = function(phrase) {
-
-            return phrase.split('_').map(function(word) {
-                return word[0].toUpperCase() + word.slice(1);
-            }).join(' ');
-        };
-
-        // ====================================================================
-        /**
-         * Helper function to establish the resource name from the resource
-         * options
-         *
-         * @param {Table} table - the Table
-         * @param {object} options - the resource options
-         *
-         * @returns {string} - the resource name
-         */
-        var resourceName = function(table, options) {
-
-            var name = options.name;
-            if (!name) {
-                var c = options.controller,
-                    f = options.function;
-                if (c && f) {
-                    name = c + '_' + f.replace('/', '_');
-                } else {
-                    name = table.name;
-                }
-            }
-            return name;
-        };
-
-        // ====================================================================
-        /**
-         * Class representing a component hook
-         *
-         * @param {Resource} resource - the master resource
-         * @param {string} alias - the component alias
-         * @param {object} description - the component hook description
-         *                               (JSON object from Sahana server)
-         */
-        function Component(resource, alias, description) {
-
-            this.resource = resource;
-            this.alias = alias;
-
-            this.tableName = description.resource;
-
-            var linkName = description.link;
-            this.linkName = linkName;
-
-            this.pkey = description.pkey || 'id';
-            if (linkName) {
-                this.lkey = description.joinby;
-                this.rkey = description.key;
-                this.fkey = description.fkey || 'id';
-            } else {
-                // this.lkey = null;
-                // this.rkey = null;
-                this.fkey = description.joinby;
-            }
-            this.multiple = description.multiple;
-
-            this.label = description.label || capitalize(alias);
-            this.labelPlural = description.plural || capitalize(alias);
-        }
-
-        // ====================================================================
-        /**
          * Resource constructor
          *
          * @param {Table} table - the database table for this resource
-         * @param {object} options - the options (@todo: rename as description)
+         * @param {object} options - the options
+         * @param {Resource} parent - the parent resource (for components/links)
          */
-        function Resource(table, options) {
+        function Resource(table, options, parent) {
 
             if (options === undefined) {
                 options = {};
@@ -138,9 +58,8 @@ EdenMobile.factory('emResources', [
             this.table = table;
             this._db = table._db;
 
-
             // Resource name
-            var name = resourceName(table, options);
+            var name = this.getName(table, options);
             this.name = name;
 
             // Table Name
@@ -176,24 +95,82 @@ EdenMobile.factory('emResources', [
             }
             this.fields = fields;
 
+            // The parent resource
+            this.parent = parent;
+
+            // Attached Components
+            this._components = {};
+            this._links = {};
+
+            // Active Components ("tabs")
+            this.activeComponents = {};
+
             // Settings
             var settings = angular.extend({}, table.settings, (options.settings || {}));
             this.settings = settings;
 
-            // Component Hooks
-            // @todo: convert the setting into Component hooks
-            this.components = settings.components || {};
-            this._hooks = {};
-
-            // Attached Components
-            this._links = {};
-            this._components = {};
+            // Register Components
+            if (!parent) {
+                this.registerComponents();
+            }
+            this.components = settings.components || {}; // @todo: obsolete
 
             // UI Configuration
             this.strings = settings.strings || {};
             this.form = settings.form;
             this.card = settings.card;
         }
+
+        // --------------------------------------------------------------------
+        /**
+         * Establish the resource name
+         *
+         * @param {Table} table - the Table
+         * @param {object} options - the resource options
+         *
+         * @returns {string} - the resource name
+         */
+        Resource.prototype.getName = function(table, options) {
+
+            var name = options.name;
+            if (!name) {
+                var c = options.controller,
+                    f = options.function;
+                if (c && f) {
+                    name = c + '_' + f.replace('/', '_');
+                } else {
+                    name = table.name;
+                }
+            }
+            return name;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Register components for this resource
+         */
+        Resource.prototype.registerComponents = function() {
+
+            var descriptions = this.settings.components;
+            if (!descriptions) {
+                return;
+            }
+
+            var description,
+                table = this.table,
+                activeComponents = this.activeComponents,
+                activeComponent;
+
+            for (var alias in descriptions) {
+                description = descriptions[alias];
+                emComponents.addComponent(table, alias, description);
+                activeComponent = {
+                    label: description.label || emUtils.capitalize(alias),
+                    labelPlural: description.plural || emUtils.capitalize(alias)
+                };
+                activeComponents[alias] = activeComponent;
+            }
+        };
 
         // --------------------------------------------------------------------
         /**
@@ -205,23 +182,26 @@ EdenMobile.factory('emResources', [
          */
         Resource.prototype._attachComponent = function(alias) {
 
-            // Get the Component
-            var hook = this._hooks[alias],
-                component = this._components[alias];
+            var component = this._components[alias];
 
             if (component) {
 
                 // Already attached
                 return component;
 
-            } else if (hook) {
+            } else {
+
+                var hook = emComponents.getComponent(this.table, alias);
+                if (!hook) {
+                    return component;
+                }
 
                 var tables = this._db.tables,
                     table = tables[hook.tableName];
 
                 if (table) {
 
-                    var linkName = hook.linkName,
+                    var linkName = hook.link,
                         linkTable;
 
                     if (linkName) {
@@ -234,8 +214,7 @@ EdenMobile.factory('emResources', [
                             pkey = hook.pkey,
                             fkey = hook.fkey;
 
-                        component = new Resource(table, {name: name});
-                        component.parent = this;
+                        component = new Resource(table, {name: name}, this);
                         component.alias = alias;
                         component.pkey = pkey;
                         component.fkey = fkey;
@@ -244,9 +223,8 @@ EdenMobile.factory('emResources', [
 
                             var linkAlias = alias + '__link';
 
-                            var link = new Resource(linkTable, {name: name + '__link'});
+                            var link = new Resource(linkTable, {name: name + '__link'}, this);
                             link.alias = linkAlias;
-                            link.parent = this;
                             link.linked = component;
 
                             component.link = link;
@@ -270,8 +248,14 @@ EdenMobile.factory('emResources', [
         };
 
         // --------------------------------------------------------------------
-        // TODO: docstring
-        // TODO: test this
+        /**
+         * Access a component or link resource
+         *
+         * @param {string} alias - the component alias
+         *
+         * @returns {Resource} - the component resource, or undefined if
+         *                       the alias can not be resolved
+         */
         Resource.prototype.component = function(alias) {
 
             var components = this._components,
@@ -288,13 +272,13 @@ EdenMobile.factory('emResources', [
             }
 
             var componentAlias,
-                hooks = this._hooks;
+                hooks = emComponents.getHooks(this.table);
 
             // Unattached link table?
             if (alias.slice(-6) == '__link') {
                 componentAlias = alias.slice(0, -6);
                 var hook = hooks[componentAlias];
-                if (hook && hook.linkName) {
+                if (hook && hook.link) {
                     component = this._attachComponent(componentAlias);
                     return component && component.link;
                 } else {
@@ -311,7 +295,7 @@ EdenMobile.factory('emResources', [
                 }
             }
             for (componentAlias in hooks) {
-                if (suffix(hooks[componentAlias].linkName) == alias) {
+                if (suffix(hooks[componentAlias].link) == alias) {
                     component = this._attachComponent(componentAlias);
                     return component && component.link;
                 }
@@ -560,7 +544,7 @@ EdenMobile.factory('emResources', [
 
             var hook = this.components[componentName];
 
-            if (!hook || !hook.resource) {
+            if (!hook || !hook.table) {
                 var error = 'Undefined component: ' + componentName;
                 if (onError) {
                     onError(error);
@@ -569,7 +553,7 @@ EdenMobile.factory('emResources', [
                 }
             } else {
                 resourcesLoaded.then(function() {
-                    var component = resources[hook.resource],
+                    var component = resources[hook.table],
                         query = null;
                     if (recordID) {
                         query = hook.joinby + '=' + recordID;
@@ -910,7 +894,7 @@ EdenMobile.factory('emResources', [
                 var installResource = function(table) {
 
                     // Find the resource
-                    var name = resourceName(table, options),
+                    var name = Resource.prototype.getName(table, options),
                         resource = table.resources[name];
 
                     if (!resource) {

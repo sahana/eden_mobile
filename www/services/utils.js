@@ -23,8 +23,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
-
 /**
  * @todo: docstring
  * @todo: add separators
@@ -32,6 +30,8 @@
  */
 EdenMobile.factory('emUtils', [
     function () {
+
+        "use strict";
 
         // ====================================================================
         /**
@@ -46,8 +46,8 @@ EdenMobile.factory('emUtils', [
             var template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx',
                 time = new Date().getTime();
 
-            if (window.performance && typeof window.performance.now === "function") {
-                time += performance.now();
+            if (window.performance && typeof window.performance.now == 'function') {
+                time += window.performance.now();
             }
             this.uuid = template.replace(/[xy]/g, function(c) {
                 var result = (time + Math.random() * 16) % 16 | 0;
@@ -78,6 +78,25 @@ EdenMobile.factory('emUtils', [
         };
 
         // ====================================================================
+        /**
+         * Transform an underscore-separated name phrase into a
+         * human-readable label
+         *
+         * @param {string} phrase - the name phrase
+         *
+         * @example
+         *  capitalize("human_resource"); // returns "Human Resource"
+         *
+         * @returns {string} - the capitalized phrase
+         */
+        var capitalize = function(phrase) {
+
+            return phrase.split('_').map(function(word) {
+                return word[0].toUpperCase() + word.slice(1);
+            }).join(' ');
+        };
+
+        // ====================================================================
         // Regex to decode reference field types
         //
         var refPattern = /reference\s+([a-z]{1}[a-z0-9_]*)(?:\.([a-z]{1}[a-z0-9_]*)){0,1}/gi;
@@ -87,9 +106,6 @@ EdenMobile.factory('emUtils', [
         //
         var utils = {
 
-            /**
-             * Get a UUID instance
-             */
             uuid: function() {
                 return new UUID();
             },
@@ -97,7 +113,9 @@ EdenMobile.factory('emUtils', [
             getReference: function(fieldType) {
                 refPattern.lastIndex = 0;
                 return refPattern.exec(fieldType);
-            }
+            },
+
+            capitalize: capitalize
         };
 
         return utils;
