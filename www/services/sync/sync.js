@@ -147,7 +147,6 @@ EdenMobile.factory('emSync', [
 
             var resourceList = [],
                 resource,
-                numRows,
                 upload,
                 item,
                 entry;
@@ -155,14 +154,13 @@ EdenMobile.factory('emSync', [
             resources.forEach(function(resourceData) {
 
                 resource = resourceData.resource;
-                numRows = resourceData.numRows;
-
-                // @todo: check autoUpload option for default
-                upload = true;
 
                 item = items[resource.name];
                 if (item !== undefined) {
                     upload = item.upload;
+                } else {
+                    // @todo: check autoUpload option for default
+                    upload = true;
                 }
 
                 entry = {
@@ -173,7 +171,7 @@ EdenMobile.factory('emSync', [
                         'c': resource.controller,
                         'f': resource.function
                     },
-                    'updated': numRows,
+                    'updated': resourceData.numRows,
                     'upload': upload
                 };
                 resourceList.push(entry);

@@ -56,22 +56,44 @@ EdenMobile.controller('EMDataCreate', [
             // Mark as saved
             $scope.saved = true;
 
-            // Show confirmation popup and go back to list
-            emDialogs.confirmation('Record created', function() {
+            var normalEnd = function() {
+                // Show confirmation popup and go back to list
+                emDialogs.confirmation('Record created', function() {
 
-                var returnTo,
-                    returnParams = {resourceName: resourceName};
+                    var returnTo,
+                        returnParams = {resourceName: resourceName};
 
-                if (!!componentName) {
-                    // Go back to the component record list
-                    returnTo = 'data.component';
-                    returnParams.recordID = recordID;
-                    returnParams.componentName = componentName;
+                    if (!!componentName) {
+                        // Go back to the component record list
+                        returnTo = 'data.component';
+                        returnParams.recordID = recordID;
+                        returnParams.componentName = componentName;
+                    } else {
+                        // Go back to the master record list
+                        returnTo = 'data.list';
+                    }
+                    $state.go(returnTo, returnParams, {location: 'replace'});
+                });
+            }
+
+            emResources.open(resourceName).then(function(resource) {
+
+                if (resource.settings.autoUpload) {
+                    emDialogs.confirmAction('Sync', 'Are you ready to send this record?', function() {
+                        // @ToDo:Sync this record back immediately
+                        //$scope.formList = []; // Currently if forms is empty then it fetches a full list from server, so avoid that
+                        // Build list of resources and ensure this list doesn't have the full list added
+                        //$scope.resourceList = [];
+                        //$scope.synchronize();
+                        // Will be:
+                        //resource.sync()
+
+                        // Do normal end no matter the branch
+                        normalEnd();
+                    }, normalEnd);
                 } else {
-                    // Go back to the master record list
-                    returnTo = 'data.list';
+                    normalEnd();
                 }
-                $state.go(returnTo, returnParams, {location: 'replace'});
             });
         };
 

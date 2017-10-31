@@ -124,7 +124,7 @@ EdenMobile.controller('EMSync', [
             }
             $scope.resourceListLoading = true;
 
-            // Remove any exiting modal
+            // Remove any existing modal
             if ($scope.resourceListModal) {
                 $scope.resourceListModal.remove();
             }
