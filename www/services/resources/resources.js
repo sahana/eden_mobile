@@ -544,7 +544,7 @@ EdenMobile.factory('emResources', [
 
             var hook = this.components[componentName];
 
-            if (!hook || !hook.resource) {
+            if (!hook || !hook.table) {
                 var error = 'Undefined component: ' + componentName;
                 if (onError) {
                     onError(error);
@@ -553,7 +553,7 @@ EdenMobile.factory('emResources', [
                 }
             } else {
                 resourcesLoaded.then(function() {
-                    var component = resources[hook.resource],
+                    var component = resources[hook.table],
                         query = null;
                     if (recordID) {
                         query = hook.joinby + '=' + recordID;

@@ -65,7 +65,7 @@ EdenMobile.factory('emComponents', [
 
                     var link = description.link,
                         hook = {
-                            tableName: description.resource,
+                            tableName: description.table,
                             pkey: pkey,
                             multiple: multiple
                         };
