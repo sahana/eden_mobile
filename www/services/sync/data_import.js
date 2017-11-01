@@ -44,9 +44,6 @@ EdenMobile.factory('DataImport', [
 
             var run = this.run;
 
-            // Register as provider for the record
-            run.provide(this, tableName, record.uuid);
-
             // Check for dependencies
             var dependencies;
             if (this.isResolved()) {
@@ -91,6 +88,9 @@ EdenMobile.factory('DataImport', [
                 dependency = run.require(null, null, downloadURL);
                 dependency.complete().then(resolveFileDependency);
             }
+
+            // Register as provider for the record
+            run.provide(this, tableName, record.uuid);
         });
 
         // --------------------------------------------------------------------
