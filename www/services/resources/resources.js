@@ -48,18 +48,16 @@ EdenMobile.factory('emResources', [
          * @param {object} options - the options
          * @param {Resource} parent - the parent resource (for components/links)
          */
-        function Resource(table, options, parent) {
+        function Resource(table, schema, parent) {
 
-            if (options === undefined) {
-                options = {};
-            }
+            var settings = schema.settings || {};
 
             // Table and Database
             this.table = table;
             this._db = table._db;
 
             // Resource name
-            var name = this.getName(table, options);
+            var name = this.getName(table, settings);
             this.name = name;
 
             // Table Name
@@ -74,14 +72,14 @@ EdenMobile.factory('emResources', [
             this.lastSync = null;
 
             // Is this a main resource (or a component/lookup table)?
-            this.main = !!options.main;
+            this.main = !!settings.main;
 
             // Server-side controller/function
-            this.controller = options.controller;
-            this.function = options.function;
+            this.controller = settings.controller;
+            this.function = settings.function;
 
             // Fields
-            var fieldOptions = options.fields || {},
+            var fieldOptions = schema.fields || {},
                 fields = {},
                 field;
             for (var fieldName in table.fields) {
@@ -106,7 +104,7 @@ EdenMobile.factory('emResources', [
             this.activeComponents = {};
 
             // Settings
-            var settings = angular.extend({}, table.settings, (options.settings || {}));
+            settings = angular.extend({}, table.settings, settings);
             this.settings = settings;
 
             // Register Components
@@ -764,23 +762,23 @@ EdenMobile.factory('emResources', [
 
                 if (table !== undefined) {
 
-                    var resourceName = record.name,
-                        fieldOpts = record.fields,
-                        options = {
-                            'name': resourceName,
-                            'controller': record.controller,
-                            'function': record.function,
-                            'settings': record.settings,
-                            'main': record.main
-                        };
+                    var schema = {};
 
+                    schema.settings = angular.extend({}, record.settings, {
+                        'name': record.name,
+                        'controller': record.controller,
+                        'function': record.function,
+                        'main': record.main
+                    });
+
+                    var fieldOpts = record.fields;
                     if (fieldOpts) {
-                        options.fields = emDB.parseSchema(fieldOpts).fields;
+                        schema.fields = emDB.parseSchema(fieldOpts).fields;
                     }
 
                     // Instantiate the Resource
-                    resource = new Resource(table, options);
-                    resources[resourceName] = resource;
+                    resource = new Resource(table, schema);
+                    resources[resource.name] = resource;
 
                     // Set date of schema synchronization
                     var schemaDate = record.schema_date;
@@ -889,30 +887,30 @@ EdenMobile.factory('emResources', [
 
                 var resourceInstalled = $q.defer(),
                     schema = emDB.parseSchema(schemaData),
-                    options = angular.extend({}, schema.settings, {fields: schema.fields});
+                    settings = schema.settings || {};
 
                 var installResource = function(table) {
 
                     // Find the resource
-                    var name = Resource.prototype.getName(table, options),
+                    var name = Resource.prototype.getName(table, settings),
                         resource = table.resources[name];
 
                     if (!resource) {
                         // New resource
-                        resource = new Resource(table, options);
+                        resource = new Resource(table, schema);
                     } else {
                         // Update resource
-                        if (options.main) {
+                        if (settings.main) {
                             resource.main = true;
                         }
 
                         // Update settings
                         if (resource.name == table.name) {
-                            table.settings = angular.extend({}, table.settings, schema.settings);
+                            table.settings = angular.extend({}, table.settings, settings);
                             table.saveSchema();
                             resource.settings = table.settings;
                         } else {
-                            resource.settings = angular.extend({}, table.settings, schema.settings);
+                            resource.settings = angular.extend({}, table.settings, settings);
                         }
 
                         // @todo: migrate schema
@@ -930,7 +928,7 @@ EdenMobile.factory('emResources', [
                         emDB.defineTable(
                             tableName,
                             schema.fields,
-                            schema.settings,
+                            settings,
                             schema.records
                         ).then(installResource);
                     } else {
