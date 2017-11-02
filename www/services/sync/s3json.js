@@ -55,6 +55,91 @@ EdenMobile.factory('emS3JSON', [
 
         // ====================================================================
         /**
+         * Helper class to locate import items in an S3JSON object tree
+         *
+         * @param {object} jsonData - the S3JSON recevied from the server
+         */
+        function SourceMap(jsonData) {
+
+            this.records = {};
+
+            this.map(jsonData);
+        }
+
+        // --------------------------------------------------------------------
+        /**
+         * Produce a map of {tableName: {uuid: item}} from an S3JSON object
+         * tree, which can then be used to locate particular import items;
+         * stores the map as this.records
+         *
+         * @param {object} tree - the S3JSON object tree
+         */
+        SourceMap.prototype.map = function(tree) {
+
+            var records = this.records,
+                key,
+                tableName,
+                recordMap,
+                self = this;
+
+            // Helper to add an item to the map
+            var addItem = function(item) {
+                var uuid = item['@uuid'];
+                if (uuid) {
+                    this[uuid] = item; // this = recordMap
+                    self.map(item);
+                }
+            };
+
+            for (key in tree) {
+
+                if (key.slice(0, 2) == '$_') {
+
+                    tableName = key.slice(2);
+                    recordMap = records[tableName] || {};
+
+                    tree[key].forEach(addItem, recordMap);
+
+                    records[tableName] = recordMap;
+                }
+            }
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Look up an item in the source tree
+         *
+         * @param {string} tableName - the table name of the item sought
+         *                             (can be omitted for type-less uuid search)
+         * @param {string} uuid - the UUID of the item sought
+         */
+        SourceMap.prototype.get = function(tableName, uuid) {
+
+            var records = this.records,
+                item;
+
+            if (arguments.length < 2) {
+                // Type-less search
+                uuid = tableName;
+                for (var name in records) {
+                    item = records[name][uuid];
+                    if (item) {
+                        break;
+                    }
+                }
+            } else {
+                // Type-bound look-up
+                var recordMap = records[tableName];
+                if (recordMap) {
+                    item = recordMap[uuid];
+                }
+            }
+
+            return item;
+        };
+
+        // ====================================================================
+        /**
          * Helper class to decode S3JSON record representations
          *
          * @param {Table} table - the emDB Table
