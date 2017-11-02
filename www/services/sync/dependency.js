@@ -24,8 +24,8 @@
  */
 
 EdenMobile.factory('Dependency', [
-    '$q',
-    function ($q) {
+    '$q', 'emDB',
+    function ($q, emDB) {
 
         "use strict";
 
@@ -79,9 +79,8 @@ EdenMobile.factory('Dependency', [
         Dependency.prototype.registerProvider = function(provider) {
 
             if (this.isCompleted && !this.isResolved) {
-                // too late
-                alert('Error: dependency failed due to unregistered provider');
-                return;
+                // too late (bug!)
+                throw new Error('dependency failed due to unregistered provider!');
             }
 
             console.log('Register provider for ' + this);
@@ -91,14 +90,28 @@ EdenMobile.factory('Dependency', [
             var self = this;
             provider.done().then(
                 function(value) {
-                    // Provider has succeeded
-                    if (!!value) {
-                        // Provider has returned a value
-                        self.resolve(value);
+                    if (self.isResolved) {
+                        // Another provider has succeeded first, or the
+                        // object was known before the current SyncRun
+                        // => just check if complete
                         self.checkComplete();
                     } else {
-                        // Provider has not produced a result
-                        self.checkResolvable();
+                        // Provider has succeeded
+                        if (value) {
+                            // Provider has returned a value
+                            // => resolve dependency, then check if complete
+                            self.resolve(value, true).then(
+                                function() {
+                                    self.checkComplete();
+                                },
+                                function(reason) {
+                                    // Provider result is not valid (bug!)
+                                    throw new Error('invalid provider result (' + reason + ')!');
+                                });
+                        } else {
+                            // Provider has not produced a result
+                            self.checkResolvable();
+                        }
                     }
                 },
                 function() {
@@ -241,27 +254,69 @@ EdenMobile.factory('Dependency', [
 
         // --------------------------------------------------------------------
         /**
-         * Resolve this dependency; resolves the resolution promise
+         * Resolve this dependency; resolves the resolution promise if pending
          *
          * @param {mixed} ref - the reference to expected result (i.e. the
          *                      table name, or record ID, or file URI)
+         * @param {boolean} lookupObjectID - whether to look up objectIDs
          */
-        Dependency.prototype.resolve = function(ref) {
+        Dependency.prototype.resolve = function(ref, lookupObjectID) {
+
+            var deferred,
+                uuid = this.uuid,
+                self = this;
 
             // Store the result reference
-            if (this.uuid) {
+            if (uuid) {
+
                 this.tableCreated = true;
-                this.recordID = ref;
+
+                var tableName = this.tableName;
+                if (lookupObjectID && tableName == 'em_object') {
+
+                    // Look up the object ID for this uuid
+                    deferred = $q.defer();
+
+                    emDB.table(tableName).then(function(table) {
+                        table.where(table.$('uuid').equals(uuid))
+                             .select(['id'], {limitby: 1}, function(records) {
+                            if (!records.length) {
+                                deferred.reject('object not found');
+                            } else {
+                                self.recordID = records[0].$('id');
+                                deferred.resolve();
+                            }
+                        });
+                    });
+                } else {
+
+                    // Ref is the record ID, no look-up required
+                    this.recordID = ref;
+                }
             } else if (this.tableName) {
                 this.tableCreated = true;
             } else if (this.url) {
                 this.fileURI = ref;
             }
 
-            // Resolve the resolution promise
-            this.isResolved = true;
-            if (this.resolution) {
-                this.resolution.resolve(this);
+            // Helper to resolve the dependency
+            var resolve = function(dependency) {
+                dependency.isResolved = true;
+                if (dependency.resolution) {
+                    dependency.resolution.resolve(dependency);
+                }
+            };
+
+            if (!deferred) {
+                // Immediate resolution
+                resolve(this);
+                return $q.resolve();
+            } else {
+                // Deferred resolution
+                deferred.promise.then(function() {
+                    resolve(self);
+                });
+                return deferred.promise;
             }
         };
 

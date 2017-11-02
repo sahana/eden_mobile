@@ -498,7 +498,8 @@
         for (var key in properties) {
             Object.defineProperty(this, key, {
                 value: properties[key],
-                writable: false
+                writable: false,
+                configurable: true
             });
         }
     };
