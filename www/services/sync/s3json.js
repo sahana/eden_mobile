@@ -239,11 +239,12 @@ EdenMobile.factory('emS3JSON', [
             var reference = emUtils.getReference(fieldType);
             if (reference) {
                 var lookupTable = reference[1],
+                    key = reference[2] || 'id',
                     uuid;
                 if (lookupTable) {
                     uuid = value['@uuid'];
                     if (uuid) {
-                        this.references[fieldName] = [lookupTable, uuid];
+                        this.references[fieldName] = [lookupTable, uuid, key];
                     }
                 }
                 return;
@@ -335,7 +336,7 @@ EdenMobile.factory('emS3JSON', [
 
         // --------------------------------------------------------------------
         /**
-         * Resolve a dependency
+         * Resolve a dependency within the source
          *
          * @param {object} data - the S3JSON data
          * @param {object} map - array of known Records, format:
@@ -388,6 +389,27 @@ EdenMobile.factory('emS3JSON', [
                 unknown[tableName] = {};
             }
             unknown[tableName][uuid] = true;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Decorator to produce a function to set the value for a pending
+         * reference
+         *
+         * @param {string} fieldName - the field name of the foreign key
+         *
+         * @returns {function} - a function to set the value of the
+         *                       foreign key and remove the pending
+         *                       reference
+         */
+        Record.prototype.resolveReference = function(fieldName) {
+
+            var self = this;
+
+            return function(value) {
+                self.data[fieldName] = value;
+                delete self.references[fieldName];
+            };
         };
 
         // --------------------------------------------------------------------

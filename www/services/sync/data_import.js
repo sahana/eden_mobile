@@ -65,10 +65,11 @@ EdenMobile.factory('DataImport', [
 
             // Register record dependencies
             var resolveRecordDependency = function(dependency) {
-                self.addForeignKey(record, dependency);
-                if (!!self.dependencies && self.isResolved()) {
-                    self.dependencies.resolve();
-                }
+                self.addForeignKey(record, dependency).then(function() {
+                    if (self.dependencies && self.isResolved()) {
+                        self.dependencies.resolve();
+                    }
+                });
             };
             for (fieldName in references) {
                 reference = references[fieldName];
@@ -187,18 +188,81 @@ EdenMobile.factory('DataImport', [
         DataImport.prototype.addForeignKey = function(record, dependency) {
 
             var references = record.references,
+                keys = dependency.keys,
                 reference,
-                fieldName;
+                resolveReference,
+                key,
+                lookup = {},
+                deferred,
+                lookedUp,
+                pending = [];
 
             // Resolve all pending references that match the dependency
-            for (fieldName in references) {
+            for (var fieldName in references) {
+
                 reference = references[fieldName];
                 if (reference[0] == dependency.tableName && reference[1] == dependency.uuid) {
+
                     if (dependency.isResolved) {
-                        record.data[fieldName] = dependency.recordID;
+
+                        resolveReference = record.resolveReference(fieldName);
+
+                        key = reference[2];
+                        if (key != 'id' || true) {
+                            // Referencing a field other than 'id', which must
+                            // be looked up from the database
+
+                            if (keys.hasOwnProperty(key)) {
+                                // Has been or is being looked up by another task
+                                lookedUp = $q.when(keys[key]);
+
+                            } else {
+                                // Schedule a look-up now
+                                deferred = $q.defer();
+                                lookup[key] = deferred;
+
+                                // Let other tasks know that we're going to look it up
+                                keys[key] = lookedUp;
+
+                                lookedUp = deferred.promise;
+                            }
+
+                            pending.push(lookedUp.then(resolveReference));
+
+                        } else {
+                            // Referencing 'id', no look-up required
+                            resolveReference(dependency.recordID);
+                        }
+                    } else {
+                        // Unresolvable dependency - skip this foreign key
+                        delete record.references[fieldName];
                     }
-                    delete record.references[fieldName];
                 }
+            }
+
+            if (pending.length) {
+
+                var lookupKeys = Object.keys(lookup);
+                if (lookupKeys.length) {
+                    // We promised to look up some keys
+                    emDB.table(dependency.tableName).then(function(table) {
+                        table.where(table.$('id').equals(dependency.recordID))
+                             .select(lookupKeys, {limitby: 1}, function(records) {
+                            var record = records[0];
+                            lookupKeys.forEach(function(key) {
+                                lookup[key].resolve(record.$(key));
+                            });
+                        });
+                    });
+                }
+
+                // Wait for pending keys to get resolved
+                return $q.all(pending);
+
+            } else {
+
+                // We're done here
+                return $q.resolve();
             }
         };
 

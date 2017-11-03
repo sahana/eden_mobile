@@ -53,6 +53,9 @@ EdenMobile.factory('Dependency', [
             this.recordID = null;
             this.fileURI = null;
 
+            // Known object keys {fieldName: lookupPromise}
+            this.keys = {};
+
             // Provider array
             // - providers are import tasks that create the required object
             this.providers = [];
