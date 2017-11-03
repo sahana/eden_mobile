@@ -30,8 +30,8 @@
  * @memberof EdenMobile.Services
  */
 EdenMobile.factory('emS3JSON', [
-    '$q', 'emDB', 'emUtils',
-    function ($q, emDB, emUtils) {
+    '$q', 'emComponents', 'emDB', 'emUtils',
+    function ($q, emComponents, emDB, emUtils) {
 
         "use strict";
 
@@ -149,13 +149,15 @@ EdenMobile.factory('emS3JSON', [
 
             this.data = {};         // {fieldName: value}
             this.references = {};   // {fieldName: [tableName, uuid]}
+            this.components = [];   // [[tableName, item, joinby, pkey]]
             this.files = {};        // {fieldName: downloadURL}
 
             this.tableName = table.name;
             this.uuid = null;
 
             var key,
-                value;
+                value,
+                hooks;
 
             for (key in jsonData) {
 
@@ -163,12 +165,12 @@ EdenMobile.factory('emS3JSON', [
 
                 if (key.slice(0, 2) == '$_') {
 
-                    // Component record => skip
-                    // @todo: handle component records
-                    continue;
-                }
+                    if (hooks === undefined) {
+                        hooks = emComponents.getHooks(table);
+                    }
+                    this.addComponent(table, hooks, key.slice(2), value);
 
-                if (key.slice(0, 3) == '$k_') {
+                } else if (key.slice(0, 3) == '$k_') {
 
                     // Foreign key
                     this.decode(table, key.slice(3), value);
@@ -299,6 +301,78 @@ EdenMobile.factory('emS3JSON', [
                 default:
                     break;
             }
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Register component items for an import item (Record)
+         *
+         * @param {Table} table - the master table
+         * @param {object} hooks - the component hooks of the master table
+         *                         (from emComponents.getHooks)
+         * @param {string} name - the component table name
+         * @param {Array} items - the component items
+         */
+        Record.prototype.addComponent = function(table, hooks, name, items) {
+
+            // Component or link table
+            var defaultAlias = name.split('_')[1] || name,
+                unknown = {},
+                links = {};
+
+            items.forEach(function(item) {
+
+                var alias = item['@alias'] || defaultAlias;
+                if (unknown[alias]) {
+                    return;
+                }
+
+                var hook = hooks[alias],
+                    link,
+                    joinby,
+                    pkey;
+
+                if (hook) {
+                    // Component hook via alias
+                    pkey = hook.pkey;
+                    if (hook.tableName == name) {
+                        joinby = hook.fkey;
+                    } else {
+                        link = hook.link;
+                        if (link && link == name) {
+                            joinby = hook.lkey;
+                        }
+                    }
+                } else {
+                    // Link table?
+                    hook = links[alias];
+                    if (hook) {
+                        pkey = hook.pkey;
+                        joinby = hook.lkey;
+                    } else {
+                        // Search through all hooks
+                        for (var componentAlias in hooks) {
+                            hook = hooks[componentAlias];
+                            link = hook.link;
+                            if (link && link == name) {
+                                pkey = hook.pkey;
+                                joinby = hook.lkey;
+                                break;
+                            }
+                        }
+                        if (joinby) {
+                            links[alias] = hook;
+                        }
+                    }
+                }
+
+                if (joinby) {
+                    this.components.push([name, item, joinby, pkey]);
+                } else {
+                    // Items with this alias can not be resolved
+                    unknown[alias] = true;
+                }
+            }, this);
         };
 
         // ====================================================================
@@ -443,6 +517,9 @@ EdenMobile.factory('emS3JSON', [
 
                     var record = new Record(table, item);
                     map[tableName][record.uuid] = record;
+
+                    // TODO: process record.components and add items to map
+
                     mapDependencies(map, dependencies, record.references);
                 });
             }
