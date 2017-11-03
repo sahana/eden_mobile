@@ -257,8 +257,7 @@ EdenMobile.factory('SyncRun', [
 
         // --------------------------------------------------------------------
         /**
-         * Register a provider for a dependency; shorthand for
-         * require().registerProvider()
+         * Register a provider for a dependency
          *
          * @param {SyncTask} provider - the SyncTask providing the required
          *                              resource
@@ -266,14 +265,23 @@ EdenMobile.factory('SyncRun', [
          * @param {string} uuid - the record UUID
          * @param {string} url - the URL to download the file
          */
-        SyncRun.prototype.provide = function(provider, tableName, recordID, resourceURI) {
+        SyncRun.prototype.provide = function(provider, tableName, uuid, url) {
 
             // Get or create the dependency
-            var dependency = this.require(tableName, recordID, resourceURI);
+            var dependency = this.require(tableName, uuid, url);
 
             // Register the provider
             if (dependency) {
                 dependency.registerProvider(provider);
+            }
+
+            // Record providers also (implicitly) provide the corresponding
+            // em_object entry, so register for that too:
+            if (uuid && tableName.slice(0, 3) != 'em_') {
+                dependency = this.require('em_object', uuid);
+                if (dependency) {
+                    dependency.registerProvider(provider);
+                }
             }
         };
 
@@ -783,8 +791,6 @@ EdenMobile.factory('SyncRun', [
 
             tableNames.forEach(function(tableName) {
 
-                // Get all UUIDs required for this table
-
                 emDB.table(tableName).then(function(table) {
 
                     var deps = recordDependencies[tableName],
@@ -805,13 +811,14 @@ EdenMobile.factory('SyncRun', [
 
                     } else {
 
+                        // Resolve all known UUIDs
                         table.where(table.$('uuid').in(Object.keys(deps)))
                              .select(['uuid', 'id'], function(rows) {
 
                             // Resolve the dependency for each record found
                             if (rows.length) {
                                 rows.forEach(function(row) {
-                                    deps[row.$('uuid')].resolve(row.$('id'));
+                                    deps[row.$('uuid')].resolve(row.$('id'), false);
                                 });
                             }
 

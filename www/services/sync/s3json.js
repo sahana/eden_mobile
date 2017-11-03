@@ -30,8 +30,8 @@
  * @memberof EdenMobile.Services
  */
 EdenMobile.factory('emS3JSON', [
-    '$q', 'emDB', 'emUtils',
-    function ($q, emDB, emUtils) {
+    '$q', 'emComponents', 'emDB', 'emUtils',
+    function ($q, emComponents, emDB, emUtils) {
 
         "use strict";
 
@@ -55,6 +55,91 @@ EdenMobile.factory('emS3JSON', [
 
         // ====================================================================
         /**
+         * Helper class to locate import items in an S3JSON object tree
+         *
+         * @param {object} jsonData - the S3JSON recevied from the server
+         */
+        function SourceMap(jsonData) {
+
+            this.records = {};
+
+            this.map(jsonData);
+        }
+
+        // --------------------------------------------------------------------
+        /**
+         * Produce a map of {tableName: {uuid: item}} from an S3JSON object
+         * tree, which can then be used to locate particular import items;
+         * stores the map as this.records
+         *
+         * @param {object} tree - the S3JSON object tree
+         */
+        SourceMap.prototype.map = function(tree) {
+
+            var records = this.records,
+                key,
+                tableName,
+                recordMap,
+                self = this;
+
+            // Helper to add an item to the map
+            var addItem = function(item) {
+                var uuid = item['@uuid'];
+                if (uuid) {
+                    this[uuid] = item; // this = recordMap
+                    self.map(item);
+                }
+            };
+
+            for (key in tree) {
+
+                if (key.slice(0, 2) == '$_') {
+
+                    tableName = key.slice(2);
+                    recordMap = records[tableName] || {};
+
+                    tree[key].forEach(addItem, recordMap);
+
+                    records[tableName] = recordMap;
+                }
+            }
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Look up an item in the source tree
+         *
+         * @param {string} tableName - the table name of the item sought
+         *                             (can be omitted for type-less uuid search)
+         * @param {string} uuid - the UUID of the item sought
+         */
+        SourceMap.prototype.get = function(tableName, uuid) {
+
+            var records = this.records,
+                item;
+
+            if (arguments.length < 2) {
+                // Type-less search
+                uuid = tableName;
+                for (var name in records) {
+                    item = records[name][uuid];
+                    if (item) {
+                        break;
+                    }
+                }
+            } else {
+                // Type-bound look-up
+                var recordMap = records[tableName];
+                if (recordMap) {
+                    item = recordMap[uuid];
+                }
+            }
+
+            return item;
+        };
+
+        // ====================================================================
+        /**
          * Helper class to decode S3JSON record representations
          *
          * @param {Table} table - the emDB Table
@@ -64,13 +149,15 @@ EdenMobile.factory('emS3JSON', [
 
             this.data = {};         // {fieldName: value}
             this.references = {};   // {fieldName: [tableName, uuid]}
+            this.components = [];   // [[tableName, item, joinby, pkey]]
             this.files = {};        // {fieldName: downloadURL}
 
             this.tableName = table.name;
             this.uuid = null;
 
             var key,
-                value;
+                value,
+                hooks;
 
             for (key in jsonData) {
 
@@ -78,12 +165,12 @@ EdenMobile.factory('emS3JSON', [
 
                 if (key.slice(0, 2) == '$_') {
 
-                    // Component record => skip
-                    // @todo: handle component records
-                    continue;
-                }
+                    if (hooks === undefined) {
+                        hooks = emComponents.getHooks(table);
+                    }
+                    this.addComponent(table, hooks, key.slice(2), value);
 
-                if (key.slice(0, 3) == '$k_') {
+                } else if (key.slice(0, 3) == '$k_') {
 
                     // Foreign key
                     this.decode(table, key.slice(3), value);
@@ -154,11 +241,12 @@ EdenMobile.factory('emS3JSON', [
             var reference = emUtils.getReference(fieldType);
             if (reference) {
                 var lookupTable = reference[1],
+                    key = reference[2] || 'id',
                     uuid;
                 if (lookupTable) {
                     uuid = value['@uuid'];
                     if (uuid) {
-                        this.references[fieldName] = [lookupTable, uuid];
+                        this.references[fieldName] = [lookupTable, uuid, key];
                     }
                 }
                 return;
@@ -215,6 +303,78 @@ EdenMobile.factory('emS3JSON', [
             }
         };
 
+        // --------------------------------------------------------------------
+        /**
+         * Register component items for an import item (Record)
+         *
+         * @param {Table} table - the master table
+         * @param {object} hooks - the component hooks of the master table
+         *                         (from emComponents.getHooks)
+         * @param {string} name - the component table name
+         * @param {Array} items - the component items
+         */
+        Record.prototype.addComponent = function(table, hooks, name, items) {
+
+            // Component or link table
+            var defaultAlias = name.split('_')[1] || name,
+                unknown = {},
+                links = {};
+
+            items.forEach(function(item) {
+
+                var alias = item['@alias'] || defaultAlias;
+                if (unknown[alias]) {
+                    return;
+                }
+
+                var hook = hooks[alias],
+                    link,
+                    joinby,
+                    pkey;
+
+                if (hook) {
+                    // Component hook via alias
+                    pkey = hook.pkey;
+                    if (hook.tableName == name) {
+                        joinby = hook.fkey;
+                    } else {
+                        link = hook.link;
+                        if (link && link == name) {
+                            joinby = hook.lkey;
+                        }
+                    }
+                } else {
+                    // Link table?
+                    hook = links[alias];
+                    if (hook) {
+                        pkey = hook.pkey;
+                        joinby = hook.lkey;
+                    } else {
+                        // Search through all hooks
+                        for (var componentAlias in hooks) {
+                            hook = hooks[componentAlias];
+                            link = hook.link;
+                            if (link && link == name) {
+                                pkey = hook.pkey;
+                                joinby = hook.lkey;
+                                break;
+                            }
+                        }
+                        if (joinby) {
+                            links[alias] = hook;
+                        }
+                    }
+                }
+
+                if (joinby) {
+                    this.components.push([name, item, joinby, pkey]);
+                } else {
+                    // Items with this alias can not be resolved
+                    unknown[alias] = true;
+                }
+            }, this);
+        };
+
         // ====================================================================
         /**
          * Map new dependencies of a Record
@@ -250,7 +410,7 @@ EdenMobile.factory('emS3JSON', [
 
         // --------------------------------------------------------------------
         /**
-         * Resolve a dependency
+         * Resolve a dependency within the source
          *
          * @param {object} data - the S3JSON data
          * @param {object} map - array of known Records, format:
@@ -307,6 +467,27 @@ EdenMobile.factory('emS3JSON', [
 
         // --------------------------------------------------------------------
         /**
+         * Decorator to produce a function to set the value for a pending
+         * reference
+         *
+         * @param {string} fieldName - the field name of the foreign key
+         *
+         * @returns {function} - a function to set the value of the
+         *                       foreign key and remove the pending
+         *                       reference
+         */
+        Record.prototype.resolveReference = function(fieldName) {
+
+            var self = this;
+
+            return function(value) {
+                self.data[fieldName] = value;
+                delete self.references[fieldName];
+            };
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Decode an S3JSON resource representation and produce a map of
          * Record objects for import
          *
@@ -336,6 +517,9 @@ EdenMobile.factory('emS3JSON', [
 
                     var record = new Record(table, item);
                     map[tableName][record.uuid] = record;
+
+                    // TODO: process record.components and add items to map
+
                     mapDependencies(map, dependencies, record.references);
                 });
             }

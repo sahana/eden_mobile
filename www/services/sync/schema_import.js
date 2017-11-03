@@ -261,6 +261,37 @@ EdenMobile.factory('SchemaImport', [
             return spec;
         };
 
+        // --------------------------------------------------------------------
+        /**
+         * Register a component definition
+         */
+        SchemaImport.prototype.addComponent = function(alias, description) {
+
+
+            var componentDefinitions = this.schema._components || {},
+                definition = {},
+                componentOpts = [
+                    'table',
+                    'link',
+                    'pkey',
+                    'joinby',
+                    'key',
+                    'fkey',
+                    'multiple',
+                    'label',
+                    'labelPlural'
+                ];
+
+            componentOpts.forEach(function(key) {
+                if (description.hasOwnProperty(key)) {
+                    definition[key] = description[key];
+                }
+            });
+            componentDefinitions[alias] = definition;
+
+            this.schema._components = componentDefinitions;
+        };
+
         // ====================================================================
         // Return the constructor
         //
