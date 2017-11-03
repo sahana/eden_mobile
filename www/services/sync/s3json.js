@@ -253,18 +253,20 @@ EdenMobile.factory('emS3JSON', [
             }
 
             // Decode @value|$ attributes if present
-            if (value) {
+            if (value.constructor === Object) {
                 if (value.hasOwnProperty('@value')) {
                     value = value['@value'];
                 } else if (value.hasOwnProperty('$')) {
                     value = value.$;
+                } else {
+                    // Empty
+                    return;
                 }
             }
 
             // Handle all other field types
             switch(fieldType) {
                 case 'boolean':
-                    // Investigate
                     if (typeof value == 'string') {
                         value = (value.toLowerCase() == 'true');
                     } else {
@@ -375,96 +377,6 @@ EdenMobile.factory('emS3JSON', [
             }, this);
         };
 
-        // ====================================================================
-        /**
-         * Map new dependencies of a Record
-         *
-         * @param {object} map - array of known Records, format:
-         *                       {tableName: {uuid: Record}}
-         * @param {array} dependencies - array of known dependencies,
-         *                               format: [[tableName, uuid], ...]
-         * @param {object} references - the reference map of the record,
-         *                              format: {fieldName: [tableName, uuid]}
-         */
-        var mapDependencies = function(map, dependencies, references) {
-
-            var dependency,
-                tableName,
-                uuid;
-
-            for (var fieldName in references) {
-
-                dependency = references[fieldName];
-
-                tableName = dependency[0];
-                uuid = dependency[1];
-
-                if (map.hasOwnProperty(tableName)) {
-                    if (map[tableName].hasOwnProperty(uuid)) {
-                        continue;
-                    }
-                }
-                dependencies.push(dependency);
-            }
-        };
-
-        // --------------------------------------------------------------------
-        /**
-         * Resolve a dependency within the source
-         *
-         * @param {object} data - the S3JSON data
-         * @param {object} map - array of known Records, format:
-         *                       {tableName: {uuid: Record}}
-         * @param {array} dependencies - array of known dependencies,
-         *                               format: [[tableName, uuid], ...]
-         * @param {object} unknown - map of records known to /not/ be in the data
-         *                           source, format: {tableName {uuid: true}}
-         * @param {array} dependency - the dependency to resolve, format:
-         *                             [tableName, uuid]
-         */
-        var resolveDependency = function(tables, data, map, dependencies, unknown, dependency) {
-
-            var tableName = dependency[0],
-                table = tables[tableName],
-                uuid = dependency[1];
-
-            if (unknown.hasOwnProperty(tableName)) {
-                if (unknown[tableName].hasOwnProperty(uuid)) {
-                    return;
-                }
-            }
-
-            // Search through the S3JSON for the record
-            var tableKey = '$_' + tableName;
-            if (data.hasOwnProperty(tableKey)) {
-
-                var items = data[tableKey],
-                    item,
-                    record;
-
-                for (var i = items.length; i--;) {
-
-                    item = items[i];
-                    if (item['@uuid'] == uuid) {
-
-                        // Generate a Record, add it to the map
-                        record = new Record(table, item);
-                        if (!map.hasOwnProperty(tableName)) {
-                            map[tableName] = {};
-                        }
-                        map[tableName][record.uuid] = record;
-                        mapDependencies(map, dependencies, record.references);
-                        return;
-                    }
-                }
-            }
-
-            if (!unknown.hasOwnProperty(tableName)) {
-                unknown[tableName] = {};
-            }
-            unknown[tableName][uuid] = true;
-        };
-
         // --------------------------------------------------------------------
         /**
          * Decorator to produce a function to set the value for a pending
@@ -486,23 +398,156 @@ EdenMobile.factory('emS3JSON', [
             };
         };
 
+        // ====================================================================
+        /**
+         * Track references of an import item (Record)
+         *
+         * @param {object} importMap - the import item map
+         * @param {array} dependencies - array of known dependencies,
+         *                               format: [[tableName, uuid], ...]
+         * @param {Record} record - the Record
+         */
+        var trackReferences = function(importMap, dependencies, record) {
+
+            var references = record.references,
+                dependency,
+                tableName,
+                uuid;
+
+            for (var fieldName in references) {
+
+                dependency = references[fieldName];
+
+                tableName = dependency[0];
+                uuid = dependency[1];
+
+                if (importMap.hasOwnProperty(tableName)) {
+                    if (importMap[tableName].hasOwnProperty(uuid)) {
+                        continue;
+                    }
+                }
+                dependencies.push(dependency);
+            }
+        };
+
         // --------------------------------------------------------------------
         /**
-         * Decode an S3JSON resource representation and produce a map of
-         * Record objects for import
+         * Add component items to the import map
          *
-         * @param {object} tables - array of all known tables, format:
+         * @param {object} tables - array of known tables
+         * @param {object} importMap - the import item map
+         * @param {Array} dependencies - array of known dependencies
+         * @param {Record} record - the master Record
+         */
+        var mapComponents = function(tables, importMap, dependencies, record) {
+
+            var components = record.components;
+
+            components.forEach(function(item) {
+
+                // item = [tablename, item, joinby, pkey]
+
+                // Get the component table
+                var tableName = item[0],
+                    table = tables[tableName];
+                if (!table) {
+                    return;
+                }
+
+                // Create a Record for the item and add it to the map
+                var componentRecord = new Record(table, item[1]);
+                if (!importMap.hasOwnProperty(tableName)) {
+                    importMap[tableName] = {};
+                }
+                importMap[tableName][componentRecord.uuid] = componentRecord;
+
+                // Map the component record's dependencies
+                trackReferences(importMap, dependencies, componentRecord);
+
+                // mapComponents for the component record?
+                // (Server doesn't currently export components of components)
+
+                var masterTableName = record.tableName,
+                    pkey = item[3];
+
+                // Super-component? => use em_object as parent entity
+                if (pkey != 'id') {
+                    var masterTable = tables[masterTableName],
+                        field = masterTable.$(pkey);
+                    if (field.name == 'em_object_id') {
+                        masterTableName = 'em_object';
+                        pkey = 'id';
+                    }
+                }
+
+                // Add parent reference
+                componentRecord.references[item[2]] = [
+                    masterTableName,
+                    record.uuid,
+                    pkey
+                ];
+            });
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Map an in-source dependency: if a referenced item is present in the
+         * object tree, then add it to the import map
+         *
+         * @param {object} tables - array of known tables, format:
+         *                          {tableName: Table}
+         * @param {SourceMap} sourceMap - accessor for the object tree
+         * @param {object} importMap - the import item map, format:
+         *                             {tableName: {uuid: Record}}
+         * @param {array} dependencies - array of known dependencies,
+         *                               format: [[tableName, uuid], ...]
+         * @param {array} dependency - the dependency to resolve, format:
+         *                             [tableName, uuid]
+         */
+        var mapDependency = function(tables, sourceMap, importMap, dependencies, dependency) {
+
+            var tableName = dependency[0],
+                uuid = dependency[1],
+                tableImportMap = importMap[tableName];
+
+            if (tableImportMap && tableImportMap.hasOwnProperty(uuid)) {
+                // Already scheduled for import
+                return;
+            }
+
+            var item = sourceMap.get(tableName, uuid);
+            if (item) {
+                // Generate a Record
+                var table = tables[tableName],
+                    record = new Record(table, item);
+
+                // Add it to the map
+                if (!tableImportMap) {
+                    tableImportMap = {};
+                }
+                tableImportMap[record.uuid] = record;
+                importMap[tableName] = tableImportMap;
+
+                // Track references of the record
+                trackReferences(importMap, dependencies, record);
+            }
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Decode an S3JSON object tree and produce a map of import items
+         *
+         * @param {object} tables - array of known tables, format:
          *                          {tableName: Table}
          * @param {string} tableName - the name of the target table
-         * @param {object} data - the S3JSON resource representation
+         * @param {object} data - the S3JSON object tree
          *
-         * @returns {object} - a map of records, format:
+         * @returns {object} - a map of import items (Records), format:
          *                     {tableName: {uuid: Record, ...}, ...}
          */
         var decode = function(tables, tableName, data) {
 
-            var map = {},
-                unknown = {},
+            var importMap = {},
                 dependencies = [];
 
             var key = '$_' + tableName,
@@ -511,24 +556,29 @@ EdenMobile.factory('emS3JSON', [
 
             if (items) {
 
-                map[tableName] = {};
+                importMap[tableName] = {};
 
                 items.forEach(function(item) {
 
                     var record = new Record(table, item);
-                    map[tableName][record.uuid] = record;
+                    importMap[tableName][record.uuid] = record;
 
-                    // TODO: process record.components and add items to map
+                    trackReferences(importMap, dependencies, record);
 
-                    mapDependencies(map, dependencies, record.references);
+                    mapComponents(tables, importMap, dependencies, record);
                 });
             }
 
+            var sourceMap = new SourceMap(data);
             while(dependencies.length) {
-                resolveDependency(tables, data, map, dependencies, unknown, dependencies.shift());
+                mapDependency(tables,
+                              sourceMap,
+                              importMap,
+                              dependencies,
+                              dependencies.shift());
             }
 
-            return map;
+            return importMap;
         };
 
         // ====================================================================
