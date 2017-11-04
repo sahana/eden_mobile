@@ -208,7 +208,7 @@ EdenMobile.factory('DataImport', [
                         resolveReference = record.resolveReference(fieldName);
 
                         key = reference[2];
-                        if (key != 'id' || true) {
+                        if (key != 'id') {
                             // Referencing a field other than 'id', which must
                             // be looked up from the database
 
