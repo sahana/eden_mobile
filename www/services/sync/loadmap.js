@@ -631,8 +631,8 @@ EdenMobile.factory('LoadMap', [
 
             this.hasPendingItems = false;
 
-            // Object table has no direct lookups or exports
             if (this.tableName == 'em_object') {
+                // Object table has no direct lookups or exports
                 return $q.resolve();
             }
 
@@ -676,42 +676,58 @@ EdenMobile.factory('LoadMap', [
 
                     // Which records to load?
                     var query,
-                        requiredUIDs = Object.keys(self.pending);
+                        required = self.requiredQuery(table),
+                        requiredUIDs = Object.keys(self.pending),
+                        synchronizedOn = table.$('synchronized_on'),
+                        modifiedOn = table.$('modified_on'),
+                        unsynchronized = synchronizedOn.is(null).or(
+                                         synchronizedOn.lessThan(modifiedOn));
 
                     if (all) {
-                        var required = self.requiredQuery(table),
-                            synchronizedOn = table.$('synchronized_on'),
-                            modifiedOn = table.$('modified_on'),
-                            unsynchronized = synchronizedOn.is(null).or(
-                                             synchronizedOn.lessThan(modifiedOn));
+                        // Initial load of primary table:
+                        // => load all records which have updates or
+                        //    are required to export component updates
                         if (required) {
                             query = unsynchronized.or(required);
                         } else {
                             query = unsynchronized;
                         }
                     } else {
-                        // TODO extend query with "or uid required and unsynchronized"
-                        query = self.requiredQuery(table);
+                        // Implicit load of referenced table:
+                        // => load all referenced records which have updates,
+                        //    or are required to export component updates
+                        if (requiredUIDs.length) {
+                            query = table.$('id').in(requiredUIDs).and(unsynchronized);
+                        }
+                        if (required) {
+                            if (query) {
+                                query = query.or(required);
+                            } else {
+                                query = required;
+                            }
+                        }
                     }
 
                     if (query) {
                         table.where(query).select(fields, function(rows) {
 
-                            // Add an export item for each row
                             rows.forEach(function(row) {
                                 var record = row._(),
                                     recordID = record.id;
 
+                                // Add en export item
                                 self.addItem(table, record);
 
                                 // Remove recordID from requiredUIDs
+                                // (since already resolved by addItem)
                                 var idx = requiredUIDs.indexOf(recordID);
                                 if (idx != -1) {
                                     requiredUIDs = requiredUIDs.splice(idx, 1);
                                 }
                             });
 
-                            // Any UID lookups left?
+                            // Any UUID lookups left?
+                            // => just resolve the UUIDs, no export
                             if (requiredUIDs.length) {
                                 table.where(table.$('id').in(requiredUIDs))
                                      .select(['id', 'uuid'], function(rows) {
