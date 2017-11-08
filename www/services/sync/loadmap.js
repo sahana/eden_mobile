@@ -38,13 +38,15 @@ EdenMobile.factory('LoadMap', [
          * @param {DataExport} task - the data export task
          * @param {Table} table - the Table
          * @param {object} record - the record data
+         * @param {Array} fields - array of names of fields to include in
+         *                         the export (optional)
          */
-        function ExportItem(task, table, record) {
+        function ExportItem(task, table, record, fields) {
 
             this.task = task;
 
             // Encode record as S3JSON object
-            var jsonData = emS3JSON.encodeRecord(table, record),
+            var jsonData = emS3JSON.encodeRecord(table, record, fields),
                 fieldName;
 
             this.data = jsonData.data; // S3JSON record data
@@ -182,10 +184,12 @@ EdenMobile.factory('LoadMap', [
          *
          * @param {Table} table - the database table the record belongs to
          * @param {object} record - the record
+         * @param {Array} fields - array of names of fields to include in the
+         *                         export (optional)
          *
          * @returns {ExportItem} - the ExportItem
          */
-        LoadMap.prototype.addItem = function(table, record) {
+        LoadMap.prototype.addItem = function(table, record, fields) {
 
             var recordID = record.id;
             if (!recordID) {
@@ -199,7 +203,7 @@ EdenMobile.factory('LoadMap', [
                 this.addUID(record);
 
                 // Create an export item for the record
-                item = new ExportItem(this.task, table, record);
+                item = new ExportItem(this.task, table, record, fields);
                 items[recordID] = item;
             }
 
@@ -384,8 +388,11 @@ EdenMobile.factory('LoadMap', [
                 alias = hook.alias,
                 parentKey = hook.fkey;
 
+            // TODO: determine export fields of the component table
+
             if (hook.link) {
                 parentKey = hook.lkey;
+                // TODO: include hook.rkey in the export fields
             }
 
             return function(row) {
@@ -464,11 +471,11 @@ EdenMobile.factory('LoadMap', [
                 }
 
                 fields = this.exportFields(link);
-                loadMap = task.getLoadMap(link.name);
-                addComponentItem = this.addComponentItem(link, loadMap, hook, pkey);
-
                 // TODO make sure we have rkey in fields
                 // TODO make sure we have all required keys from loadMap in fields
+
+                loadMap = task.getLoadMap(link.name);
+                addComponentItem = this.addComponentItem(link, loadMap, hook, pkey);
 
                 link.join(component.on(fkey.equals(rkey))).where(
                     allOf(
@@ -716,7 +723,7 @@ EdenMobile.factory('LoadMap', [
                                     recordID = record.id;
 
                                 // Add en export item
-                                self.addItem(table, record);
+                                self.addItem(table, record, exportFields);
 
                                 // Remove recordID from requiredUIDs
                                 // (since already resolved by addItem)

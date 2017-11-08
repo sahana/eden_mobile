@@ -112,9 +112,6 @@ EdenMobile.factory('DataExport', [
                         }
                     }
 
-                    // TODO: remove test code
-                    throw new Error('Not Implemented');
-
                     // Generate the data upload task, then resolve
                     var dataUpload = new DataUpload(self.job, jsonData, self.files);
                     self.resolve(dataUpload);
