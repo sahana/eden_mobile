@@ -86,19 +86,30 @@ EdenMobile.factory('DataExport', [
                         lookups = self.lookups,
                         tableName,
                         items,
+                        recordID,
+                        item,
                         data;
 
                     // Collect all records into one S3JSON object
                     for (tableName in lookups) {
 
+                        if (tableName.slice(0, 3) === 'em_') {
+                            // System table not exported
+                            continue;
+                        }
+
                         items = lookups[tableName].items;
                         data = [];
 
-                        for (var recordID in items) {
-                            data.push(items[recordID].data);
+                        for (recordID in items) {
+                            item = items[recordID];
+                            if (!item.parent) {
+                                data.push(item.data);
+                            }
                         }
-
-                        angular.extend(jsonData, emS3JSON.encode(tableName, data));
+                        if (data.length) {
+                            angular.extend(jsonData, emS3JSON.encode(tableName, data));
+                        }
                     }
 
                     // TODO: remove test code
