@@ -24,8 +24,8 @@
  */
 
 EdenMobile.factory('DataExport', [
-    '$q', 'emS3JSON', 'DataUpload', 'ReferenceMap', 'SyncTask',
-    function ($q, emS3JSON, DataUpload, ReferenceMap, SyncTask) {
+    '$q', 'emS3JSON', 'DataUpload', 'LoadMap', 'SyncTask',
+    function ($q, emS3JSON, DataUpload, LoadMap, SyncTask) {
 
         "use strict";
 
@@ -35,9 +35,9 @@ EdenMobile.factory('DataExport', [
          */
         var DataExport = SyncTask.define(function() {
 
-            // All reference maps for this task
-            this.references = {
-                // tableName: ReferenceMap
+            // All LoadMaps for this task
+            this.lookups = {
+                // tableName: LoadMap
             };
 
             this.files = {
@@ -47,33 +47,51 @@ EdenMobile.factory('DataExport', [
 
         // --------------------------------------------------------------------
         /**
+         * Get the LoadMap for a table name
+         *
+         * @param {string} tableName - the table name
+         *
+         * @returns {LoadMap} - the LoadMap
+         */
+        DataExport.prototype.getLoadMap = function(tableName) {
+
+            var lookups = this.lookups,
+                loadMap = lookups[tableName];
+
+            if (!loadMap) {
+                loadMap = new LoadMap(this, tableName);
+                lookups[tableName] = loadMap;
+            }
+            return loadMap;
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Execute this data export; produces a DataUpload task
          */
         DataExport.prototype.execute = function() {
 
-            // Create a ReferenceMap for the target table
+            // Create a LoadMap for the target table
             var self = this,
                 tableName = this.job.tableName,
-                refMap = new ReferenceMap(this, tableName);
-
-            this.references[tableName] = refMap;
+                loadMap = this.getLoadMap(tableName);
 
             // Load all (new|modified) records in the target table,
             // then resolve all foreign keys (and export referenced
             // records as necessary)
-            refMap.load(true).then(function() {
+            loadMap.load(true, true).then(function() {
                 return self.export().then(function() {
 
                     var jsonData = {},
-                        references = self.references,
+                        lookups = self.lookups,
                         tableName,
                         items,
                         data;
 
                     // Collect all records into one S3JSON object
-                    for (tableName in references) {
+                    for (tableName in lookups) {
 
-                        items = references[tableName].items;
+                        items = lookups[tableName].items;
                         data = [];
 
                         for (var recordID in items) {
@@ -82,6 +100,9 @@ EdenMobile.factory('DataExport', [
 
                         angular.extend(jsonData, emS3JSON.encode(tableName, data));
                     }
+
+                    // TODO: remove test code
+                    throw new Error('Not Implemented');
 
                     // Generate the data upload task, then resolve
                     var dataUpload = new DataUpload(self.job, jsonData, self.files);
@@ -111,12 +132,12 @@ EdenMobile.factory('DataExport', [
             }
 
             var pending = [],
-                references = this.references,
-                refMap;
-            for (var tableName in references) {
-                refMap = references[tableName];
-                if (refMap.hasPendingItems) {
-                    pending.push(refMap);
+                lookups = this.lookups,
+                loadMap;
+            for (var tableName in lookups) {
+                loadMap = lookups[tableName];
+                if (loadMap.hasPendingItems) {
+                    pending.push(loadMap);
                 }
             }
 
@@ -125,8 +146,8 @@ EdenMobile.factory('DataExport', [
             } else {
                 var loaded = [],
                     self = this;
-                pending.forEach(function(refMap) {
-                    loaded.push(refMap.load());
+                pending.forEach(function(loadMap) {
+                    loaded.push(loadMap.load());
                 });
                 $q.all(loaded).then(function() {
                     self.export(deferred);
@@ -148,17 +169,11 @@ EdenMobile.factory('DataExport', [
          */
         DataExport.prototype.getUID = function(tableName, recordID) {
 
-            // Get the reference map for the table
-            var referenceMap = this.references[tableName];
+            // Get the LoadMap for the table
+            var loadMap = this.getLoadMap(tableName);
 
-            // If it doesn't yet exist => create it
-            if (referenceMap === undefined) {
-                referenceMap = new ReferenceMap(this, tableName);
-                this.references[tableName] = referenceMap;
-            }
-
-            // Look up the UUID from the referenceMap
-            return referenceMap.getUID(recordID);
+            // Look up the UUID from the loadMap
+            return loadMap.getUID(recordID);
         };
 
         // --------------------------------------------------------------------
