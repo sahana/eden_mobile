@@ -113,6 +113,7 @@ EdenMobile.factory('DataExport', [
                     }
 
                     // Generate the data upload task, then resolve
+                    // TODO: don't create an upload task if there are no data
                     var dataUpload = new DataUpload(self.job, jsonData, self.files);
                     self.resolve(dataUpload);
                 });
