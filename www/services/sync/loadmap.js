@@ -373,6 +373,7 @@ EdenMobile.factory('LoadMap', [
          * component table (resolving the respective promises there), and
          * embed them into their respective parent items
          *
+         * @param {string} alias - the component alias
          * @param {Table} table - the component/link table
          * @param {LoadMap} loadMap - the load map for the component/link table
          * @param {object} hook - the component hook
@@ -380,12 +381,11 @@ EdenMobile.factory('LoadMap', [
          *
          * @returns {function} - a function to add a component record
          */
-        LoadMap.prototype.addComponentItem = function(table, loadMap, hook, pkey) {
+        LoadMap.prototype.addComponentItem = function(alias, table, loadMap, hook, pkey) {
 
             var self = this,
                 tableName = table.name,
                 defaultAlias = tableName.split('_')[1] || tableName,
-                alias = hook.alias,
                 parentKey = hook.fkey;
 
             // TODO: determine export fields of the component table
@@ -432,6 +432,7 @@ EdenMobile.factory('LoadMap', [
          *
          * @param {DataExport} task - the data export task
          * @param {object} tables - all known database tables
+         * @param {string} alias - the component alias
          * @param {object} hook - the component hook
          * @param {Array} masterIDs - limit to component entries for these
          *                            master record IDs
@@ -440,7 +441,7 @@ EdenMobile.factory('LoadMap', [
          *                      records have been extracted and added to the
          *                      export
          */
-        LoadMap.prototype.loadComponent = function(task, tables, hook, masterIDs) {
+        LoadMap.prototype.loadComponent = function(task, tables, alias, hook, masterIDs) {
 
             var deferred = $q.defer(),
                 component = tables[hook.tableName],
@@ -475,7 +476,7 @@ EdenMobile.factory('LoadMap', [
                 // TODO make sure we have all required keys from loadMap in fields
 
                 loadMap = task.getLoadMap(link.name);
-                addComponentItem = this.addComponentItem(link, loadMap, hook, pkey);
+                addComponentItem = this.addComponentItem(alias, link, loadMap, hook, pkey);
 
                 link.join(component.on(fkey.equals(rkey))).where(
                     allOf(
@@ -499,7 +500,7 @@ EdenMobile.factory('LoadMap', [
 
                 fields = this.exportFields(component);
                 loadMap = task.getLoadMap(component.name);
-                addComponentItem = this.addComponentItem(component, loadMap, hook, pkey);
+                addComponentItem = this.addComponentItem(alias, component, loadMap, hook, pkey);
 
                 if (undefined === masterIDs) {
                     hasParent = fkey.isNot(null);
@@ -661,7 +662,8 @@ EdenMobile.factory('LoadMap', [
 
                     // Load any component data
                     for (alias in hooks) {
-                        components.push(self.loadComponent(task, tables, hooks[alias]));
+                        // TODO: limit to self.pending keys if not 'all' (masterIDs)
+                        components.push(self.loadComponent(task, tables, alias, hooks[alias]));
                     }
                     if (components.length) {
                         componentsLoaded = $q.all(components);
