@@ -385,20 +385,27 @@ EdenMobile.factory('LoadMap', [
 
             var self = this,
                 tableName = table.name,
+                exportFields = this.exportFields(table),
                 defaultAlias = tableName.split('_')[1] || tableName,
                 parentKey = hook.fkey;
 
-            // TODO: determine export fields of the component table
-
             if (hook.link) {
+
+                // Use the left key of the link to request the parent
                 parentKey = hook.lkey;
-                // TODO: include hook.rkey in the export fields
+
+                // Make sure the key to the linked table is exported, so
+                // that the linked record will be as well (if necessary)
+                var linkedKey = hook.rkey;
+                if (exportFields.indexOf(linkedKey) == -1) {
+                    exportFields.push(linkedKey);
+                }
             }
 
             return function(row) {
 
                 // Add the item to its load map and request the parent
-                var item = loadMap.addItem(table, row._()),
+                var item = loadMap.addItem(table, row._(), exportFields),
                     parent = self.getItem(pkey, row.$(parentKey));
 
                 // Mark this item as inline by setting 'parent' property
