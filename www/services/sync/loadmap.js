@@ -769,16 +769,34 @@ EdenMobile.factory('LoadMap', [
          */
         LoadMap.prototype.finalize = function(deferred) {
 
-            // TODO: if this.pending is not empty and not hasPendingItems
-            //       => some pending items could not be resolved
-            //       => reject all (unresolvable) pending items
+            if (!this.hasPendingItems) {
+                // All pending UUID/item requests have been included
+                // in the extraction queries at least once, so any
+                // unresolved items left are unresolvable => reject them
+
+                // Reject all unresolved UUID requests
+                var pending = this.pending;
+                for (var recordID in pending) {
+                    pending[recordID].reject('record not found');
+                }
+
+                // Reject all unresolved item requests
+                var requiredItems = this.requiredItems;
+                for (var key in requiredItems) {
+                    requiredItems[key].forEach(function(lookup) {
+                        if (undefined === lookup[2]) {
+                            lookup[2] = null;
+                            lookup[1].reject('record not found');
+                        }
+                    });
+                }
+            }
 
             var pendingComponents = this.pendingComponents,
                 self = this;
             if (pendingComponents.length) {
                 // Wait for component items to be embedded
-                // TODO: 'finally' rather than 'then'?
-                $q.all(pendingComponents).then(function() {
+                $q.all(pendingComponents).finally(function() {
                     self.pendingComponents = [];
                     deferred.resolve();
                 });
