@@ -88,7 +88,8 @@ EdenMobile.factory('DataExport', [
                         items,
                         recordID,
                         item,
-                        data;
+                        data,
+                        upload = false;
 
                     // Collect all records into one S3JSON object
                     for (tableName in lookups) {
@@ -109,13 +110,18 @@ EdenMobile.factory('DataExport', [
                         }
                         if (data.length) {
                             angular.extend(jsonData, emS3JSON.encode(tableName, data));
+                            upload = true;
                         }
                     }
 
-                    // Generate the data upload task, then resolve
-                    // TODO: don't create an upload task if there are no data
-                    var dataUpload = new DataUpload(self.job, jsonData, self.files);
-                    self.resolve(dataUpload);
+                    if (upload) {
+                        // Generate the data upload task, then resolve
+                        var dataUpload = new DataUpload(self.job, jsonData, self.files);
+                        self.resolve(dataUpload);
+                    } else {
+                        // No data to upload => just resolve
+                        self.resolve();
+                    }
                 });
             }).catch(function(e) {
                 self.reject(e);

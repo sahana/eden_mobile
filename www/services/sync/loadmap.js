@@ -128,32 +128,40 @@ EdenMobile.factory('LoadMap', [
             // UUIDs for references; {recordID: uuid|promise}
             this.uuids = {};
 
-            // Deferred lookups; {recordID: deferred}
-            this.pending = {};
-
-            // TODO explain
-            this.requiredItems = {};
-
-            // TODO explain
+            // Whether this LoadMap still has pending lookups/exports
             this.hasPendingItems = false;
 
-            // TODO explain
+            // Deferred UUID lookups; {recordID: deferred}
+            // => getUID/addUID
+            this.pending = {};
+
+            // Deferred exports; {key: [[value, deferred, recordID], ...]}
+            // => getItem/addItem
+            this.requiredItems = {};
+
+            // List of component items waiting for their parent to
+            // become available; [promise, ...]
+            // => loadComponent/addComponentItem/finalize
             this.pendingComponents = [];
         }
 
         // --------------------------------------------------------------------
         /**
-         * Get an ExportItem
+         * Request an ExportItem for a referenced record (e.g. the parent
+         * item for a component)
          *
-         * @param {string} key - the name of the key field
-         * @param {*} value - the value sought
+         * @param {string} key - the name of the referenced key
+         * @param {*} value - the look-up value
          *
          * @returns {promise} - a promise that resolves into the ExportItem
-         *                      when the record has been loaded
+         *                      when the referenced record has been loaded
          */
         LoadMap.prototype.getItem = function(key, value) {
 
-            // TODO: throw error if value is undefined or null
+            if (value === undefined || value === null) {
+                // Look-up value must not be null or undefined
+                throw new Error('invalid reference');
+            }
 
             var lookups = this.requiredItems[key] || [],
                 lookup,
@@ -238,7 +246,7 @@ EdenMobile.factory('LoadMap', [
 
         // --------------------------------------------------------------------
         /**
-         * Get the UUID of a record
+         * Request the UUID of a referenced record
          *
          * @param {integer} recordID - the record ID
          *
@@ -278,8 +286,9 @@ EdenMobile.factory('LoadMap', [
 
         // --------------------------------------------------------------------
         /**
-         * Get the UUID for an object key, and request the instance record
-         * to be exported if not synchronized
+         * Request the UUID for an object key, and the instance record
+         * to be exported if not synchronized (implicitly called from
+         * getUID)
          *
          * @param {integer} objectID - the object ID
          *
@@ -369,7 +378,7 @@ EdenMobile.factory('LoadMap', [
 
         // --------------------------------------------------------------------
         /**
-         * Decorator function to add component items to the loadMap of the
+         * Decorated function to add component items to the loadMap of the
          * component table (resolving the respective promises there), and
          * embed them into their respective parent items
          *
@@ -459,7 +468,8 @@ EdenMobile.factory('LoadMap', [
                 fields,
                 loadMap,
                 addComponentItem,
-                hasParent;
+                hasParent,
+                key;
 
             var table = tables[this.tableName],
                 pkey = table.$(hook.pkey).name;
@@ -472,19 +482,33 @@ EdenMobile.factory('LoadMap', [
                     linkSynchronizedOn = link.$('synchronized_on'),
                     linkModifiedOn = link.$('modified_on');
 
-                if (undefined === masterIDs) {
-                    hasParent = lkey.isNot(null);
-                } else {
-                    hasParent = lkey.in(masterIDs);
-                }
-
-                fields = this.exportFields(link);
-                // TODO make sure we have rkey in fields
-                // TODO make sure we have all required keys from loadMap in fields
-
+                // Get the LoadMap for the link table, and a function to
+                // add items to it
                 loadMap = task.getLoadMap(link.name);
                 addComponentItem = this.addComponentItem(alias, link, loadMap, hook, pkey);
 
+                // Which fields to extract?
+                fields = this.exportFields(link);
+                // Make sure we extract all required item keys
+                for (key in loadMap.requiredItems) {
+                    if (fields.indexOf(key) == -1) {
+                        fields.push(key);
+                    }
+                }
+                // Make sure we extract the linked component key (rkey)
+                if (fields.indexOf(rkey.name) == -1) {
+                    fields.push(rkey.name);
+                }
+
+                // Only extract records which have a parent
+                if (undefined === masterIDs) {
+                    hasParent = lkey.isNot(null);
+                } else {
+                    // Limit to known master IDs
+                    hasParent = lkey.in(masterIDs);
+                }
+
+                // Extract all relevant links
                 link.join(component.on(fkey.equals(rkey))).where(
                     allOf(
                         not(link.$('id').in(Object.keys(loadMap.items))),
@@ -505,16 +529,29 @@ EdenMobile.factory('LoadMap', [
 
             } else {
 
-                fields = this.exportFields(component);
+                // Get the LoadMap for the component table, and a function
+                // to add items to it
                 loadMap = task.getLoadMap(component.name);
                 addComponentItem = this.addComponentItem(alias, component, loadMap, hook, pkey);
 
+                // Which fields to extract?
+                fields = this.exportFields(component);
+                // Make sure we extract all required item keys
+                for (key in loadMap.requiredItems) {
+                    if (fields.indexOf(key) == -1) {
+                        fields.push(key);
+                    }
+                }
+
+                // Only extract records which have a parent
                 if (undefined === masterIDs) {
                     hasParent = fkey.isNot(null);
                 } else {
+                    // Limit to known master IDs
                     hasParent = fkey.in(masterIDs);
                 }
 
+                // Extract all relevant component records
                 component.where(
                     allOf(
                         not(component.$('id').in(Object.keys(loadMap.items))),
