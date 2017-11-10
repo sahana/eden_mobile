@@ -587,6 +587,9 @@ EdenMobile.factory('emS3JSON', [
          *
          * @param {Table} table - the Table
          * @param {object} record - the record data
+         * @param {Array} fields - names of the fields to include in the
+         *                         export (optional, default: all available
+         *                         properties of the record)
          *
          * @returns {object} - the S3JSON data and its references, format:
          *                          {data: {key: value},
@@ -594,7 +597,7 @@ EdenMobile.factory('emS3JSON', [
          *                           files: {fieldName: fileURI}
          *                           }
          */
-        var encodeRecord = function(table, record) {
+        var encodeRecord = function(table, record, fields) {
 
             var data = {},
                 references = {},
@@ -603,17 +606,21 @@ EdenMobile.factory('emS3JSON', [
                 fieldType,
                 value;
 
-            for (var fieldName in record) {
+            if (!fields) {
+                fields = Object.keys(record);
+            }
+
+            fields.forEach(function(fieldName) {
 
                 field = table.fields[fieldName];
                 if (!field) {
-                    continue;
+                    return;
                 }
 
                 // Handle null-values
                 value = record[fieldName];
-                if (value === null) {
-                    continue;
+                if (value === undefined || value === null) {
+                    return;
                 }
 
                 // Handle meta-fields
@@ -630,7 +637,7 @@ EdenMobile.factory('emS3JSON', [
                             // Skip all other meta-fields
                             break;
                     }
-                    continue;
+                    return;
                 }
 
                 fieldType = field.type;
@@ -638,7 +645,7 @@ EdenMobile.factory('emS3JSON', [
                 // Handle upload-fields
                 if (fieldType == 'upload') {
                     files[fieldName] = value;
-                    continue;
+                    return;
                 }
 
                 // Handle references
@@ -646,7 +653,7 @@ EdenMobile.factory('emS3JSON', [
                 if (reference) {
                     var lookupTable = reference[1];
                     references[fieldName] = [lookupTable, value];
-                    continue;
+                    return;
                 }
 
                 // Handle all other field types
@@ -674,7 +681,7 @@ EdenMobile.factory('emS3JSON', [
                         // Ignore
                         break;
                 }
-            }
+            });
 
             return {
                 data: data,

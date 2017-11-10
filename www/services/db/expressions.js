@@ -306,6 +306,9 @@
                 rSql = right.toSQL();
                 sqlStr = '(' + lSql + ') ' + op.toUpperCase() + ' (' + rSql + ')';
                 break;
+            case 'not':
+                sqlStr = op.toUpperCase() + '(' + lSql + ')';
+                break;
             case '=':
             case '!=':
             case '<':

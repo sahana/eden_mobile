@@ -92,6 +92,109 @@ EdenMobile.factory('DataUpload', [
 
         // --------------------------------------------------------------------
         /**
+         * Find the rejected items in the error tree returned from server
+         *
+         * @param {object} rejected - known rejected items
+         *                            {tableName: {uuid: error}}
+         * @param {object} errorTree - the error tree from the server
+         *                             (or a sub-section of it)
+         * @param {boolean} all - assume all items in the error tree have
+         *                        been rejected even if not marked with error
+         */
+        DataUpload.prototype.rejectedItems = function(rejected, errorTree, all) {
+
+            if (undefined === rejected) {
+                rejected = {};
+            }
+
+            if (errorTree) {
+
+                var rejectedItems,
+                    tableName,
+                    uuid,
+                    error,
+                    self = this;
+
+                var registerRejected = function(item) {
+
+                    uuid = item['@uuid'];
+                    error = item['@error'];
+
+                    if (!error && all) {
+                        // If the parent item has been rejected, assume
+                        // the same for all its components
+                        error = 'parent rejected';
+                    }
+                    if (uuid && error) {
+                        rejectedItems[uuid] = error;
+                    }
+                    // Descend into components
+                    self.rejectedItems(rejected, item, !!error);
+                };
+
+                for (var key in errorTree) {
+                    if (key.slice(0, 2) == '$_') {
+                        tableName = key.slice(2);
+                        rejectedItems = rejected[tableName] || {};
+                        rejected[tableName] = rejectedItems;
+                        errorTree[key].forEach(registerRejected);
+                    }
+                }
+            }
+
+            return rejected;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Find the accepted items in the object tree sent to the server
+         *
+         * @param {object} accepted - known accepted items
+         *                            {tableName: [uuid, ...]}
+         * @param {object} rejected - known rejected items
+         *                            {tableName: {uuid: error}}
+         * @param {object} tree - the object tree sent to the server
+         */
+        DataUpload.prototype.acceptedItems = function(accepted, rejected, tree) {
+
+            if (undefined === accepted) {
+                accepted = {};
+            }
+
+            if (tree) {
+
+                var acceptedItems,
+                    rejectedItems,
+                    tableName,
+                    uuid,
+                    self = this;
+
+                var registerAccepted = function(item) {
+                    uuid = item['@uuid'];
+                    // If not registered as rejected, register as accepted
+                    if (!rejectedItems.hasOwnProperty(uuid)) {
+                        acceptedItems.push(uuid);
+                        // Descend into components
+                        self.acceptedItems(accepted, rejected, item);
+                    }
+                };
+
+                for (var key in tree) {
+                    if (key.slice(0, 2) == '$_') {
+                        tableName = key.slice(2);
+                        rejectedItems = rejected[tableName] || {};
+                        acceptedItems = accepted[tableName] || [];
+                        accepted[tableName] = acceptedItems;
+                        tree[key].forEach(registerAccepted);
+                    }
+                }
+            }
+
+            return accepted;
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Identify accepted objects and update their synchronized_on
          *
          * @param {object} response - the response object from the server
@@ -101,66 +204,12 @@ EdenMobile.factory('DataUpload', [
         DataUpload.prototype.updateSyncDate = function(response) {
 
             var errorTree = response.tree,
-                rejected = {},
-                rejectedItems,
-                key,
-                tableName,
-                uuid,
-                error;
-
-            // Collect UUIDs of rejected items
-            if (errorTree) {
-
-                var registerRejected = function(item) {
-                    uuid = item['@uuid'];
-                    error = item['@error'];
-                    if (uuid && error) {
-                        rejectedItems[uuid] = error;
-                    }
-                };
-
-                for (key in errorTree) {
-                    if (key.slice(0, 2) == '$_') {
-
-                        tableName = key.slice(2);
-                        if (!rejected.hasOwnProperty(tableName)) {
-                            rejected[tableName] = {};
-                        }
-                        rejectedItems = rejected[tableName];
-                        errorTree[key].forEach(registerRejected);
-                    }
-                }
-            }
-
-            var uploaded = this.data,
-                accepted = {},
-                acceptedItems;
-
-            // Collect UUIDs of accepted items
-
-            var registerAccepted = function(item) {
-                uuid = item['@uuid'];
-                if (!rejectedItems.hasOwnProperty(uuid)) {
-                    acceptedItems.push(uuid);
-                }
-            };
-
-            for (key in uploaded) {
-                if (key.slice(0, 2) == '$_') {
-
-                    tableName = key.slice(2);
-                    if (!accepted.hasOwnProperty(tableName)) {
-                        accepted[tableName] = [];
-                    }
-                    acceptedItems = accepted[tableName];
-                    rejectedItems = rejected[tableName] || {};
-                    uploaded[key].forEach(registerAccepted);
-                }
-            }
+                rejected = this.rejectedItems({}, errorTree),
+                accepted = this.acceptedItems({}, rejected, this.data);
 
             // Set synchronized_on for accepted items
             var now = new Date();
-            for (tableName in accepted) {
+            for (var tableName in accepted) {
                 this.setSyncDate(tableName, accepted[tableName], now);
             }
         };
