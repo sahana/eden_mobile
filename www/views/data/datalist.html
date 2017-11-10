@@ -3,7 +3,7 @@
         <a ng-href="{{parentView}}" class="button icon-left ion-arrow-left-a"></a>
         <h2 class="title">{{listTitle}}</h2>
         <div class="buttons">
-            <a ng-href="{{createView}}" class="button button-positive icon-left ion-plus"></a>
+            <a ng-show="insertable" ng-href="{{createView}}" class="button button-positive icon-left ion-plus"></a>
         </div>
     </div>
     <ion-content class="padding has-header has-subheader has-footer">

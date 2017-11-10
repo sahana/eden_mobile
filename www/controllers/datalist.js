@@ -139,7 +139,13 @@ EdenMobile.controller("EMDataList", [
 
                         // Master action links
                         $scope.parentView = $state.href('data.resources');
-                        $scope.createView = $state.href('data.create', linkParams);
+                        if (resource.settings.insertable) {
+                            $scope.insertable = true;
+                            $scope.createView = $state.href('data.create', linkParams);
+                        } else {
+                            $scope.insertable = false;
+                            $scope.createView = "#";
+                        }
 
                         // Open master
                         updateDataList(resource);
