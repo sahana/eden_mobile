@@ -31,8 +31,8 @@
  * @memberof EdenMobile.Services
  */
 EdenMobile.factory('emResources', [
-    '$q', 'emComponents', 'emDB', 'emUtils',
-    function ($q, emComponents, emDB, emUtils) {
+    '$q', 'emComponents', 'emDB', 'emUtils', 'Join',
+    function ($q, emComponents, emDB, emUtils, Join) {
 
         "use strict";
 
@@ -300,6 +300,30 @@ EdenMobile.factory('emResources', [
             }
 
             return component; // undefined
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Create a Join for this resource
+         *
+         * @returns {Join} - the join
+         */
+        Resource.prototype.getJoin = function() {
+
+            var tableName = this.tableName,
+                link = this.link,
+                join;
+
+            if (!this.parent) {
+                join = new Join(tableName);
+            } else if (link) {
+                join = link.getJoin();
+                join.append(new Join(tableName, this.rkey, this.fkey));
+            } else {
+                join = new Join(tableName, this.pkey, this.fkey);
+            }
+
+            return join;
         };
 
         // --------------------------------------------------------------------

@@ -128,6 +128,7 @@
         } else {
             switch (this.exprType) {
                 case 'field':
+                case 'selector':
                 case 'transform':
                 case 'aggregate':
                     expr = new Expression('assert', this, op, other);
@@ -183,6 +184,7 @@
 
         switch (this.exprType) {
             case 'field':
+            case 'selector':
             case 'transform':
                 expr = new Expression('transform', this, op);
                 expr.decode = this.decode;
@@ -213,6 +215,7 @@
 
         switch (this.exprType) {
             case 'field':
+            case 'selector':
                 expr = new Expression('aggregate', this, op);
                 expr.decode = this.decode;
                 break;
@@ -248,6 +251,7 @@
 
         switch (this.exprType) {
             case 'field':
+            case 'selector':
             case 'aggregate':
             case 'transform':
                 expr = new Expression('orderby', this, op);
@@ -392,7 +396,7 @@
                 sqlStr = op.toUpperCase() + '(' + lSql + ')';
                 break;
             case 'on':
-                sqlStr = '' + left + ' ON ' + right.toSQL();
+                sqlStr = '' + lSql + ' ON ' + right.toSQL();
                 break;
             case 'asc':
             case 'desc':

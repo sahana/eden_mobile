@@ -33,13 +33,11 @@ EdenMobile.factory('Selector', [
         /**
          * FieldPath
          *
-         * @param {string} masterTable - the name of the master table
          * @param {Array} path - an array of path names of joins
          * @param {string} fieldName - the field name
          */
-        function FieldPath(masterTable, path, fieldName) {
+        function FieldPath(path, fieldName) {
 
-            this.masterTable = masterTable; // is this really needed?
             this.path = path;
             this.fieldName = fieldName;
 
@@ -102,9 +100,16 @@ EdenMobile.factory('Selector', [
         // ====================================================================
         /**
          * Selector
+         *
+         * @param {string} name - the selector expression
          */
-        function Selector() {
+        function Selector(name) {
 
+            this.name = name;
+
+            this._setProperties({
+                exprType: 'selector'
+            });
         }
 
         // --------------------------------------------------------------------
@@ -126,11 +131,13 @@ EdenMobile.factory('Selector', [
         };
 
         // --------------------------------------------------------------------
-        // @todo: docstring
-        Selector.prototype.resolvePaths = function(join, tableMap) {
+        /**
+         * Resolve field paths in this expression
+         */
+        Selector.prototype.resolvePaths = function( /* join, tableMap */ ) {
 
-            // @todo: implement
-//             return this;
+            // Selectors do not contain field paths => return as-is
+            return this;
         };
 
         // ====================================================================
