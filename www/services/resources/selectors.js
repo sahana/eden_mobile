@@ -121,7 +121,7 @@ EdenMobile.factory('Selector', [
 
         // --------------------------------------------------------------------
         // @todo: docstring
-        Selector.prototype.resolveSelectors = function(resource) {
+        Selector.prototype.resolveSelectors = function( /* resource */ ) {
 
             // @todo: implement
 //             call resource.resolveSelector(this.name) => return join, path list and field name
@@ -138,6 +138,221 @@ EdenMobile.factory('Selector', [
 
             // Selectors do not contain field paths => return as-is
             return this;
+        };
+
+        Selector.prototype.parse = function() {
+
+            var selector = this.name,
+                fragments = selector.split('$'),
+                head = fragments[0],
+                tail = fragments[1],
+                parsed = {
+                    head: head,
+                    tail: tail
+                };
+
+            fragments = head.split('.');
+            var alias = fragments[0],
+                path = fragments[1];
+
+            if (!path) {
+                parsed.name = alias;
+            } else if (alias == '~') {
+                parsed.name = path;
+            } else {
+                if (alias.indexOf(':') != -1) {
+                    fragments = alias.split(':');
+                    parsed.key = fragments[0];
+                    parsed.link = fragments[1];
+                } else {
+                    parsed.alias = alias;
+                }
+                if (tail) {
+                    path += '$' + tail;
+                }
+                parsed.path = path;
+            }
+
+            return parsed;
+        };
+
+        Selector.prototype.resolveForeignKey = function(resource, field, tail) {
+
+            var error,
+                join,
+                path,
+                fieldName,
+                fk = field.getForeignKey();
+
+            if (!fk) {
+                error = 'not a foreign key: ' + field;
+            } else {
+
+                var selector = new Selector(tail),
+                    fkResource = resource.getTable(fk.table).getResource();
+
+                // Resolve the selector against the joined resource
+                var joinedField = selector.resolve(fkResource);
+                fieldName = joinedField.fieldName;
+                if (fieldName) {
+
+                    // Add keys to Join
+                    var fkJoin = joinedField.join;
+                    fkJoin.lKey = field.name;
+                    if (fk.table == 'em_object') {
+                        fkJoin.rKey = 'em_object_id';
+                    } else {
+                        fkJoin.rKey = fk.key;
+                    }
+
+                    // Get path and field name
+                    path = [fkJoin.getPath()];
+
+                } else {
+                    error = joinedField.error;
+                }
+            }
+
+            var result = {
+                join: join,
+                path: path
+            };
+            if (fieldName) {
+                result.fieldName = fieldName;
+            }
+            if (error) {
+                result.error = error;
+            }
+            return result;
+        };
+
+        Selector.prototype.resolveComponent = function(resource, alias, fragment) {
+
+            // Field in a component
+            var component = resource.component(alias),
+                result;
+            if (component) {
+                var selector = new Selector(fragment);
+                result = selector.resolve(component);
+            } else {
+                result = {error: 'undefined component: ' + alias};
+            }
+            return result;
+        };
+
+        Selector.prototype.resolveJoin = function(resource, tableName, key, fragment) {
+
+            var joinedTable = resource.getTable(tableName),
+                result;
+
+            if (!joinedTable) {
+                result = {error: 'undefined table: ' + tableName};
+            } else {
+                var field = joinedTable.$(key),
+                    selector = new Selector(fragment),
+                    joinedField = selector.resolve(joinedTable.getResource()),
+                    fieldName = joinedField.fieldName;
+
+                if (fieldName) {
+
+                    // Add keys to Join
+                    var join = joinedField.join,
+                        fk = field.getForeignKey();
+                    if (!fk || fk.table != resource.tableName) {
+                        join.lKey = 'id';
+                    } else {
+                        join.lKey = fk.key;
+                    }
+                    join.rKey = key;
+
+                    result = {
+                        fieldName: fieldName,
+                        join: join,
+                        path: [join.getPath()].concat(joinedField.path)
+                    };
+
+                } else {
+                    result = {error: joinedField.error};
+                }
+            }
+        };
+
+        Selector.prototype.resolve = function(resource) {
+
+            // Output variables
+            var fieldName,
+                join = resource.getJoin(),
+                path = join.getPath(),
+                error;
+
+            if (!path) {
+                path = [];
+            } else {
+                path = [path];
+            }
+
+            // Selector analysis
+            var parsed = this.parse(),
+                name = parsed.name,
+                tail = parsed.tail,
+                joinedField;
+
+            if (name) {
+                var field = resource.fields[name];
+                if (!field) {
+                    error = 'field not found: ' + name;
+                } else {
+                    if (tail) {
+                        // Field in a referenced table
+                        joinedField = this.resolveForeignKey(resource, field, tail);
+                        fieldName = joinedField.fieldName;
+                        if (fieldName) {
+                            join.append(joinedField.join);
+                            path = path.concat(joinedField.path);
+                        } else {
+                            error = joinedField.error;
+                        }
+                    } else {
+                        // Field in this resource
+                        fieldName = name;
+                    }
+                }
+            } else {
+                var alias = parsed.alias;
+                if (alias) {
+                    // Field in a component
+                    joinedField = this.resolveComponent(resource, alias, parsed.path);
+                    fieldName = joinedField.fieldName;
+                    if (fieldName) {
+                        join.append(joinedField.join);
+                        path = path.concat(joinedField.path);
+                    } else {
+                        error = joinedField.error;
+                    }
+                } else {
+                    // Field in a joined table (free join)
+                    joinedField = this.resolveJoin(resource,
+                                                   parsed.link,
+                                                   parsed.key,
+                                                   parsed.path);
+                    fieldName = joinedField.fieldName;
+                    if (fieldName) {
+                        join.append(joinedField.join);
+                        path = path.concat(joinedField.path);
+                    } else {
+                        error = joinedField.error;
+                    }
+                }
+            }
+
+            var output = {join: join, path: path};
+            if (fieldName) {
+                output.fieldName = fieldName;
+            }
+            if (error) {
+                output.error = error;
+            }
+            return output;
         };
 
         // ====================================================================

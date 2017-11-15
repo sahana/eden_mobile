@@ -75,8 +75,8 @@
             }
 
             // Recursively register all sub-joins
-            for (var subjoin in join.joins) {
-                this.register(subjoin);
+            for (var path in join.joins) {
+                this.register(join.joins[path]);
             }
         }
     };
@@ -94,6 +94,11 @@
         var lKey = this.lKey,
             rKey = this.rKey,
             path;
+
+        if (!lKey || !rKey) {
+            return path;
+        }
+
         if (lKey == rKey) {
             if (lKey == 'id') {
                 path = '=';
