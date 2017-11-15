@@ -248,6 +248,37 @@ EdenMobile.factory('Table', [
 
         // --------------------------------------------------------------------
         /**
+         * Get a Resource for this Table; e.g. to resolve component aliases
+         *
+         * @param {string} name - the resource name (optional), if omitted,
+         *                        the default resource will be returned, or,
+         *                        if no default resource exists, an arbitrary
+         *                        resource
+         *
+         * @returns {Resource} - the resource (undefined if not found)
+         */
+        Table.prototype.getResource = function(name) {
+
+            var resources = this.resources,
+                resource;
+
+            if (name) {
+                resource = resources[name];
+            } else {
+                resource = resources[this.name];
+                if (!resource) {
+                    name = Object.keys(resources)[0];
+                    if (name) {
+                        resource = resources[name];
+                    }
+                }
+            }
+
+            return resource;
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Add the standard meta fields to this table (as defined in emDefaultSchema)
          */
         Table.prototype.addMetaFields = function() {
