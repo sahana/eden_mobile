@@ -140,10 +140,47 @@ EdenMobile.factory('Selector', [
             return this;
         };
 
+        // --------------------------------------------------------------------
+        /**
+         * Return types for field selector parsing/resolution:
+         *
+         * @typedef {object} Parsed
+         * @property {string} head - the head part of the selector
+         * @property {string} tail - the tail part of the selector
+         * @property {string} name - the field name (=head in master)
+         * @property {string} path - the field path (=head not in master)
+         * @property {string} alias - the alias (=field in component|link)
+         * @property {string} joined - the joined table name (=free join)
+         * @property {string} joinby - the foreign key name (=free join)
+         *
+         * @typedef {object} Resolved
+         * @property {Join} join: the Join tree containing the field
+         * @property {Array} path: the path to the field in the join tree
+         * @property {string} fieldName: the field name, undefined if the
+         *                               field could not be identified
+         * @property {string} error: reason why the field could not be
+         *                           identified
+         */
+
+        // --------------------------------------------------------------------
+        /**
+         * Parse the selector according to the following grammar:
+         *
+         *   selector = head$tail
+         *   head = join.name | ~.name | name
+         *   join = alias | joinby:joined
+         *   path = name[$tail]
+         *
+         * @returns {Parsed} - the selector properties
+         */
         Selector.prototype.parse = function() {
 
-            var selector = this.name,
-                fragments = selector.split('$'),
+            var selector = this.name;
+            if (!selector) {
+                return undefined;
+            }
+
+            var fragments = selector.split('$'),
                 head = fragments[0],
                 tail = fragments[1],
                 parsed = {
@@ -162,8 +199,8 @@ EdenMobile.factory('Selector', [
             } else {
                 if (alias.indexOf(':') != -1) {
                     fragments = alias.split(':');
-                    parsed.key = fragments[0];
-                    parsed.link = fragments[1];
+                    parsed.joinby = fragments[0];
+                    parsed.joined = fragments[1];
                 } else {
                     parsed.alias = alias;
                 }
@@ -176,6 +213,16 @@ EdenMobile.factory('Selector', [
             return parsed;
         };
 
+        // --------------------------------------------------------------------
+        /**
+         * Resolve the tail part of the selector against a foreign key
+         *
+         * @param {Resource} resource: the master resource
+         * @param {Field} field: the foreign key
+         * @param {string} tail: the tail part of the selector
+         *
+         * @returns {Resolved} - the field description
+         */
         Selector.prototype.resolveForeignKey = function(resource, field, tail) {
 
             var error,
@@ -213,77 +260,120 @@ EdenMobile.factory('Selector', [
                 }
             }
 
-            var result = {
+            var resolved = {
                 join: join,
                 path: path
             };
             if (fieldName) {
-                result.fieldName = fieldName;
+                resolved.fieldName = fieldName;
             }
             if (error) {
-                result.error = error;
+                resolved.error = error;
             }
-            return result;
+            return resolved;
         };
 
+        // --------------------------------------------------------------------
+        /**
+         * Resolve a selector fragment (parsed.path) against a component
+         *
+         * @param {Resource} resource - the master resource
+         * @param {string} alias - the component|link alias
+         * @param {string} fragment - the selector fragment
+         *
+         * @returns {Resolved} - the field description
+         */
         Selector.prototype.resolveComponent = function(resource, alias, fragment) {
 
             // Field in a component
             var component = resource.component(alias),
-                result;
+                resolved;
             if (component) {
                 var selector = new Selector(fragment);
-                result = selector.resolve(component);
+                resolved = selector.resolve(component);
             } else {
-                result = {error: 'undefined component: ' + alias};
+                resolved = {error: 'undefined component: ' + alias};
             }
-            return result;
+
+            return resolved;
         };
 
-        Selector.prototype.resolveJoin = function(resource, tableName, key, fragment) {
+        // --------------------------------------------------------------------
+        /**
+         * Resolve a selector fragment (parsed.path) against a free join
+         *
+         * @param {Resource} resource - the master resource
+         * @param {string} joined - the joined table name
+         * @param {string} joinby - the joined table foreign key
+         * @param {string} fragment - the selector fragment
+         *
+         * @returns {Resolved} - the field description
+         */
+        Selector.prototype.resolveJoin = function(resource, joined, joinby, fragment) {
 
-            var joinedTable = resource.getTable(tableName),
-                result;
+            var joinedTable = resource.getTable(joined),
+                resolved;
 
             if (!joinedTable) {
-                result = {error: 'undefined table: ' + tableName};
+                resolved = {error: 'undefined table: ' + joined};
             } else {
-                var field = joinedTable.$(key),
+                var joinedResource = joinedTable.getResource(),
                     selector = new Selector(fragment),
-                    joinedField = selector.resolve(joinedTable.getResource()),
+                    joinedField = selector.resolve(joinedResource),
                     fieldName = joinedField.fieldName;
 
                 if (fieldName) {
 
                     // Add keys to Join
                     var join = joinedField.join,
-                        fk = field.getForeignKey();
-                    if (!fk || fk.table != resource.tableName) {
-                        join.lKey = 'id';
-                    } else {
-                        join.lKey = fk.key;
+                        fk = joinedTable.$(joinby).getForeignKey(),
+                        lKey = 'id';
+                    if (fk) {
+                        if (fk.table == 'em_object') {
+                            lKey = 'em_object_id';
+                        } else if (fk.table == resource.tableName) {
+                            lKey = fk.key;
+                        }
                     }
-                    join.rKey = key;
+                    join.lKey = lKey;
+                    join.rKey = joinby;
 
-                    result = {
+                    var path = [join.getPath()];
+                    if (joinedResource.parent) {
+                        // Drop the component join from the path
+                        path = path.concat(joinedField.path.slice(1));
+                    } else {
+                        path = path.concat(joinedField.path);
+                    }
+
+                    resolved = {
                         fieldName: fieldName,
                         join: join,
-                        path: [join.getPath()].concat(joinedField.path)
+                        path: path
                     };
 
                 } else {
-                    result = {error: joinedField.error};
+                    resolved = {error: joinedField.error};
                 }
             }
+
+            return resolved;
         };
 
+        // --------------------------------------------------------------------
+        /**
+         * Resolve this selector against a resource
+         *
+         * @param {Resource} resource - the Resource
+         *
+         * @returns {Resolved} - the field description
+         */
         Selector.prototype.resolve = function(resource) {
 
             // Output variables
             var fieldName,
                 join = resource.getJoin(),
-                path = join.getPath(),
-                error;
+                path = join.getPath();
 
             if (!path) {
                 path = [];
@@ -292,9 +382,14 @@ EdenMobile.factory('Selector', [
             }
 
             // Selector analysis
-            var parsed = this.parse(),
-                name = parsed.name,
+            var parsed = this.parse();
+            if (!parsed) {
+                return {error: 'invalid selector: ' + this.name};
+            }
+
+            var name = parsed.name,
                 tail = parsed.tail,
+                error,
                 joinedField;
 
             if (name) {
@@ -332,8 +427,8 @@ EdenMobile.factory('Selector', [
                 } else {
                     // Field in a joined table (free join)
                     joinedField = this.resolveJoin(resource,
-                                                   parsed.link,
-                                                   parsed.key,
+                                                   parsed.joined,
+                                                   parsed.joinby,
                                                    parsed.path);
                     fieldName = joinedField.fieldName;
                     if (fieldName) {
@@ -345,14 +440,14 @@ EdenMobile.factory('Selector', [
                 }
             }
 
-            var output = {join: join, path: path};
+            var resolved = {join: join, path: path};
             if (fieldName) {
-                output.fieldName = fieldName;
+                resolved.fieldName = fieldName;
             }
             if (error) {
-                output.error = error;
+                resolved.error = error;
             }
-            return output;
+            return resolved;
         };
 
         // ====================================================================

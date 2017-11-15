@@ -30,7 +30,10 @@
     /**
      * Class to represent a tree of joins
      *
-     * @param {string} tableName - the name of the primary table
+     * @param {string} tableName - the name of the joined table
+     * @param {string} lKey - the left key of the join
+     * @param {string} rKey - the right key of the join
+     * @param {string} alias - the component alias (if component, optional)
      */
     function Join(tableName, lKey, rKey, alias) {
 

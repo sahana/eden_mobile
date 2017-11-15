@@ -103,7 +103,10 @@ EdenMobile.factory('emComponents', [
                 objectHooks = hooks[objectType];
                 if (objectHooks) {
                     for (alias in objectHooks) {
-                        allHooks[alias] = objectHooks[alias];
+                        allHooks[alias] = angular.extend(
+                            {},
+                            objectHooks[alias],
+                            {pkey: 'em_object_id'});
                     }
                 }
             }
@@ -143,6 +146,7 @@ EdenMobile.factory('emComponents', [
                     if (objectHooks) {
                         hook = objectHooks[alias];
                         if (hook) {
+                            hook = angular.extend({}, hook, {pkey: 'em_object_id'});
                             break;
                         }
                     }
