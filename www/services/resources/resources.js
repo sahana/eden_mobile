@@ -328,6 +328,28 @@ EdenMobile.factory('emResources', [
 
         // --------------------------------------------------------------------
         /**
+         * Synchronous method to access a Table
+         *
+         * @param {string} name - the table name (optional),
+         *                        returns the table of this resource if omitted
+         *
+         * @returns {Table} - the table (undefined if not found)
+         */
+        Resource.prototype.getTable = function(name) {
+
+            var table;
+
+            if (name) {
+                table = this._db.tables[name];
+            } else {
+                table = this.table;
+            }
+
+            return table;
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Save the schema for this resource in the em_resource table
          */
         Resource.prototype.saveSchema = function() {
