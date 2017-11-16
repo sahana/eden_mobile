@@ -431,8 +431,18 @@ EdenMobile.factory('SyncRun', [
 
             return this.downloadData(jobs).then(function(result) {
 
-                var dataImports = result[0];
-                    //filesRequired = result[1];
+                var dataImports = result[0],
+                    filesRequired = result[1];
+
+                if (filesRequired) {
+                    // Verify pending file dependencies have providers,
+                    // otherwise reject them
+                    // TODO: currently all files will be rejected because
+                    //       there are no providers => implement them!
+                    filesRequired.forEach(function(fileURI) {
+                        self.require(null, null, fileURI).checkResolvable();
+                    });
+                }
 
                 return self.importData(dataImports).then(function() {
 
@@ -442,8 +452,6 @@ EdenMobile.factory('SyncRun', [
                         }
                     });
                 });
-                // @todo: download files
-                //downloadFiles(filesRequired);
             });
         };
 
@@ -741,7 +749,7 @@ EdenMobile.factory('SyncRun', [
             var deferred = $q.defer(),
                 self = this,
                 imports = [],
-                filesRequired = [];
+                files = [];
             downloads.forEach(function(download) {
                 download.done().then(
                     function(result) {
@@ -752,7 +760,7 @@ EdenMobile.factory('SyncRun', [
                             imports = imports.concat(importTasks);
                         }
                         if (filesRequired && filesRequired.length) {
-                            filesRequired = filesRequired.concat(filesRequired);
+                            files = files.concat(filesRequired);
                         }
                     },
                     function(reason) {
@@ -760,7 +768,7 @@ EdenMobile.factory('SyncRun', [
                         download.job.result('error', reason);
                     }).finally(function() {
                         if (self.checkProgress()) {
-                            deferred.resolve([imports, filesRequired]);
+                            deferred.resolve([imports, files]);
                         }
                     });
             });

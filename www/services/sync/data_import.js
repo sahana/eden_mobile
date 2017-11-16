@@ -275,18 +275,18 @@ EdenMobile.factory('DataImport', [
          */
         DataImport.prototype.addFileURI = function(record, dependency) {
 
-            var references = record.references,
-                reference,
+            var files = record.files,
+                url,
                 fieldName;
 
             // Resolve all pending uploads that match the dependency
-            for (fieldName in references) {
-                reference = references[fieldName];
-                if (reference == dependency.url) {
+            for (fieldName in files) {
+                url = files[fieldName];
+                if (url == dependency.url) {
                     if (dependency.isResolved) {
                         record.data[fieldName] = dependency.fileURI;
                     }
-                    delete record.references[fieldName];
+                    delete files[fieldName];
                 }
             }
         };
