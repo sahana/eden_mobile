@@ -120,14 +120,29 @@ EdenMobile.factory('Selector', [
         Selector.prototype.constructor = Selector;
 
         // --------------------------------------------------------------------
-        // @todo: docstring
-        Selector.prototype.resolveSelectors = function( /* resource */ ) {
+        /**
+         * Resolve this selector against a resource, and return
+         * Join and FieldPath that can be used to construct a Field
+         *
+         * @param {Resource} resource - the Resource
+         *
+         * @returns {object} - an object {join: Join, expr: FieldPath}
+         *
+         * @throws {Error} - when unresolvable
+         */
+        Selector.prototype.resolveSelectors = function(resource) {
 
-            // @todo: implement
-//             call resource.resolveSelector(this.name) => return join, path list and field name
-//             construct a field path
+            var resolved = this.resolve(resource),
+                fieldName = resolved.fieldName;
 
-//             return {join: join, expression: fieldPath}
+            if (!fieldName) {
+                throw new Error('"' + this.name + '": ' + resolved.error);
+            }
+
+            return {
+                join: resolved.join,
+                expr: new FieldPath(resolved.path, fieldName)
+            };
         };
 
         // --------------------------------------------------------------------
@@ -326,32 +341,49 @@ EdenMobile.factory('Selector', [
 
                     // Add keys to Join
                     var join = joinedField.join,
-                        fk = joinedTable.$(joinby).getForeignKey(),
+                        joinbyField = joinedTable.$(joinby),
+                        fk = joinbyField.getForeignKey(),
                         lKey = 'id';
                     if (fk) {
                         if (fk.table == 'em_object') {
-                            lKey = 'em_object_id';
+                            if (joinbyField.name == 'em_object_id') {
+                                // This is the objectID => find the objectKey
+                                var objectKey = resource.table.getObjectKey(joinedTable,
+                                                                            joinby);
+                                if (objectKey) {
+                                    lKey = objectKey.name;
+                                } else {
+                                    lKey = undefined;
+                                }
+                            } else {
+                                // This is the objectKey => use em_object_id
+                                lKey = 'em_object_id';
+                            }
                         } else if (fk.table == resource.tableName) {
                             lKey = fk.key;
                         }
                     }
-                    join.lKey = lKey;
-                    join.rKey = joinby;
 
-                    var path = [join.getPath()];
-                    if (joinedResource.parent) {
-                        // Drop the component join from the path
-                        path = path.concat(joinedField.path.slice(1));
+                    if (!lKey) {
+                        resolved = {error: 'no join for: ' + joinbyField};
                     } else {
-                        path = path.concat(joinedField.path);
+                        join.lKey = lKey;
+                        join.rKey = joinby;
+
+                        var path = [join.getPath()];
+                        if (joinedResource.parent) {
+                            // Drop the component join from the path
+                            path = path.concat(joinedField.path.slice(1));
+                        } else {
+                            path = path.concat(joinedField.path);
+                        }
+
+                        resolved = {
+                            fieldName: fieldName,
+                            join: join,
+                            path: path
+                        };
                     }
-
-                    resolved = {
-                        fieldName: fieldName,
-                        join: join,
-                        path: path
-                    };
-
                 } else {
                     resolved = {error: joinedField.error};
                 }

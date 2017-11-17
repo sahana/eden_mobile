@@ -248,6 +248,50 @@ EdenMobile.factory('Table', [
 
         // --------------------------------------------------------------------
         /**
+         * Find an object key that matches the objectID of another table,
+         * e.g. to resolve objectID-based free joins in field selectors
+         *
+         * @param {Table} table - the other table
+         * @param {string} typeKey - the object type key (e.g. 'pe_id')
+         *
+         * @returns {Field} - the object key, or undefined if not found
+         *
+         * @note: can be ambiguous if multiple object keys exist
+         */
+        Table.prototype.getObjectKey = function(table, typeKey) {
+
+            var fields = this.fields,
+                field,
+                refType,
+                objectTypes = table.objectTypes,
+                objectKey;
+
+            if (typeKey) {
+                field = fields[typeKey];
+                if (field) {
+                    refType = field.isObjectKey && field.refType;
+                    if (refType && objectTypes.hasOwnProperty(refType[0])) {
+                        objectKey = field;
+                    }
+                }
+            }
+
+            if (!objectKey) {
+                for (var fieldName in fields) {
+                    field = fields[fieldName];
+                    refType = field.isObjectKey && field.refType;
+                    if (refType && objectTypes.hasOwnProperty(refType[0])) {
+                        objectKey = field;
+                        break;
+                    }
+                }
+            }
+
+            return objectKey;
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Get a Resource for this Table; e.g. to resolve component aliases
          *
          * @param {string} name - the resource name (optional), if omitted,

@@ -54,7 +54,7 @@ EdenMobile.factory('Field', [
                 isObjectKey = false;
             if (reference) {
                 var lookupTable = reference[1],
-                    key = reference[2] | 'id';
+                    key = reference[2] || 'id';
                 if (lookupTable == 'em_object' && key == 'id') {
                     // All em_object references are object lookup keys,
                     // except the objectID (which is a self-reference)
