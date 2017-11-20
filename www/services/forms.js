@@ -116,11 +116,28 @@ EdenMobile.factory('emForms', [
             this.resource = resource;
             this.componentKey = componentKey;
 
-            if (fieldNames) {
-                this.fieldNames = fieldNames;
-            } else {
-                this.fieldNames = resource.form;
+            if (!fieldNames) {
+                fieldNames = [];
+                var field,
+                    formFields = resource.form,
+                    formLength = formFields.length;
+                for (var i = 0; i < formLength; i++) {
+                    field = formFields[i];
+                    if (field === Object(field)) {
+                        // Not just a simple field
+                        if (field.type === 'dummy') {
+                            // S3SQLDummyField
+                            field = field.name;
+                        } else {
+                            // Currently Unsupported
+                            continue;
+                        }
+                    }
+                    fieldNames.push(field);
+                }
+                
             }
+            this.fieldNames = fieldNames;
         }
 
         // --------------------------------------------------------------------

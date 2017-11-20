@@ -7,6 +7,11 @@ input[type="text"],
 input[type="password"] {
     width: 100%;
 }
+.input-label {
+    max-width: none;
+    white-space: normal;
+    width: 100%;
+}
 .sync-result {
     font-size: 0.8rem;
     font-style: italic;
