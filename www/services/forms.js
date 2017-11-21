@@ -241,6 +241,7 @@ EdenMobile.factory('emForms', [
             if (Object.keys(grids).length) {
                 var grid,
                     table,
+                    wrapper,
                     cell,
                     row,
                     row1,
@@ -329,7 +330,9 @@ EdenMobile.factory('emForms', [
 
                 if (grids.hasOwnProperty(fieldName)) {
                     // Grid
-                    table = angular.element('<div class="grid">');
+                    // Proper TABLE is the only way to make column labels match up with cells
+                    //table = angular.element('<div class="grid">');
+                    table = angular.element('<table>');
                     grid = grids[fieldName];
                     colsLength = grid.c.length;
                     rowsLength = grid.r.length;
@@ -337,28 +340,42 @@ EdenMobile.factory('emForms', [
                     for (i = 0; i < rowsLength; i++) {
                         if (i == 0) {
                             // Start Column Labels row with empty cell at top-left
-                            row1 = angular.element('<div class="row">');
-                            row1.append(angular.element('<div class="col">'));
+                            //row1 = angular.element('<div class="row">');
+                            row1 = angular.element('<tr>');
+                            //row1.append(angular.element('<div class="col">'));
+                            row1.append(angular.element('<td>'));
                             for (j = 0; j < colsLength; j++) {
                                 // ...continue Column Labels row
-                                row1.append(angular.element('<div class="col th">')
+                                //row1.append(angular.element('<div class="col th">')
+                                row1.append(angular.element('<th>')
                                                    .html(grid.c[j]));
                             }
                             table.append(row1);
                         }
                         // Start Row with Row Label
-                        row = angular.element('<div class="row">');
-                        row.append(angular.element('<div class="col th">')
+                        //row = angular.element('<div class="row">');
+                        row = angular.element('<tr>');
+                        //row.append(angular.element('<div class="col th">')
+                        row.append(angular.element('<th>')
                                           .html(grid.r[i]));
                         for (j = 0; j < colsLength; j++) {
                             // ...continue with field cells
                             fieldName = grid.f[j][i];
                             if (fieldName) {
-                                widget = addField(fieldName, false);
+                                if (i > 4) {
+                                    // Column Labels not Visible
+                                    // Use as placeholder
+                                    //description = resource.fields[fieldName]._description;
+                                    //description.placeholder = description.label;
+                                    widget = addField(fieldName, true);
+                                } else {
+                                    widget = addField(fieldName, false);
+                                }
                             } else {
                                 widget = null;
                             }
-                            cell = angular.element('<div class="col">');
+                            //cell = angular.element('<div class="col">');
+                            cell = angular.element('<td>');
                             if (widget) {
                                 cell.append(widget);
                             }
@@ -366,7 +383,9 @@ EdenMobile.factory('emForms', [
                         }
                         table.append(row);
                     }
-                    formRows.append(table);
+                    wrapper = angular.element('<div class="grid">');
+                    wrapper.append(table)
+                    formRows.append(wrapper);
                 } else {
                     // Normal field
                     widget = addField(fieldName, true);

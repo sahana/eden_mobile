@@ -62,10 +62,15 @@ img.photo-widget-preview {
 	-webkit-overflow-scrolling: touch;
 }
 .row {
-    /* Prevent Y-axis scrolling */
-    display: inline;
+    /* Prevent Y-axis scrolling
+    - not required & causes issues
+    display: inline; */
 }
-.col.th { /* match .input-label */
+th, .col.th { /* match .input-label */
     color: #444;
     font-size: 16px;
-}
+    white-space: normal;
+}/*
+td {
+    min-width: 3px;
+}*/
