@@ -248,13 +248,13 @@ EdenMobile.factory('emForms', [
                     cols,
                     colsLength;
                 for (grid in grids) {
-                    rows = grids[grid].f;
-                    rowsLength = rows.length;
-                    for (i = 0; i < rowsLength; i++) {
-                        cols = rows[i];
-                        colsLength = cols.length;
-                        for (j = 0; j < colsLength; j++) {
-                            gridChildren.push(cols[j]);
+                    cols = grids[grid].f;
+                    colsLength = cols.length;
+                    for (i = 0; i < colsLength; i++) {
+                        rows = cols[i];
+                        rowsLength = rows.length;
+                        for (j = 0; j < rowsLength; j++) {
+                            gridChildren.push(rows[j]);
                         }
                     }
                 }
@@ -330,11 +330,10 @@ EdenMobile.factory('emForms', [
                     // Grid
                     table = angular.element('<div>');
                     grid = grids[fieldName];
-                    rows = grid.f;
-                    rowsLength = rows.length;
+                    colsLength = grid.c.length;
+                    rowsLength = grid.r.length;
+                    cols = grid.f;
                     for (i = 0; i < rowsLength; i++) {
-                        cols = rows[i];
-                        colsLength = cols.length;
                         if (i == 0) {
                             // Start Column Labels row with empty cell at top-left
                             row1 = angular.element('<div class="row">');
@@ -352,8 +351,12 @@ EdenMobile.factory('emForms', [
                                           .html(grid.r[i]));
                         for (j = 0; j < colsLength; j++) {
                             // ...continue with field cells
-                            fieldName = grid.f[i][j];
-                            widget = addField(fieldName, false);
+                            fieldName = grid.f[j][i];
+                            if (fieldName) {
+                                widget = addField(fieldName, false);
+                            } else {
+                                widget = null;
+                            }
                             cell = angular.element('<div class="col">');
                             if (widget) {
                                 cell.append(widget);
