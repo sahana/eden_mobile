@@ -128,6 +128,11 @@ EdenMobile.factory('emForms', [
                         if (field.type === 'dummy') {
                             // S3SQLDummyField
                             field = field.name;
+                            if (field in resource.fields) {
+                                // Skip
+                               // @ToDo: Log error somewhere
+                                continue;
+                            }
                         } else {
                             // Currently Unsupported
                             continue;
