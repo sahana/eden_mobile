@@ -62,7 +62,7 @@ img.photo-widget-preview {
 	-webkit-overflow-scrolling: touch;
 }
 .row {
-    /* Prevent Y-axis scrolling
+    /* Prevent Y-axis scrolling */
     display: inline;
 }
 .col.th { /* match .input-label */
