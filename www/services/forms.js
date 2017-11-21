@@ -329,7 +329,7 @@ EdenMobile.factory('emForms', [
 
                 if (grids.hasOwnProperty(fieldName)) {
                     // Grid
-                    table = angular.element('<div>');
+                    table = angular.element('<div class="grid">');
                     grid = grids[fieldName];
                     colsLength = grid.c.length;
                     rowsLength = grid.r.length;

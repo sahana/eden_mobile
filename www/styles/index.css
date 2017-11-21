@@ -54,6 +54,17 @@ img.photo-widget-preview {
 .subheading {
     font-weight: bold;
 }
+/* Grids */
+.grid {
+    white-space: nowrap;
+	overflow-y: hidden;
+	overflow-x: scroll;
+	-webkit-overflow-scrolling: touch;
+}
+.row {
+    /* Prevent Y-axis scrolling
+    display: inline;
+}
 .col.th { /* match .input-label */
     color: #444;
     font-size: 16px;
