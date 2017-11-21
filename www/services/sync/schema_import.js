@@ -251,6 +251,7 @@ EdenMobile.factory('SchemaImport', [
                         key = 'defaultValue';
                         break;
                     default:
+                        // No translation: use as-is
                         break;
                 }
 

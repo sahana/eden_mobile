@@ -82,6 +82,7 @@ EdenMobile.factory('emForms', [
             // Pass resource and field name to widget
             widget.attr('resource', resource.name);
             widget.attr('field', field.name);
+            widget.attr('widget', field._description.settings && field._description.settings.widget);
 
             // Set disabled when not writable
             if (writable === false) {

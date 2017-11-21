@@ -264,10 +264,18 @@
             var renderWidget = function($scope, elem, attr) {
 
                 // Build the widget
-                var widget = angular.element('<ion-toggle>')
-                                    .addClass('item item-toggle')
-                                    .attr('toggle-class', 'toggle-positive')
-                                    .html(attr.label || '');
+                if (attr.widget == 'checkbox') {
+                    // Checkbox
+                    var widget = angular.element('<ion-checkbox>')
+                                        .addClass('item')
+                                        .html(attr.label || '');
+                } else {
+                    // Default: Toggle
+                    var widget = angular.element('<ion-toggle>')
+                                        .addClass('item item-toggle')
+                                        .attr('toggle-class', 'toggle-positive')
+                                        .html(attr.label || '');
+                }
 
                 // Input attributes
                 copyAttr(attr, widget, [
