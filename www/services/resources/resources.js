@@ -89,7 +89,7 @@ EdenMobile.factory('emResources', [
                 } else {
                     field = table.fields[fieldName].clone();
                 }
-                fields[fieldName] = (field);
+                fields[fieldName] = field;
             }
             this.fields = fields;
 

@@ -695,7 +695,8 @@ EdenMobile.factory('LoadMap', [
             emDB.tables().then(function(tables) {
 
                 var table = tables[self.tableName],
-                    componentsLoaded = false;
+                    componentsLoaded = false,
+                    hasComponents = false;
 
                 if (exportComponents) {
 
@@ -710,6 +711,7 @@ EdenMobile.factory('LoadMap', [
                         components.push(self.loadComponent(task, tables, alias, hooks[alias]));
                     }
                     if (components.length) {
+                        hasComponents = true;
                         componentsLoaded = $q.all(components);
                     } else {
                         componentsLoaded = true;
@@ -768,8 +770,13 @@ EdenMobile.factory('LoadMap', [
                                 var record = row._(),
                                     recordID = record.id;
 
-                                // Add en export item
-                                self.addItem(table, record, exportFields);
+                                if (!table.lookupOnly || hasComponents) {
+                                    // Add en export item
+                                    self.addItem(table, record, exportFields);
+                                } else {
+                                    // Only resolve UUID promise
+                                    self.addUID(record);
+                                }
 
                                 // Remove recordID from requiredUIDs
                                 // (since already resolved by addItem)
