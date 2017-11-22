@@ -202,7 +202,7 @@ EdenMobile.factory('SchemaImport', [
             if (this.provides == job.tableName) {
 
                 // Main schema
-                schema._main = true;
+                schema._main = !!fieldDescriptions.length;
                 schema._name = job.resourceName;
 
                 // Store link to server resource

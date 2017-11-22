@@ -296,15 +296,22 @@ EdenMobile.factory('emForms', [
                                 });
                             $scope.$watchGroup(sourceFields, function(oldValues, newValues, scope) {
                                 var form = scope[scopeName],
-                                    total = 0;
+                                    total = 0,
+                                    empty = true;
                                 if (form) {
                                     sources.forEach(function(fieldName) {
                                         var value = form[fieldName];
-                                        if (value) {
+                                        if (!isNaN(value - 0)) {
+                                            empty = false;
                                             total += value;
                                         }
                                     });
-                                    form[sumField] = total;
+                                    // Update sumField only if any source values
+                                    // present, otherwise leave the existing total
+                                    // intact
+                                    if (!empty) {
+                                        form[sumField] = total;
+                                    }
                                 }
                             });
                         }
