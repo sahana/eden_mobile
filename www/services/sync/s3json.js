@@ -181,11 +181,14 @@ EdenMobile.factory('emS3JSON', [
                     var fieldName = key.slice(1);
                     switch(fieldName) {
                         case 'uuid':
-                            this.data[fieldName] = this.uuid = value;
+                            this.data.uuid = this.uuid = value;
                             break;
                         case 'created_on':
                         case 'modified_on':
                             this.data[fieldName] = parseUTCDateTime(value);
+                            break;
+                        case 'llrepr':
+                            this.data.llrepr = value;
                             break;
                         default:
                             break;

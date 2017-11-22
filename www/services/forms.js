@@ -23,8 +23,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
-
 // ============================================================================
 /**
  * emForms - Service to generate forms from schemas
@@ -33,8 +31,10 @@
  * @memberof EdenMobile
  */
 EdenMobile.factory('emForms', [
-    '$compile',
-    function ($compile) {
+    '$document',
+    function ($document) {
+
+        "use strict";
 
         // ====================================================================
         /**
@@ -118,12 +118,27 @@ EdenMobile.factory('emForms', [
             this.componentKey = componentKey;
 
             if (!fieldNames) {
+
                 fieldNames = [];
-                var field,
-                    formFields = resource.form,
-                    formLength = formFields.length;
-                for (var i = 0; i < formLength; i++) {
-                    field = formFields[i];
+
+                var formFields = resource.form;
+                if (!formFields) {
+                    // Fall back to all readable fields
+                    formFields = [];
+                    for (var fieldName in resource.fields) {
+                        if (resource.fields[fieldName].readable) {
+                            formFields.push(fieldName);
+                        }
+                    }
+                    // If no user fields exist, render llrepr (read-only)
+                    // @todo: set a label
+                    if (!formFields.length) {
+                        formFields.push('llrepr');
+                    }
+                }
+
+                for (var i = 0, len = formFields.length; i < len; i++) {
+                    var field = formFields[i];
                     if (field === Object(field)) {
                         // Not just a simple field
                         if (field.type === 'dummy') {
@@ -141,7 +156,7 @@ EdenMobile.factory('emForms', [
                     }
                     fieldNames.push(field);
                 }
-                
+
             }
             this.fieldNames = fieldNames;
         }
@@ -196,6 +211,7 @@ EdenMobile.factory('emForms', [
                 widget;
 
             // Auto-Totals (if-defined)
+            // TODO: move into GRID directives
             if (Object.keys(autototals).length) {
                 var input,
                     inputs,
@@ -216,7 +232,10 @@ EdenMobile.factory('emForms', [
                     // Apply Total
                     this[scopeName][sumField] = total;
                     // Propagate Change
-                    inputs = angular.element(document).find('input');
+                    // TODO do not iterate over all inputs in the entire app (SPA!!)
+                    // TODO avoid digest cycle interference: watch scope rather than
+                    //      forward-triggering listeners (=reverse principle)
+                    inputs = $document.find('input');
                     for (i = 0; i < inputs.length; i++) {
                         input = angular.element(inputs[i]);
                         if (input.attr('ng-model') == scopeName + '.' + sumField) {
@@ -275,6 +294,7 @@ EdenMobile.factory('emForms', [
                 }
 
                 // Add Subheading(s) if-defined
+                // TODO: use directives for subheadings
                 var subheading = subheadings[fieldName];
                 if (subheading) {
                     if (typeof subheading == 'string' || subheading instanceof String) {
@@ -289,12 +309,12 @@ EdenMobile.factory('emForms', [
                     }
                 }
 
-                var addField = function(fieldName, label) {
+                var addField = function(fieldName, withLabel) {
                     field = resource.fields[fieldName];
                     if (field) {
 
                         // Field must be readable
-                        if (!field.readable) {
+                        if (!field.readable && fieldName != 'llrepr') {
                             return;
                         }
 
@@ -305,7 +325,7 @@ EdenMobile.factory('emForms', [
 
                         // Label
                         description = field._description;
-                        if (label) {
+                        if (withLabel) {
                             attr.label = description.label || fieldName;
                         }
 
@@ -317,8 +337,11 @@ EdenMobile.factory('emForms', [
 
                         // Auto-Totals
                         if (autototalSources.hasOwnProperty(fieldName)) {
-                            autotal = autototalSources[fieldName]; // [0] = sumField, [1] = Array of sourceFields
-                            attr['ng-change'] = 'autoTotals("' + autotal[0] + '", ' + JSON.stringify(autotal[1]) + ')';
+                            // [0] = sumField, [1] = Array of sourceFields
+                            autotal = autototalSources[fieldName];
+                            attr['ng-change'] = 'autoTotals("' +
+                                                autotal[0] + '", ' +
+                                                JSON.stringify(autotal[1]) + ')';
                         }
 
                         // Instantiate the widget and append it to the form rows
@@ -328,6 +351,7 @@ EdenMobile.factory('emForms', [
                     return false;
                 };
 
+                // TODO use directives for Grid construction
                 if (grids.hasOwnProperty(fieldName)) {
                     // Grid
                     // Proper TABLE is the only way to make column labels match up with cells
@@ -384,7 +408,7 @@ EdenMobile.factory('emForms', [
                         table.append(row);
                     }
                     wrapper = angular.element('<div class="grid">');
-                    wrapper.append(table)
+                    wrapper.append(table);
                     formRows.append(wrapper);
                 } else {
                     // Normal field

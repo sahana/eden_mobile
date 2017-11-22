@@ -58,13 +58,15 @@ EdenMobile.factory('DataDownload', [
                     return;
                 }
 
+                if (!ref.v) {
+                    ref.v = {};
+                }
+                ref.v.mdata = '1';
+
                 // Set msince
                 var lastSync = resource.getLastSync();
                 if (lastSync) {
                     var msince = lastSync.toISOString().split('.')[0];
-                    if (!ref.v) {
-                        ref.v = {};
-                    }
                     ref.v.msince = msince;
                 }
 

@@ -26,7 +26,7 @@
 /**
  * The version number for the default schema
  */
-var emSchemaVersion = '4';
+var emSchemaVersion = '5';
 
 /**
  * The default schema for the local database
@@ -224,6 +224,11 @@ EdenMobile.factory('emDefaultSchema', ['emUtils', function (emUtils) {
         },
         'synchronized_on': {
             type: 'datetime',
+            readable: false,
+            writable: false
+        },
+        'llrepr': {
+            type: 'text',
             readable: false,
             writable: false
         }

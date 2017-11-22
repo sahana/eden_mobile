@@ -23,8 +23,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
-
 // ============================================================================
 /**
  * emDataForm - directive for create/update forms
@@ -35,6 +33,8 @@
 EdenMobile.directive('emDataForm', [
     '$compile', 'emForms', 'emResources',
     function($compile, emForms, emResources) {
+
+        "use strict";
 
         /**
          * Form renderer
@@ -96,6 +96,8 @@ EdenMobile.directive('emConfigForm', [
     '$compile', 'emSettings', 'emConfig',
     function($compile, emSettings, emConfig) {
 
+        "use strict";
+
         /**
          * Form renderer
          *
@@ -105,9 +107,9 @@ EdenMobile.directive('emConfigForm', [
          * @param {object} attr - object containing the attributes of
          *                        the element (unused)
          */
-        var renderForm = function($scope, elem, attr) {
+        var renderForm = function($scope, elem /* , attr */ ) {
 
-            emConfig.apply(function(settings) { // 'settings' is unused
+            emConfig.apply(function( /* settings */ ) {
 
                 var form = angular.element('<div class="list">'),
                     section,

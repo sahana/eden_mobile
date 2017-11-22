@@ -179,7 +179,7 @@ EdenMobile.controller("EMDataUpdate", [
                 fieldNames = Object.keys(fields),
                 master = $scope.master,
                 form = $scope.form;
-            targetResource.select(fieldNames, query, function(records, result) {
+            targetResource.select(fieldNames, query, function(records /* , result */) {
                 if (records.length == 1) {
 
                     // Prepopulare the scope with current record data
@@ -189,7 +189,7 @@ EdenMobile.controller("EMDataUpdate", [
                         value;
                     for (fieldName in fields) {
                         field = fields[fieldName];
-                        if (!field.readable) {
+                        if (!field.readable && fieldName != 'llrepr') {
                             continue;
                         }
                         value = row[fieldName];
