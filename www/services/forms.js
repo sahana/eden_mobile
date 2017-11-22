@@ -31,8 +31,7 @@
  * @memberof EdenMobile
  */
 EdenMobile.factory('emForms', [
-    '$document',
-    function ($document) {
+    function () {
 
         "use strict";
 
@@ -202,59 +201,12 @@ EdenMobile.factory('emForms', [
                 j,
                 attr,
                 autototals = settings.autototals || {},
-                autototalSources = {},
                 description,
                 grids = settings.grids || {},
                 gridChildren = [], // Which fields we skip from the normal processing
                 placeholder,
                 subheadings = settings.subheadings || {},
                 widget;
-
-            // Auto-Totals (if-defined)
-            // TODO: move into GRID directives
-            if (Object.keys(autototals).length) {
-                var input,
-                    inputs,
-                    sourceFieldsLength,
-                    total,
-                    value;
-                $scope.autoTotals = function(sumField, sourceFields) {
-                    // Read all the Source Fields & Total them
-                    // this == $scope
-                    sourceFieldsLength = sourceFields.length;
-                    total = 0;
-                    for (i = 0; i < sourceFieldsLength; i++) {
-                        value = this[scopeName][sourceFields[i]];
-                        if (value) {
-                            total += value;
-                        }
-                    }
-                    // Apply Total
-                    this[scopeName][sumField] = total;
-                    // Propagate Change
-                    // TODO do not iterate over all inputs in the entire app (SPA!!)
-                    // TODO avoid digest cycle interference: watch scope rather than
-                    //      forward-triggering listeners (=reverse principle)
-                    inputs = $document.find('input');
-                    for (i = 0; i < inputs.length; i++) {
-                        input = angular.element(inputs[i]);
-                        if (input.attr('ng-model') == scopeName + '.' + sumField) {
-                            input.controller('ngModel').$viewChangeListeners[0]();
-                            break;
-                        }
-                    }
-                };
-                var autotal,
-                    sourceFields,
-                    sumField;
-                for (sumField in autototals) {
-                    sourceFields = autototals[sumField];
-                    sourceFieldsLength = sourceFields.length;
-                    for (i = 0; i < sourceFieldsLength; i++) {
-                        autototalSources[sourceFields[i]] = [sumField, sourceFields];
-                    }
-                }
-            }
 
             // Grids (if-defined)
             if (Object.keys(grids).length) {
@@ -336,12 +288,25 @@ EdenMobile.factory('emForms', [
                         }
 
                         // Auto-Totals
-                        if (autototalSources.hasOwnProperty(fieldName)) {
-                            // [0] = sumField, [1] = Array of sourceFields
-                            autotal = autototalSources[fieldName];
-                            attr['ng-change'] = 'autoTotals("' +
-                                                autotal[0] + '", ' +
-                                                JSON.stringify(autotal[1]) + ')';
+                        if (autototals.hasOwnProperty(fieldName)) {
+                            var sumField = fieldName,
+                                sources = autototals[sumField],
+                                sourceFields = sources.map(function(fieldName) {
+                                    return scopeName + '.' + fieldName;
+                                });
+                            $scope.$watchGroup(sourceFields, function(oldValues, newValues, scope) {
+                                var form = scope[scopeName],
+                                    total = 0;
+                                if (form) {
+                                    sources.forEach(function(fieldName) {
+                                        var value = form[fieldName];
+                                        if (value) {
+                                            total += value;
+                                        }
+                                    });
+                                    form[sumField] = total;
+                                }
+                            });
                         }
 
                         // Instantiate the widget and append it to the form rows
