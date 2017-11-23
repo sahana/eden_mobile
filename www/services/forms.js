@@ -378,7 +378,11 @@ EdenMobile.factory('emForms', [
                     // Grid
                     // Proper TABLE is the only way to make column labels match up with cells
                     //table = angular.element('<div class="grid">');
-                    table = angular.element('<table>');
+                    if (hiddenBy) {
+                        table = angular.element('<table ng-show="' + hiddenBy + '">');
+                    } else {
+                        table = angular.element('<table>');
+                    }
                     grid = grids[fieldName];
                     colsLength = grid.c.length;
                     rowsLength = grid.r.length;
