@@ -31,8 +31,8 @@
  * @memberof EdenMobile.Services
  */
 EdenMobile.factory('emResources', [
-    '$q', 'emComponents', 'emDB', 'emUtils', 'Join',
-    function ($q, emComponents, emDB, emUtils, Join) {
+    '$q', 'emComponents', 'emDB', 'emUtils', 'Join', 'Represent',
+    function ($q, emComponents, emDB, emUtils, Join, Represent) {
 
         "use strict";
 
@@ -454,6 +454,30 @@ EdenMobile.factory('emResources', [
             }
 
             return label;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Get a string representation for a field value
+         *
+         * @param {string} fieldName - the field name
+         * @param {*} value - the field value
+         *
+         * @returns {promise} - a promise that resolves into a string
+         *                      representation of the field value
+         *
+         * @throws - if the field does not exist in this resource
+         *
+         * TODO support field selectors
+         */
+        Resource.prototype.represent = function(fieldName, value) {
+
+            var field = this.fields[fieldName];
+            if (!field) {
+                throw new Error('field not found: ' + fieldName);
+            }
+            var represent = new Represent(this.table, field);
+            return represent.render(value);
         };
 
         // --------------------------------------------------------------------
