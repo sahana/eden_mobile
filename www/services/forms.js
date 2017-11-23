@@ -203,8 +203,11 @@ EdenMobile.factory('emForms', [
                 autototals = settings.autototals || {},
                 description,
                 grids = settings.grids || {},
-                gridChildren = [], // Which fields we skip from the normal processing
+                gridChildren = [], // Fields which we skip from the normal processing
                 placeholder,
+                showHidden = settings.show_hidden || {},
+                hides = {},
+                hiddenBy,
                 subheadings = settings.subheadings || {},
                 widget;
 
@@ -233,6 +236,27 @@ EdenMobile.factory('emForms', [
                 }
             }
 
+            // showHidden (if-defined)
+            if (Object.keys(showHidden).length) {
+                // Invert the structure
+                var h,
+                    hide,
+                    arrayLength;
+                for (hide in showHidden) {
+                    h = showHidden[hide];
+                    if (h.constructor === Array) {
+                        // Multiple fields
+                        arrayLength = h.length;
+                        for (i = 0; i < arrayLength; i++) {
+                            hides[h[i]] = hide;
+                        }
+                    } else {
+                        // Single field
+                        hides[h] = hide;
+                    }
+                }
+            }
+
             fieldNames.forEach(function(fieldName) {
 
                 // Skip component key
@@ -245,18 +269,39 @@ EdenMobile.factory('emForms', [
                     return;
                 }
 
+                // Hidden?
+                if (hides.hasOwnProperty(fieldName)) {
+                    hiddenBy = scopeName + '.' + hides[fieldName];
+                } else {
+                    hiddenBy = false;
+                }
+
                 // Add Subheading(s) if-defined
                 // TODO: use directives for subheadings
                 var subheading = subheadings[fieldName];
                 if (subheading) {
                     if (typeof subheading == 'string' || subheading instanceof String) {
                         // 1 subheading
-                        formRows.append(angular.element('<div class="subheading">').html(subheading));
+                        if (hiddenBy) {
+                            formRows.append(angular.element('<div class="subheading" ng-show="' + hiddenBy + '">')
+                                    .html(subheading));
+                        } else {
+                            formRows.append(angular.element('<div class="subheading">')
+                                    .html(subheading));
+                        }
                     } else {
                         // Multiple subheadings
                         var subheadingLength = subheading.length;
-                        for (i = 0; i < subheadingLength; i++) {
-                            formRows.append(angular.element('<div class="subheading">').html(subheading[i]));
+                        if (hiddenBy) {
+                            for (i = 0; i < subheadingLength; i++) {
+                                formRows.append(angular.element('<div class="subheading" ng-show="' + hiddenBy + '">')
+                                        .html(subheading[i]));
+                            }
+                        } else {
+                            for (i = 0; i < subheadingLength; i++) {
+                                formRows.append(angular.element('<div class="subheading">')
+                                        .html(subheading[i]));
+                            }
                         }
                     }
                 }
@@ -285,6 +330,11 @@ EdenMobile.factory('emForms', [
                         placeholder = description.placeholder;
                         if (placeholder) {
                             attr.placeholder = placeholder;
+                        }
+
+                        // Hidden?
+                        if (hiddenBy) {
+                            attr['ng-show'] = hiddenBy;
                         }
 
                         // Auto-Totals

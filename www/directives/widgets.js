@@ -106,6 +106,11 @@
                                     .append(label)
                                     .append(input);
 
+                // Widget attributes
+                copyAttr(attr, widget, [
+                    'ngShow'
+                ]);
+
                 // Compile the widget against the scope, then
                 // render it in place of the directive
                 var compiled = $compile(widget)($scope);
@@ -166,6 +171,11 @@
                                     .append(label)
                                     .append(input);
 
+                // Widget attributes
+                copyAttr(attr, widget, [
+                    'ngShow'
+                ]);
+
                 // Compile the widget against the scope, then
                 // render it in place of the directive
                 var compiled = $compile(widget)($scope);
@@ -225,6 +235,11 @@
                                     .append(label)
                                     .append(input);
 
+                // Widget attributes
+                copyAttr(attr, widget, [
+                    'ngShow'
+                ]);
+
                 // Compile the widget against the scope, then
                 // render it in place of the directive
                 var compiled = $compile(widget)($scope);
@@ -277,9 +292,10 @@
                                         .html(attr.label || '');
                 }
 
-                // Input attributes
+                // Widget attributes
                 copyAttr(attr, widget, [
                     'ngModel',
+                    'ngShow',
                     'disabled'
                 ]);
 
@@ -362,6 +378,11 @@
                 var widget = angular.element('<label>')
                                     .addClass('item item-input item-stacked-label')
                                     .append(label);
+
+                // Widget attributes
+                copyAttr(attr, widget, [
+                    'ngShow'
+                ]);
 
                 // Look up the field options
                 options(attr.resource, attr.field, function(opts) {
@@ -543,6 +564,11 @@
                 var widget = angular.element('<div class="item-stacked-label item-input-inset photo-widget">')
                                     .append(label)
                                     .append(controls);
+
+                // Widget attributes
+                copyAttr(attr, widget, [
+                    'ngShow'
+                ]);
 
                 // Install callbacks
                 $scope.getPicture = function(model) {
