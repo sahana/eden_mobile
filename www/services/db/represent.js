@@ -63,7 +63,7 @@ EdenMobile.factory('Represent', [
 
             // None-value?
             if (value === undefined || value === null) {
-                return this.none;
+                return $q.resolve(this.none);
             }
 
             // Already known?
@@ -78,46 +78,19 @@ EdenMobile.factory('Represent', [
                 i;
             if (field.isForeignKey) {
 
-                // Get the lookup table
-                var db = this.table._db,
-                    fk = field.getForeignKey(),
-                    table = db.tables[fk.table];
-
                 // Determine which fields to lookup from the referenced table
-                var represent = field.represent,
-                    lookupFields,
-                    isFieldList = false;
-                if (represent) {
-                    if (represent.constructor === Array) {
-                        // Array of field names
-                        isFieldList = true;
-                        for (i = represent.length; i--;) {
-                            if (!table.fields.hasOwnProperty(represent[i])) {
-                                isFieldList = false;
-                                break;
-                            }
-                        }
-                        if (isFieldList) {
-                            lookupFields = represent;
-                        }
-                    }
-                }
-                if (!lookupFields) {
-                    lookupFields = ['llrepr'];
-                    if (table.fields.hasOwnProperty('name')) {
-                        lookupFields.push('name');
-                    }
-                }
+                var lookup = this.getLookup(field),
+                    lookupFields = lookup.fields,
+                    self = this;
 
                 // Look up the referenced row and render the key representation
-                var self = this;
-                reprStr = this.lookupRows(table, [value], lookupFields).then(function(rows) {
+                reprStr = this.lookupRows(lookup.table, [value], lookupFields).then(function(rows) {
                     if (rows.length) {
                         var row = rows[0];
-                        if (isFieldList) {
-                            return self.representRow(row, lookupFields);
-                        } else {
+                        if (lookup.fallback) {
                             return self.representRow(row);
+                        } else {
+                            return self.representRow(row, lookupFields);
                         }
                     } else {
                         return self.unknown;
@@ -154,6 +127,99 @@ EdenMobile.factory('Represent', [
             theSet[value] = reprStr;
 
             return reprStr;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Render string representations for an array of field values
+         *
+         * @param {Array} values - the values
+         *
+         * @returns {promise} - a promise that resolves into an object
+         *                      with {value: reprStr}, not including
+         *                      representations of null/undefined
+         */
+        Represent.prototype.bulk = function(values) {
+
+            // remove null/undefined from values
+            var repr = {},
+                result;
+            values.forEach(function(value) {
+                if (value !== null && value !== undefined) {
+                    repr[value] = null;
+                }
+            });
+
+            var field = this.field,
+                value,
+                label,
+                fieldOptions = field._description.options;
+
+            if (field.isForeignKey) {
+
+                // Determine which fields to lookup from the referenced table
+                var lookup = this.getLookup(field),
+                    lookupFields = lookup.fields,
+                    self = this;
+
+                // Look up the referenced rows and render the key representations
+                result = this.lookupRows(lookup.table, values, lookupFields).then(function(rows) {
+
+                    var recordID;
+
+                    rows.forEach(function(row) {
+                        recordID = row.$('id');
+                        if (lookup.fallback) {
+                            repr[recordID] = self.representRow(row);
+                        } else {
+                            repr[recordID] = self.representRow(row, lookupFields);
+                        }
+                    });
+                    for (recordID in repr) {
+                        if (repr[recordID] === null) {
+                            repr[recordID] = self.unknown;
+                        }
+                    }
+                    return repr;
+                });
+
+            } else if (fieldOptions) {
+
+                // Lookup labels from field options
+                if (fieldOptions.constructor === Array) {
+                    for (var i = fieldOptions.length, opt; i--;) {
+                        opt = fieldOptions[i];
+                        value = opt[0];
+                        label = opt[1];
+                        if (repr.hasOwnProperty(value)) {
+                            repr[value] = label;
+                        }
+                    }
+                } else {
+                    for (value in fieldOptions) {
+                        if (repr.hasOwnProperty(value)) {
+                            repr[value] = fieldOptions[value];
+                        }
+                    }
+                }
+                for (value in repr) {
+                    label = repr[value];
+                    if (label === null || label === undefined) {
+                        repr[value] = this.unknown;
+                    }
+                }
+                result = $q.resolve(repr);
+
+            } else {
+
+                // Resolve everything as string
+                for (value in repr) {
+                    repr[value] = '' + value;
+                }
+                result = $q.resolve(repr);
+            }
+
+            return result;
         };
 
         // --------------------------------------------------------------------
@@ -198,7 +264,9 @@ EdenMobile.factory('Represent', [
          * @param {Array} fields - array of field names to use to construct
          *                         the field representation
          *
-         * @returns {ßtring} - the string representation
+         * @returns {String} - the string representation
+         *
+         * TODO add support for string templates
          */
         Represent.prototype.representRow = function(row, fields) {
 
@@ -230,7 +298,62 @@ EdenMobile.factory('Represent', [
         };
 
         // --------------------------------------------------------------------
-        // TODO Represent.prototype.bulk
+        /**
+         * Determine which fields to look up from which table for a
+         * foreign key
+         *
+         * @param {Field} field - the foreign key field
+         *
+         * @returns {Resolution} - the resolution
+         *
+         * @typedef {object} Resolution
+         * @property {Table} table - the look up table
+         * @property {Array} fields - field names to lookup
+         * @property {boolean} fallback - apply fallbacks (llrepr, name)
+         */
+        Represent.prototype.getLookup = function(field) {
+
+            // Get the lookup table
+            var db = this.table._db,
+                fk = field.getForeignKey(),
+                table = db.tables[fk.table],
+                represent = field.represent,
+                lookupFields,
+                fallback = false;
+
+            if (represent) {
+                if (represent.constructor === Array) {
+                    // Verify all fields present in referenced table
+                    for (var i = represent.length; i--;) {
+                        if (!table.fields.hasOwnProperty(represent[i])) {
+                            fallback = true;
+                            break;
+                        }
+                    }
+                    if (!fallback) {
+                        lookupFields = represent;
+                    }
+                } else {
+                    // TODO add support for string templates
+                    fallback = true;
+                }
+            } else {
+                fallback = true;
+            }
+
+            if (fallback) {
+                lookupFields = ['llrepr'];
+                if (table.fields.hasOwnProperty('name')) {
+                    lookupFields.push('name');
+                }
+            }
+
+            return {
+                table: table,
+                fields: lookupFields,
+                fallback: fallback
+            };
+        };
 
         // --------------------------------------------------------------------
         // TODO Represent.prototype.multiple

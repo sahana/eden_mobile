@@ -23,8 +23,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
-
 // ============================================================================
 /**
  * EMDataList - Data List Controller
@@ -35,6 +33,8 @@
 EdenMobile.controller("EMDataList", [
     '$scope', '$state', '$stateParams', 'emDialogs', 'emResources',
     function($scope, $state, $stateParams, emDialogs, emResources) {
+
+        "use strict";
 
         // State parameters
         var resourceName = $stateParams.resourceName,
@@ -86,7 +86,7 @@ EdenMobile.controller("EMDataList", [
             }
 
             // Select all existing records
-            resource.select(fields, query, function(records, result) {
+            resource.select(fields, query, function(records) {
                 $scope.records = records;
                 $scope.$apply();
             });
