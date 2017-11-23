@@ -87,8 +87,9 @@ EdenMobile.controller("EMDataList", [
 
             // Select all existing records
             resource.select(fields, query, function(records) {
-                $scope.records = records;
-                $scope.$apply();
+                resource.representRecords(records).then(function(result) {
+                    $scope.records = result;
+                });
             });
         };
 

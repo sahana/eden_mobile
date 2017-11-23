@@ -76,7 +76,10 @@ EdenMobile.factory('Represent', [
                 fieldOptions = field._description.options,
                 reprStr,
                 i;
-            if (field.isForeignKey) {
+
+            if (field.isForeignKey && field.name != 'em_object_id' && !field.isObjectKey) {
+
+                // TODO support object keys properly
 
                 // Determine which fields to lookup from the referenced table
                 var lookup = this.getLookup(field),
@@ -120,6 +123,7 @@ EdenMobile.factory('Represent', [
             } else {
 
                 // Just convert into string
+                // TODO type-specific representation (e.g. boolean=>Yes|No)
                 reprStr = $q.resolve('' + value);
             }
 
@@ -155,7 +159,9 @@ EdenMobile.factory('Represent', [
                 label,
                 fieldOptions = field._description.options;
 
-            if (field.isForeignKey) {
+            if (field.isForeignKey && field.name != 'em_object_id' && !field.isObjectKey) {
+
+                // TODO support object keys properly
 
                 // Determine which fields to lookup from the referenced table
                 var lookup = this.getLookup(field),
@@ -213,6 +219,7 @@ EdenMobile.factory('Represent', [
             } else {
 
                 // Resolve everything as string
+                // TODO type-specific representation (e.g. boolean=>Yes|No)
                 for (value in repr) {
                     repr[value] = '' + value;
                 }

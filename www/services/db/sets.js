@@ -462,12 +462,25 @@
             throw new Error('callback required');
         }
 
+        var handleError = function(error) {
+            if (typeof onError == 'function') {
+                onError(error);
+            } else {
+                db.sqlError(error);
+            }
+        };
+
         // Expand the columns
         var sql = ['SELECT'];
         if (!columns) {
             sql.push('*');
         } else {
-            sql.push(this.expand(columns));
+            try {
+                sql.push(this.expand(columns));
+            } catch (error) {
+                handleError(error);
+                return;
+            }
         }
 
         // Expand the set
@@ -517,11 +530,7 @@
                 },
                 function(error) {
                     // Error
-                    if (typeof onError == 'function') {
-                        onError(error);
-                    } else {
-                        db.sqlError(error);
-                    }
+                    handleError(error);
                 });
         }
     };

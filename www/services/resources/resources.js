@@ -482,6 +482,106 @@ EdenMobile.factory('emResources', [
 
         // --------------------------------------------------------------------
         /**
+         * Wrap a set of records in their representations
+         *
+         * @param {Array} records - a set of records (as objects)
+         * @returns {promise} - a promise that resolves into an array
+         *                      with each record wrapped in an object
+         *                      with represented field values, including
+         *                      a '_row' property holding the original record
+         *
+         * TODO: support field selectors (and hence native Rows)
+         */
+        Resource.prototype.representRecords = function(records) {
+
+            var renderers = {},
+                table = this.table,
+                fields = this.fields,
+                attr,
+                renderer,
+                rawValues = {},
+                values,
+                field,
+                value;
+
+            // Collect fields+values, instantiate renderers
+            records.forEach(function(record) {
+
+                for (attr in record) {
+                    renderer = renderers[attr];
+                    if (!renderer) {
+                        field = fields[attr];
+                        if (field) {
+                            renderer = new Represent(table, field);
+                            renderers[attr] = renderer;
+                        } else {
+                            continue;
+                        }
+                    }
+                    value = record[attr];
+                    values = rawValues[attr] || [];
+                    if (value && values.indexOf(value) == -1) {
+                        values.push(value);
+                    }
+                    rawValues[attr] = values;
+                }
+             });
+
+            // Bulk-lookup representations
+            var lookups = [],
+                repr = {},
+                reprAdd = function(attr) {
+                    return function(result) {
+                        repr[attr] = result;
+                    };
+                };
+            for (attr in rawValues) {
+                renderer = renderers[attr];
+                if (renderer) {
+                    values = rawValues[attr];
+                    if (values && values.length) {
+                        lookups.push(renderer.bulk(values).then(reprAdd(attr)));
+                    } else {
+                        repr[attr] = {};
+                    }
+                }
+            }
+
+            // Construct represented records + resolve
+            var deferred = $q.defer();
+
+            $q.all(lookups).finally(function() {
+
+                var output = [];
+                records.forEach(function(record) {
+
+                    var reprRecord = {'_row': record},
+                        reprValues,
+                        reprStr;
+
+                    for (attr in record) {
+                        value = record[attr];
+                        reprStr = '' + value;
+                        if (value === null) {
+                            reprStr = '-';
+                        } else {
+                            reprValues = repr[attr];
+                            if (reprValues) {
+                                reprStr = reprValues[value] || reprStr;
+                            }
+                        }
+                        reprRecord[attr] = reprStr;
+                    }
+                    output.push(reprRecord);
+                });
+                deferred.resolve(output);
+            });
+
+            return deferred.promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Add a new record to this resource
          *
          * @param {object} data - the data for the record
