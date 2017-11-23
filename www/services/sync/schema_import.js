@@ -140,6 +140,7 @@ EdenMobile.factory('SchemaImport', [
                 requires = this.requires;
 
             var schema = {},
+                lookupOnly = true,
                 data = null,
                 fieldName,
                 fieldSpec,
@@ -153,7 +154,8 @@ EdenMobile.factory('SchemaImport', [
 
                 // Decode field description and add spec to schema
                 fieldSpec = this.decodeField(fieldDescriptions[fieldName]);
-                if (!!fieldSpec) {
+                if (fieldSpec) {
+                    lookupOnly = false;
                     schema[fieldName] = fieldSpec;
                 }
 
@@ -202,7 +204,7 @@ EdenMobile.factory('SchemaImport', [
             if (this.provides == job.tableName) {
 
                 // Main schema
-                schema._main = !!fieldDescriptions.length;
+                schema._main = !lookupOnly;
                 schema._name = job.resourceName;
 
                 // Store link to server resource

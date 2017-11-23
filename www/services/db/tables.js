@@ -49,7 +49,8 @@ EdenMobile.factory('Table', [
 
             var field,
                 fieldName,
-                tableFields = {};
+                tableFields = {},
+                lookupOnly = true;
 
             for (fieldName in fields) {
                 field = fields[fieldName];
@@ -57,10 +58,14 @@ EdenMobile.factory('Table', [
                     field = field.clone();
                 }
                 field.table = this;
+                if (!field.meta) {
+                    lookupOnly = false;
+                }
                 tableFields[fieldName] = field;
             }
 
             this.fields = tableFields;
+            this.lookupOnly = lookupOnly;
             this.settings = settings;
 
             this.objectTypes = settings.types || {};
