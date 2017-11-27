@@ -35,6 +35,8 @@ EdenMobile.factory('DefaultLookup', [
          */
         var DefaultLookup = SyncTask.define(function(tableName, fieldName, uuid) {
 
+            // TODO receive resource name and set as this.resourceName
+
             this.tableName = tableName;
             this.fieldName = fieldName;
             this.uuid = uuid;
@@ -50,12 +52,13 @@ EdenMobile.factory('DefaultLookup', [
 
             var run = this.run,
                 tableName = this.tableName,
+                fieldName = this.fieldName,
                 self = this;
 
             run.require(tableName).resolved().then(
                 function() {
                     emDB.table(tableName).then(function(table) {
-                        this.lookupDefault(table).then(
+                        self.lookupDefault(table, fieldName).then(
                             function() {
                                 self.resolve();
                             },
@@ -142,6 +145,14 @@ EdenMobile.factory('DefaultLookup', [
             return $q.when(value).then(function(value) {
 
                 var field = table.$(self.fieldName);
+
+                // TODO: propagate to resources
+                //
+                // resourceName = this.resourceName || table.name
+                // if single resource or resourceName == table.name:
+                //      => update both table and resource
+                // else:
+                //      => update only resource
 
                 field._description.defaultValue = value;
                 field.defaultValue = value;

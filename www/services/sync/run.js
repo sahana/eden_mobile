@@ -375,11 +375,7 @@ EdenMobile.factory('SyncRun', [
                                         tableNames);
                     if (resolvable) {
 
-                        self.importSchemas(schemaImports).then(function(/* result */) {
-
-                            // @todo: execute dataImports + download filesRequired
-                            //var dataImports = result[0],
-                            //    filesRequired = result[1];
+                        self.importSchemas(schemaImports).then(function() {
 
                             jobs.forEach(function(job) {
                                 if (!job.$result) {
@@ -394,6 +390,7 @@ EdenMobile.factory('SyncRun', [
                             });
                             deferred.resolve();
                         });
+
                     } else {
 
                         // Form synchronization failed due to unresolvable
@@ -434,7 +431,7 @@ EdenMobile.factory('SyncRun', [
                 var dataImports = result[0],
                     filesRequired = result[1];
 
-                if (filesRequired) {
+                if (filesRequired.length) {
                     // Verify pending file dependencies have providers,
                     // otherwise reject them
                     // TODO: currently all files will be rejected because
@@ -679,7 +676,8 @@ EdenMobile.factory('SyncRun', [
             var deferred = $q.defer(),
                 self = this,
                 dataImports = [],
-                filesRequired = [];
+                filesRequired = [],
+                pendingDefaults = [];
 
             schemaImports.forEach(function(schemaImport) {
                 schemaImport.done().then(
@@ -693,6 +691,8 @@ EdenMobile.factory('SyncRun', [
                             filesRequired = filesRequired.concat(
                                 schemaImport.filesRequired);
                         }
+                        pendingDefaults = pendingDefaults.concat(
+                            schemaImport.pendingDefaults);
                     },
                     function(error) {
                         // Schema import failed; if this was the
@@ -703,9 +703,78 @@ EdenMobile.factory('SyncRun', [
                         }
                     }).finally(function() {
                         if (self.checkProgress()) {
-                            deferred.resolve([dataImports, filesRequired]);
+
+                            if (filesRequired.length) {
+                                // Verify pending file dependencies have providers,
+                                // otherwise reject them
+                                // TODO: currently all files will be rejected because
+                                //       there are no providers => implement them!
+                                filesRequired.forEach(function(fileURI) {
+                                    self.require(null, null, fileURI).checkResolvable();
+                                });
+                            }
+
+                            // Import default data, then resolve pending defaults
+                            self.importData(dataImports).then(function() {
+                                self.resolveDefaults(pendingDefaults).then(function() {
+
+                                    // Remove any failed record dependencies of this
+                                    // stage, so that subsequent data imports will
+                                    // try again
+                                    var dependencies = self.dependencies.records,
+                                        tableName,
+                                        deps,
+                                        uuid,
+                                        dependency;
+
+                                    for (tableName in dependencies) {
+                                        deps = dependencies[tableName];
+                                        for (uuid in deps) {
+                                            dependency = deps[uuid];
+                                            if (!dependency.isResolved) {
+                                                delete deps[uuid];
+                                            }
+                                        }
+                                    }
+
+                                    deferred.resolve();
+                                });
+                            });
                         }
                     });
+            });
+
+            return deferred.promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Sub-process to resolve default values in schemas
+         *
+         * @param {Array} defaultLookups - array of DefaultLookup tasks
+         *
+         * @returns {promise} - a promise that is resolved when all
+         *                      DefaultLookup tasks have completed
+         */
+        SyncRun.prototype.resolveDefaults = function(defaultLookups) {
+
+            if (!defaultLookups.length) {
+                // No defaults to resolve => resolve early
+                return $q.resolve();
+            }
+
+            var deferred = $q.defer(),
+                self = this;
+
+            this.currentStage('Resolve Defaults', null, defaultLookups);
+
+            defaultLookups.forEach(function(defaultLookup) {
+                defaultLookup.done().finally(function() {
+                    if (self.checkProgress()) {
+
+                        deferred.resolve();
+                    }
+                });
             });
 
             return deferred.promise;

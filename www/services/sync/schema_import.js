@@ -328,6 +328,8 @@ EdenMobile.factory('SchemaImport', [
                         this.tableName,
                         fieldName,
                         defaultValue
+                        // TODO pass job.resourceName
+                        //      if this.provides != job.tableName
                     );
                     this.pendingDefaults.push(defaultLookup);
                 }
