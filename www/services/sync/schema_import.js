@@ -24,8 +24,8 @@
  */
 
 EdenMobile.factory('SchemaImport', [
-    '$q', 'emResources', 'emUtils', 'SyncTask',
-    function ($q, emResources, emUtils, SyncTask) {
+    '$q', 'emResources', 'emUtils', 'DefaultLookup', 'SyncTask',
+    function ($q, emResources, emUtils, DefaultLookup, SyncTask) {
 
         "use strict";
 
@@ -49,6 +49,9 @@ EdenMobile.factory('SchemaImport', [
 
             // The names of the tables this task requires
             this.requires = [];
+
+            // Default value lookups required for this task
+            this.pendingDefaults = [];
 
             // Decode the schemaData
             var importData = this.decode(schemaData),
@@ -164,12 +167,15 @@ EdenMobile.factory('SchemaImport', [
                 reference = emUtils.getReference(fieldType);
                 if (reference) {
                     lookupTable = reference[1];
-                    if (lookupTable &&
-                        lookupTable != this.tableName &&
-                        requires.indexOf(lookupTable) == -1) {
-                        requires.push(lookupTable);
+                    if (lookupTable) {
+                        if (lookupTable != this.tableName && requires.indexOf(lookupTable) == -1) {
+                            requires.push(lookupTable);
+                        }
                     }
                 }
+
+                // Resolve default value
+                this.resolveDefault(fieldName, fieldSpec, reference);
             }
 
             // Settings
@@ -293,6 +299,39 @@ EdenMobile.factory('SchemaImport', [
             componentDefinitions[alias] = definition;
 
             this.schema._components = componentDefinitions;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Resolve a default value for a field, schedule a look-up task
+         * if necessary
+         *
+         * @param {string} fieldName - the field name
+         * @param {object} fieldSpec - the field specification
+         * @param {object} reference - foreign key defaults (if field is a
+         *                             foreign key)
+         */
+        SchemaImport.prototype.resolveDefault = function(fieldName, fieldSpec, reference) {
+
+            var defaultValue = fieldSpec.defaultValue;
+            if (defaultValue) {
+
+                if (reference) {
+                    // Foreign key => is a UUID that needs to be resolved
+
+                    // Remove default value from schema until resolved
+                    delete fieldSpec.defaultValue;
+
+                    // Schedule a lookup task
+                    var defaultLookup = new DefaultLookup(
+                        this.job,
+                        this.tableName,
+                        fieldName,
+                        defaultValue
+                    );
+                    this.pendingDefaults.push(defaultLookup);
+                }
+            }
         };
 
         // ====================================================================
