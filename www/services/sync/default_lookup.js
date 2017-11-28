@@ -33,13 +33,14 @@ EdenMobile.factory('DefaultLookup', [
          * SyncTask to
          * - look up a foreign key default and update the schema
          */
-        var DefaultLookup = SyncTask.define(function(tableName, fieldName, uuid) {
-
-            // TODO receive resource name and set as this.resourceName
+        var DefaultLookup = SyncTask.define(function(tableName, fieldName, uuid, resourceName) {
 
             this.tableName = tableName;
             this.fieldName = fieldName;
+
             this.uuid = uuid;
+
+            this.resourceName = resourceName;
         });
 
         // --------------------------------------------------------------------
@@ -144,20 +145,25 @@ EdenMobile.factory('DefaultLookup', [
 
             return $q.when(value).then(function(value) {
 
-                var field = table.$(self.fieldName);
+                var resourceName = self.resourceName || table.name,
+                    resource = table.resources[resourceName],
+                    field = table.$(self.fieldName);
 
-                // TODO: propagate to resources
-                //
-                // resourceName = this.resourceName || table.name
-                // if single resource or resourceName == table.name:
-                //      => update both table and resource
-                // else:
-                //      => update only resource
+                if (table.isDefaultResource(resourceName)) {
+                    // Propagate to table
+                    field._description.defaultValue = value;
+                    field.defaultValue = value;
+                    table.saveSchema();
+                }
 
-                field._description.defaultValue = value;
-                field.defaultValue = value;
-
-                table.saveSchema();
+                if (resource) {
+                    field = resource.fields[field.name];
+                    if (field) {
+                        field._description.defaultValue = value;
+                        field.defaultValue = value;
+                        resource.saveSchema();
+                    }
+                }
             });
         };
 

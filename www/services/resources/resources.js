@@ -1075,7 +1075,7 @@ EdenMobile.factory('emResources', [
                         }
 
                         // Update settings
-                        if (resource.name == table.name) {
+                        if (table.isDefaultResource(resource.name)) {
                             table.settings = angular.extend({}, table.settings, settings);
                             table.saveSchema();
                             resource.settings = table.settings;

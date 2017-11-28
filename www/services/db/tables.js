@@ -328,6 +328,29 @@ EdenMobile.factory('Table', [
 
         // --------------------------------------------------------------------
         /**
+         * Check if a resource is the default or only resource of this table;
+         * usually used to determine whether a configuration change should be
+         * propagated to the table schema
+         *
+         * @param {string} resourceName - the resource name
+         *
+         * @returns {boolean} - true if default/only resource
+         */
+        Table.prototype.isDefaultResource = function(resourceName) {
+
+            var resources = this.resources,
+                isDefault = false;
+
+            if (resourceName && resources.hasOwnProperty(resourceName)) {
+                if (resourceName == this.name || Object.keys(resources).length == 1) {
+                    isDefault = true;
+                }
+            }
+            return isDefault;
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Add the standard meta fields to this table (as defined in emDefaultSchema)
          */
         Table.prototype.addMetaFields = function() {

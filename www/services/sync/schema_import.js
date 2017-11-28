@@ -322,14 +322,21 @@ EdenMobile.factory('SchemaImport', [
                     // Remove default value from schema until resolved
                     delete fieldSpec.defaultValue;
 
+                    var job = this.job,
+                        resourceName;
+                    if (this.provides == job.tableName) {
+                        resourceName = job.resourceName;
+                    } else {
+                        resourceName = this.provides;
+                    }
+
                     // Schedule a lookup task
                     var defaultLookup = new DefaultLookup(
-                        this.job,
+                        job,
                         this.tableName,
                         fieldName,
-                        defaultValue
-                        // TODO pass job.resourceName
-                        //      if this.provides != job.tableName
+                        defaultValue,
+                        resourceName
                     );
                     this.pendingDefaults.push(defaultLookup);
                 }
