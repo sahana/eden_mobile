@@ -24,8 +24,12 @@
  */
 
 EdenMobile.factory('SyncRun', [
-    '$q', "$rootScope", "$timeout", 'emDB', 'emResources', 'emS3JSON', "DataImport", "DataExport", "Dependency", "SyncJob",
-    function ($q, $rootScope, $timeout, emDB, emResources, emS3JSON, DataImport, DataExport, Dependency, SyncJob) {
+    '$q', '$rootScope', '$timeout',
+    'emDB', 'emResources', 'emS3JSON',
+    'DataImport', 'DataExport', 'Dependency', 'FileDownload', 'SyncJob',
+    function ($q, $rootScope, $timeout,
+              emDB, emResources, emS3JSON,
+              DataImport, DataExport, Dependency, FileDownload, SyncJob) {
 
         "use strict";
 
@@ -426,20 +430,7 @@ EdenMobile.factory('SyncRun', [
 
             var self = this;
 
-            return this.downloadData(jobs).then(function(result) {
-
-                var dataImports = result[0],
-                    filesRequired = result[1];
-
-                if (filesRequired.length) {
-                    // Verify pending file dependencies have providers,
-                    // otherwise reject them
-                    // TODO: currently all files will be rejected because
-                    //       there are no providers => implement them!
-                    filesRequired.forEach(function(fileURI) {
-                        self.require(null, null, fileURI).checkResolvable();
-                    });
-                }
+            return this.downloadData(jobs).then(function(dataImports) {
 
                 return self.importData(dataImports).then(function() {
 
@@ -493,7 +484,7 @@ EdenMobile.factory('SyncRun', [
          */
         SyncRun.prototype.downloadSchemas = function(jobs) {
 
-            var stage = "Schema Download";
+            var stage = 'Schema Download';
 
             this.currentStage(stage, 'preparing');
 
@@ -676,7 +667,6 @@ EdenMobile.factory('SyncRun', [
             var deferred = $q.defer(),
                 self = this,
                 dataImports = [],
-                filesRequired = [],
                 pendingDefaults = [];
 
             schemaImports.forEach(function(schemaImport) {
@@ -686,10 +676,6 @@ EdenMobile.factory('SyncRun', [
                         if (schemaImport.dataImports) {
                             dataImports = dataImports.concat(
                                 schemaImport.dataImports);
-                        }
-                        if (schemaImport.filesRequired) {
-                            filesRequired = filesRequired.concat(
-                                schemaImport.filesRequired);
                         }
                         pendingDefaults = pendingDefaults.concat(
                             schemaImport.pendingDefaults);
@@ -703,16 +689,6 @@ EdenMobile.factory('SyncRun', [
                         }
                     }).finally(function() {
                         if (self.checkProgress()) {
-
-                            if (filesRequired.length) {
-                                // Verify pending file dependencies have providers,
-                                // otherwise reject them
-                                // TODO: currently all files will be rejected because
-                                //       there are no providers => implement them!
-                                filesRequired.forEach(function(fileURI) {
-                                    self.require(null, null, fileURI).checkResolvable();
-                                });
-                            }
 
                             // Import default data, then resolve pending defaults
                             self.importData(dataImports).then(function() {
@@ -817,19 +793,13 @@ EdenMobile.factory('SyncRun', [
 
             var deferred = $q.defer(),
                 self = this,
-                imports = [],
-                files = [];
+                imports = [];
             downloads.forEach(function(download) {
                 download.done().then(
-                    function(result) {
+                    function(importTasks) {
                         // Download was successful
-                        var importTasks = result[0],
-                            filesRequired = result[1];
                         if (importTasks.length) {
                             imports = imports.concat(importTasks);
-                        }
-                        if (filesRequired && filesRequired.length) {
-                            files = files.concat(filesRequired);
                         }
                     },
                     function(reason) {
@@ -837,7 +807,7 @@ EdenMobile.factory('SyncRun', [
                         download.job.result('error', reason);
                     }).finally(function() {
                         if (self.checkProgress()) {
-                            deferred.resolve([imports, files]);
+                            deferred.resolve(imports);
                         }
                     });
             });
@@ -940,7 +910,7 @@ EdenMobile.factory('SyncRun', [
             var deferred = $q.defer(),
                 self = this;
 
-            this.resolveRecordDependencies().then(function(){
+            this.resolveRecordDependencies().then(function() {
 
                 self.currentStage('Data Import', null, dataImports);
 
@@ -1051,17 +1021,14 @@ EdenMobile.factory('SyncRun', [
          * @param {string} tableName - the target table name
          * @param {object} data - the S3JSON data
          *
-         * @returns {promise} - a promise that resolves into a tuple
-         *                      [dataImports, filesRequired], where:
-         *                      dataImports => array of DataImport tasks
-         *                      filesRequired => array of download URLs
+         * @returns {promise} - a promise that resolves into an array of
+         *                      DataImport/FileDownload tasks
          */
         SyncRun.prototype.createDataImports = function(job, tableName, data) {
 
             return emDB.tables().then(function(tables) {
 
-                var dataImports = [],
-                    filesRequired = [];
+                var dataImports = [];
 
                 // Decode the S3JSON data
                 var map = emS3JSON.decode(tables, tableName, data);
@@ -1072,26 +1039,25 @@ EdenMobile.factory('SyncRun', [
                         record,
                         files,
                         downloadURL,
-                        fieldName,
-                        dataImport;
+                        fieldName;
 
                     for (var uuid in records) {
 
-                        // Generate a DataImport task
                         record = records[uuid];
-                        dataImport = new DataImport(job, tn, record);
-                        dataImports.push(dataImport);
 
-                        // Collect the download URLs of the required files
+                        // Generate FileImport tasks as needed
                         files = record.files;
                         for (fieldName in files) {
                             downloadURL = files[fieldName];
-                            filesRequired.push(downloadURL);
+                            dataImports.push(new FileDownload(job, downloadURL));
                         }
+
+                        // Generate a DataImport task
+                        dataImports.push(new DataImport(job, tn, record));
                     }
                 }
 
-                return [dataImports, filesRequired];
+                return dataImports;
             });
         };
 

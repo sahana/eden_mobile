@@ -23,9 +23,9 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
-
 (function() {
+
+    "use strict";
 
     // ========================================================================
     /**
@@ -56,7 +56,8 @@
      */
     SahanaURL.prototype.extend = function(baseURL) {
 
-        var url = '';
+        var url = '',
+            options = this.options;
 
         if (baseURL) {
             // Parse the baseURL
@@ -67,8 +68,7 @@
                 return null;
             }
             // Reconstruct URL
-            var options = this.options,
-                protocol = parsed[2] || 'http',
+            var protocol = parsed[2] || 'http',
                 host = parsed[3],
                 path = options.a || parsed[5] || 'eden';
             url = protocol + '://' + host + '/' + path;
@@ -158,6 +158,24 @@
         }
     };
 
+    // ------------------------------------------------------------------------
+    /**
+     * Helper function to replace protocol and host part of a request URL
+     * with those configured for the Sahana server (=enforce the configured
+     * server), e.g. for misconfigured Sahana public URLs; ensures that
+     * files are downloaded with the right credentials from the right host
+     *
+     * @param {string} srvURL - the configured server URL
+     * @param {string} reqURL - the request URL
+     */
+    var sanitizeHost = function(srvURL, reqURL) {
+
+        var srv = new URL(srvURL),
+            req = new URL(reqURL);
+
+        return srv.protocol + '//' + srv.host + req.pathname;
+    };
+
     // ========================================================================
     /**
      * HTTP 401 Recovery Service
@@ -197,14 +215,14 @@
                         var authHeader,
                             requestHeaders = config.headers;
                         if (requestHeaders) {
-                            authHeader = requestHeaders['Authorization'];
+                            authHeader = requestHeaders.Authorization;
                         } else {
                             requestHeaders = {};
                         }
 
                         var login = function(username, password) {
-                            authHeader = 'Basic ' + btoa(username + ":" + password);
-                            requestHeaders['Authorization'] = authHeader;
+                            authHeader = 'Basic ' + btoa(username + ':' + password);
+                            requestHeaders.Authorization = authHeader;
                             config.headers = requestHeaders;
                             deferred.resolve(config);
                         };
@@ -558,7 +576,7 @@
                             data[fileName] = blob;
                             completed(fileName);
                         },
-                        function(error) {
+                        function( /* error */ ) {
                             // File not found or not readable => skip
                             completed(fileName);
                         }
@@ -652,7 +670,7 @@
                     };
 
                     // transformRequest to build formData object
-                    config.transformRequest = function(data, headersGetter) {
+                    config.transformRequest = function(data /*, headersGetter */) {
                         var formData = new FormData();
                         angular.forEach(data, function(value, key) {
                             if (key !== '_files') {
@@ -680,6 +698,72 @@
                 }
             };
 
+            // ----------------------------------------------------------------
+            /**
+             * Regex pattern for Content-Disposition "attachment" to extract
+             * the original file name
+             */
+            var attPattern = /attachment;\sfilename=\"(.*)\".*/g;
+
+            /**
+             * File download
+             *
+             * @param {string} downloadURL - the download URL
+             * @param {function} successCallback: success callback,
+             *                                    function(data, fileName)
+             * @param {function} errorCallback: error callback,
+             *                                  function(response)
+             */
+            var getFile = function(downloadURL, onSuccess, onError) {
+
+                emConfig.apply(function(settings) {
+
+                    var serverURL = settings.get('server.url');
+                    if (!serverURL) {
+                        if (onError) {
+                            onError('No Sahana server configured');
+                        }
+                        return;
+                    }
+
+                    var config = {
+                        method: 'GET',
+                        url: sanitizeHost(serverURL, downloadURL),
+                        responseType: 'blob'
+                    };
+
+                    $http(config).then(
+                        function(response) {
+
+                            var cDisp = response.headers('content-disposition'),
+                                parsed,
+                                fileName;
+
+                            if (cDisp) {
+                                attPattern.lastIndex = 0;
+                                parsed = attPattern.exec(cDisp);
+                                if (parsed) {
+                                    // Use original file name
+                                    fileName = parsed[1];
+                                }
+                            }
+                            if (!fileName) {
+                                // Fallback to file name in URL
+                                fileName = downloadURL.substring(
+                                            downloadURL.lastIndexOf('/') + 1);
+                            }
+                            if (onSuccess) {
+                                onSuccess(response.data, fileName);
+                            }
+                        },
+                        function(response) {
+                            if (onError) {
+                                onError(response);
+                            }
+                        });
+                });
+            };
+
             // ================================================================
             /**
              * The emServer API
@@ -705,6 +789,8 @@
                  *
                  * @param {function} successCallback: success callback, function(data)
                  * @param {function} errorCallback: error callback, function(response)
+                 *
+                 * TODO move function definition out of the dict
                  */
                 formList: function(successCallback, errorCallback) {
 
@@ -724,6 +810,8 @@
                  *                       object {c:controller, f:function, vars:vars}
                  * @param {function} successCallback: success callback, function(data)
                  * @param {function} errorCallback: error callback, function(response)
+                 *
+                 * TODO move function definition out of the dict
                  */
                 getForm: function(ref, successCallback, errorCallback) {
 
@@ -746,6 +834,8 @@
                  * @param {object|string} data - the data to upload
                  * @param {function} successCallback: success callback, function(data)
                  * @param {function} errorCallback: error callback, function(response)
+                 *
+                 * TODO move function definition out of the dict
                  */
                 getData: function(ref, successCallback, errorCallback) {
 
@@ -760,6 +850,9 @@
                 },
 
                 // ------------------------------------------------------------
+                getFile: getFile,
+
+                // ------------------------------------------------------------
                 /**
                  * Upload resource data
                  *
@@ -768,6 +861,8 @@
                  * @param {object|string} data - the data to upload
                  * @param {function} successCallback: success callback, function(data)
                  * @param {function} errorCallback: error callback, function(response)
+                 *
+                 * TODO move function definition out of the dict
                  */
                 postData: function(ref, data, successCallback, errorCallback) {
 
@@ -788,6 +883,8 @@
                  * @param {object} response - the server response
                  *
                  * @returns {string} - the error message
+                 *
+                 * TODO move function definition out of the dict
                  */
                 parseServerError: function(response) {
 

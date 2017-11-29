@@ -218,7 +218,7 @@
 
             var reader = new FileReader();
             reader.onloadend = function() {
-                var blob = new Blob([this.result], {type: "application/octet-stream"});
+                var blob = new Blob([this.result], {type: 'application/octet-stream'});
                 onSuccess(fileName, blob);
             };
             reader.readAsArrayBuffer(file);

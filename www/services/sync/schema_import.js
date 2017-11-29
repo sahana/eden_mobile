@@ -61,7 +61,6 @@ EdenMobile.factory('SchemaImport', [
             this.data = importData.data;
 
             this.dataImports = null;
-            this.filesRequired = null;
 
             // Collect dependencies
             if (importData.schema) {
@@ -106,8 +105,7 @@ EdenMobile.factory('SchemaImport', [
                                 // Create data import tasks for look-up data
                                 run.createDataImports(self.job, self.tableName, self.data).then(
                                     function(result) {
-                                        self.dataImports = result[0];
-                                        self.filesRequired = result[1];
+                                        self.dataImports = result;
                                         self.resolve(self.tableName);
                                     });
 
@@ -194,10 +192,10 @@ EdenMobile.factory('SchemaImport', [
             // Other schema options
             // @todo: component declarations, data card format...
             var schemaOptions = [
-                "form",
-                "subheadings",
-                "strings",
-                "types"
+                'form',
+                'subheadings',
+                'strings',
+                'types'
             ];
 
             schemaOptions.forEach(function(key) {

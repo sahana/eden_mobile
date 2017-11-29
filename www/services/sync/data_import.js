@@ -24,8 +24,8 @@
  */
 
 EdenMobile.factory('DataImport', [
-    '$q', 'emDB', 'SyncTask',
-    function ($q, emDB, SyncTask) {
+    '$q', 'emDB', 'emFiles', 'SyncTask',
+    function ($q, emDB, emFiles, SyncTask) {
 
         "use strict";
 
@@ -79,10 +79,11 @@ EdenMobile.factory('DataImport', [
 
             // Register file dependencies
             var resolveFileDependency = function(dependency) {
-                self.addFileURI(record, dependency);
-                if (!!self.dependencies && self.isResolved()) {
-                    self.dependencies.resolve();
-                }
+                self.addFileURI(record, dependency).then(function() {
+                    if (!!self.dependencies && self.isResolved()) {
+                        self.dependencies.resolve();
+                    }
+                });
             };
             for (fieldName in files) {
                 downloadURL = files[fieldName];
@@ -277,17 +278,53 @@ EdenMobile.factory('DataImport', [
 
             var files = record.files,
                 url,
-                fieldName;
+                fieldName,
+                pending = [],
+                deferred;
+
+            // Decorated callback function to set the upload field
+            // value after the file has been stored (deferred)
+            var setValue = function(fieldName, deferred) {
+                return function(fileURI) {
+                    // Set field value
+                    record.data[fieldName] = fileURI;
+                    // Mark as consumed (can only be referenced once)
+                    dependency.fileURI = null;
+                    // Remove local dependency
+                    delete files[fieldName];
+                    deferred.resolve();
+                };
+            };
 
             // Resolve all pending uploads that match the dependency
             for (fieldName in files) {
                 url = files[fieldName];
                 if (url == dependency.url) {
                     if (dependency.isResolved) {
-                        record.data[fieldName] = dependency.fileURI;
+                        var tempFileURI = dependency.fileURI;
+                        if (tempFileURI) {
+                            // File available
+                            deferred = $q.defer();
+                            emFiles.store(tempFileURI,
+                                          setValue(fieldName, deferred),
+                                          this.tableName,
+                                          fieldName);
+                            pending.push(deferred.promise);
+                        } else {
+                            // Already consumed => skip
+                            delete files[fieldName];
+                        }
+                    } else {
+                        // File not available => skip
+                        delete files[fieldName];
                     }
-                    delete files[fieldName];
                 }
+            }
+
+            if (pending.length) {
+                return $q.all(pending);
+            } else {
+                return $q.resolve();
             }
         };
 
