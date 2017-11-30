@@ -458,6 +458,74 @@ EdenMobile.factory('emResources', [
 
         // --------------------------------------------------------------------
         /**
+         * Get field options
+         *
+         * @param {string} fieldName - the field name
+         *
+         * @returns {Array} - an array of tuples [[key, label], ...] of the
+         *                    available field options
+         */
+        Resource.prototype.getOptions = function(fieldName) {
+
+            var field = this.table.$(fieldName),
+                options,
+                promise;
+
+            if (!field) {
+                return $q.reject('field not found: ' + fieldName);
+            } else {
+                // Use the resource-specific clone
+                field = this.fields[field.name];
+            }
+
+            if (field.isForeignKey) {
+
+                var deferred = $q.defer();
+
+                // Look up all recordIDs in the referenced table
+                var fk = field.getForeignKey(),
+                    lookupTable = this.getTable(fk.table),
+                    key = fk.key,
+                    self = this;
+
+                lookupTable.select([key], function(rows) {
+
+                    var keys = rows.map(function(row) {
+                        return row.$(key);
+                    });
+
+                    var represent = new Represent(self.table, field);
+
+                    represent.bulk(keys).then(function(labels) {
+                        options = keys.map(function(k) {
+                            return [k, labels[k] || k];
+                        });
+                        deferred.resolve(options);
+                    });
+                });
+
+                promise = deferred.promise;
+
+            } else {
+
+                options = field._description.options || [];
+
+                if (options.constructor !== Array) {
+                    // Copy original array (=> allow the caller to modify)
+                    options = angular.copy(options);
+                } else {
+                    // Convert into array of tuples
+                    options = Object.keys(options).map(function(k) {
+                        return [k, options[k]];
+                    });
+                }
+                promise = $q.resolve(options);
+            }
+            return promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Get a string representation for a field value
          *
          * @param {string} fieldName - the field name

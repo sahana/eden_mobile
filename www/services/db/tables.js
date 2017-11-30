@@ -775,7 +775,7 @@ EdenMobile.factory('Table', [
          */
         Table.prototype.select = function(fields, options, onSuccess, onError) {
 
-           new Set(this).select(fields, options, onSuccess, onError);
+           (new Set(this)).select(fields, options, onSuccess, onError);
         };
 
         // --------------------------------------------------------------------

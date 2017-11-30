@@ -252,6 +252,10 @@
 
         columns.forEach(function(expr) {
 
+            if (!expr) {
+                throw new Error('invalid column expression: ' + expr);
+            }
+
             if (typeof expr == 'string') {
                 var fieldName = expr;
                 expr = table.$(fieldName);
@@ -272,7 +276,7 @@
                     sql.push(sqlExpr);
                     break;
                 default:
-                    throw new Error('invalid column expression');
+                    throw new Error('invalid type of column expression');
             }
         });
         return sql.join(',');
@@ -466,7 +470,7 @@
             if (typeof onError == 'function') {
                 onError(error);
             } else {
-                db.sqlError(error);
+                this._db.sqlError(error);
             }
         };
 
@@ -478,7 +482,7 @@
             try {
                 sql.push(this.expand(columns));
             } catch (error) {
-                handleError(error);
+                handleError.call(this, error);
                 return;
             }
         }
@@ -530,7 +534,7 @@
                 },
                 function(error) {
                     // Error
-                    handleError(error);
+                    handleError.call(self, error);
                 });
         }
     };

@@ -23,9 +23,9 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
-
 (function() {
+
+    "use strict";
 
     // ========================================================================
     /**
@@ -279,17 +279,18 @@
             var renderWidget = function($scope, elem, attr) {
 
                 // Build the widget
+                var widget;
                 if (attr.widget == 'checkbox') {
                     // Checkbox
-                    var widget = angular.element('<ion-checkbox>')
-                                        .addClass('item')
-                                        .html(attr.label || '');
+                    widget = angular.element('<ion-checkbox>')
+                                    .addClass('item')
+                                    .html(attr.label || '');
                 } else {
                     // Default: Toggle
-                    var widget = angular.element('<ion-toggle>')
-                                        .addClass('item item-toggle')
-                                        .attr('toggle-class', 'toggle-positive')
-                                        .html(attr.label || '');
+                    widget = angular.element('<ion-toggle>')
+                                    .addClass('item item-toggle')
+                                    .attr('toggle-class', 'toggle-positive')
+                                    .html(attr.label || '');
                 }
 
                 // Widget attributes
@@ -341,20 +342,12 @@
 
                 emResources.open(resourceName).then(function(resource) {
 
-                    if (resource) {
-                        var field = resource.fields[fieldName];
-                        if (field) {
-                            field.getOptions().then(function(options) {
-                                if (callback) {
-                                    callback(options);
-                                }
-                            });
-                            return;
-                        }
-                    }
-                    if (callback) {
-                        callback();
-                    }
+                    resource.getOptions(fieldName).then(
+                        callback,
+                        function() {
+                            // Call without options on error
+                            callback();
+                        });
                 });
             };
 
@@ -620,8 +613,7 @@
             var renderForm = function($scope, elem, attr) {
 
                 var sectionName = attr.sectionName,
-                    section = emSettings[sectionName],
-                    empty = true;
+                    section = emSettings[sectionName];
 
                 if (section === undefined) {
                     return;
@@ -645,7 +637,6 @@
                     if (key[0] == '_') {
                         continue;
                     }
-                    var setting = section[key];
                     var widget = angular.element('<em-config-widget>')
                                         .attr('section-name', sectionName)
                                         .attr('setting-name', key);
@@ -764,7 +755,7 @@
 
                 // Attach popup
                 if (popup && writable) {
-                    listItem.on('click', function(event) {
+                    listItem.on('click', function( /* event */ ) {
 
                         var sectionData = scope.settings[sectionName],
                             value;
