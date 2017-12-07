@@ -321,9 +321,22 @@ EdenMobile.factory('emForms', [
                         };
 
                         // Label
+                        // TODO: make a Resource method
                         description = field._description;
                         if (withLabel) {
-                            attr.label = description.label || fieldName;
+                            var label;
+                            if (fieldName == 'llrepr') {
+                                var strings = resource.strings;
+                                if (strings) {
+                                    label = strings.name;
+                                }
+                                if (!label) {
+                                    label = resource.name;
+                                }
+                            } else {
+                                label = description.label || fieldName;
+                            }
+                            attr.label = label;
                         }
 
                         // Placeholder (for text input)

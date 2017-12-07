@@ -23,8 +23,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
-
 // ============================================================================
 /**
  * emDataCard - directive for cards in data list
@@ -33,10 +31,12 @@
  * @memberof EdenMobile
  */
 EdenMobile.directive("emDataCard", [
-    '$compile', 'emResources',
-    function($compile, emResources) {
+    '$compile',
+    function($compile) {
 
-        var renderCard = function($scope, elem, attr) {
+        "use strict";
+
+        var renderCard = function($scope, elem /* , attr */ ) {
 
             // => Scope structures used (provided by controller):
             // $scope.resourceName: the master resource name
@@ -69,8 +69,8 @@ EdenMobile.directive("emDataCard", [
                 titleTemplate = cardConfig.title;
             }
             if (!titleTemplate) {
-                // Fallback
-                titleTemplate = 'Record #{{record.id}}';
+                // Fallback: use llrepr if not empty, otherwise show record ID
+                titleTemplate = '{{record.llrepr || "Record #" + record.id}}';
             }
 
             // Construct the data card template
@@ -101,7 +101,9 @@ EdenMobile.directive('emResource', [
     '$compile', 'emResources',
     function($compile, emResources) {
 
-        var renderCard = function($scope, elem, attr) {
+        "use strict";
+
+        var renderCard = function($scope, elem /* , attr */ ) {
 
             var resourceData = $scope.resource,
                 resourceName = resourceData.name,
@@ -157,7 +159,9 @@ EdenMobile.directive("emSyncFormCard", [
     '$compile',
     function($compile) {
 
-        var renderCard = function($scope, elem, attr) {
+        "use strict";
+
+        var renderCard = function($scope, elem /* , attr */ ) {
 
             var form = $scope.form,
                 label = form.label;
@@ -197,7 +201,9 @@ EdenMobile.directive("emSyncResourceCard", [
     '$compile',
     function($compile) {
 
-        var renderCard = function($scope, elem, attr) {
+        "use strict";
+
+        var renderCard = function($scope, elem /* , attr */ ) {
 
             var resource = $scope.resource,
                 label = resource.label;
@@ -236,7 +242,9 @@ EdenMobile.directive("emSyncLogCard", [
     '$compile',
     function($compile) {
 
-        var renderCard = function($scope, elem, attr) {
+        "use strict";
+
+        var renderCard = function($scope, elem /* , attr */ ) {
 
             var entry = $scope.entry,
                 cardTemplate = angular.element('<div class="item">'),

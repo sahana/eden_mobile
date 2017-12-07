@@ -631,7 +631,12 @@ EdenMobile.factory('emResources', [
                         value = record[attr];
                         reprStr = '' + value;
                         if (value === null) {
-                            reprStr = '-';
+                            if (attr == 'llrepr') {
+                                // Leave empty (fallback trigger)
+                                reprStr = '';
+                            } else {
+                                reprStr = '-';
+                            }
                         } else {
                             reprValues = repr[attr];
                             if (reprValues) {
