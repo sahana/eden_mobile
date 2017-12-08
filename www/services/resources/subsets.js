@@ -24,8 +24,8 @@
  */
 
 EdenMobile.factory('Subset', [
-    //'$q',
-    function () {
+    '$q',
+    function ($q) {
 
         "use strict";
 
@@ -74,6 +74,98 @@ EdenMobile.factory('Subset', [
             }
 
             return new Subset(this.resource, this.parentID, subQuery);
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Extract records from this Subset (DRAFT)
+         *
+         * @param {Array} fields - Array of Fields or field names to extract
+         * @param {object} options - select options (orderby, limitby etc.)
+         *
+         * @returns {promise} - a promise that resolves into the extracted
+         *                      records
+         */
+        Subset.prototype.select = function(fields, options) {
+
+            var deferred = $q.defer();
+
+            var parent = this.parentQuery(),
+                table = this.table;
+
+            var set = table;
+            if (parent.joins) {
+                parent.joins.forEach(function(join) {
+                    set = set.join(join);
+                }, this);
+            }
+            if (parent.query) {
+                set = set.where(parent.query);
+            }
+            if (this.query) {
+                set = set.where(this.query);
+            }
+
+            set.select(fields, options,
+                function(rows) {
+                    deferred.resolve(rows);
+                },
+                function(error) {
+                    deferred.reject(error);
+                });
+
+            return deferred.promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Helper function to construct the parent query and joins
+         *
+         * @returns {Parent} - query and joins
+         *
+         * @typedef {object} Parent
+         * @property {Expression} query - the parent query
+         * @property {Array} joins - Array of on-expressions to join
+         *                           the parent table
+         */
+        Subset.prototype.parentQuery = function() {
+
+            var resource = this.resource,
+                parent = resource.parent,
+                parentID = this.parentID,
+                joins,
+                query;
+
+            if (parent && parentID) {
+
+                var parentTable = parent.table,
+                    table = this.table,
+                    link = resource.link,
+                    pkey = resource.pkey,
+                    fkey = resource.fkey;
+
+                query = parentTable.$('id').equals(parentID);
+
+                if (link) {
+
+                    var linkTable = link.table,
+                        lkey = resource.lkey,
+                        rkey = resource.rkey;
+
+                    joins = [
+                        linkTable.on(linkTable.$(rkey).equals(table.$(fkey))),
+                        parentTable.on(parentTable.$(pkey).equals(linkTable.$(lkey)))
+                    ];
+
+                } else {
+
+                    joins = [
+                        parentTable.on(parentTable.$(pkey).equals(table.$(fkey)))
+                    ];
+                }
+            }
+
+            return {joins: joins, query: query};
         };
 
         // ====================================================================
