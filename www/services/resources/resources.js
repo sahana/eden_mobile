@@ -31,8 +31,8 @@
  * @memberof EdenMobile.Services
  */
 EdenMobile.factory('emResources', [
-    '$q', 'emComponents', 'emDB', 'emUtils', 'Join', 'Represent',
-    function ($q, emComponents, emDB, emUtils, Join, Represent) {
+    '$q', 'emComponents', 'emDB', 'emUtils', 'Join', 'Represent', 'Subset',
+    function ($q, emComponents, emDB, emUtils, Join, Represent, Subset) {
 
         "use strict";
 
@@ -665,6 +665,13 @@ EdenMobile.factory('emResources', [
             var record = this.addDefaults(data, false, false);
 
             this.table.insert(record, callback);
+        };
+
+        // --------------------------------------------------------------------
+        // TODO docstring
+        Resource.prototype.subSet = function(parentID, query) {
+
+            return new Subset(this, parentID, query);
         };
 
         // --------------------------------------------------------------------
