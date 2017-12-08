@@ -53,10 +53,11 @@ EdenMobile.controller("EMDataList", [
          *                         records, e.g. a subset linked to a
          *                         particular master record (components)
          */
-        var updateDataList = function(resource, query) {
+        var updateDataList = function(subset) {
 
             // Get strings
-            var strings = resource.strings,
+            var resource = subset.resource,
+                strings = resource.strings,
                 listTitle = resource.name;
             if (strings) {
                 listTitle = strings.namePlural || strings.name || listTitle;
@@ -86,7 +87,13 @@ EdenMobile.controller("EMDataList", [
             }
 
             // Select all existing records
-            resource.select(fields, query, function(records) {
+            subset.select(fields, function(rows) {
+
+                // TODO change representRecords to accept rows
+                var records = [];
+                rows.forEach(function(row) {
+                    records.push(row._());
+                });
                 resource.representRecords(records).then(function(result) {
                     $scope.records = result;
                 });
@@ -117,7 +124,7 @@ EdenMobile.controller("EMDataList", [
                             recordID: recordID
                         };
 
-                    if (!!componentName) {
+                    if (componentName) {
 
                         // Component action links
                         linkParams.componentName = componentName;
@@ -125,17 +132,20 @@ EdenMobile.controller("EMDataList", [
                         $scope.createView = $state.href('data.componentCreate', linkParams);
 
                         // Open component
-                        resource.openComponent(recordID, componentName,
-                            function(component, query) {
-                                updateDataList(component, query);
-                            },
-                            function(error) {
-                                emDialogs.error('Error', error, function() {
-                                    $state.go('data.list',
-                                        {resourceName: resourceName},
-                                        {location: 'replace', reload: true});
+                        var component = resource.component(componentName);
+                        if (!component) {
+                            // Undefined component
+                            emDialogs.error('Error', 'Undefined Component',
+                                function() {
+                                    $state.go('data.update', linkParams, {
+                                        location: 'replace',
+                                        reload: true
+                                    });
                                 });
-                            });
+                            $scope.records = [];
+                        } else {
+                            updateDataList(component.subSet(recordID));
+                        }
                     } else {
 
                         // Master action links
@@ -149,7 +159,7 @@ EdenMobile.controller("EMDataList", [
                         }
 
                         // Open master
-                        updateDataList(resource);
+                        updateDataList(resource.subSet());
                     }
                 }
             });

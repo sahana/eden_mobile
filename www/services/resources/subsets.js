@@ -31,7 +31,11 @@ EdenMobile.factory('Subset', [
 
         // ====================================================================
         /**
-         * Constructor
+         * Subset - a filtered subset of a resource
+         *
+         * @param {Resource} resource - the resource
+         * @param {integer} parentID - the ID of the parent record
+         * @param {Expression} query - the filter expression for the subset
          */
         function Subset(resource, parentID, query) {
 

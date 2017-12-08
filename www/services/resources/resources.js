@@ -510,7 +510,7 @@ EdenMobile.factory('emResources', [
 
                 options = field._description.options || [];
 
-                if (options.constructor !== Array) {
+                if (options.constructor == Array) {
                     // Copy original array (=> allow the caller to modify)
                     options = angular.copy(options);
                 } else {
@@ -668,7 +668,14 @@ EdenMobile.factory('emResources', [
         };
 
         // --------------------------------------------------------------------
-        // TODO docstring
+        /**
+         * Define a Subset of this resource
+         *
+         * @param {integer} parentID - the parent record ID (optional,
+         *                             for components)
+         * @param {Expression} query - the filter query for the subset
+         *
+         */
         Resource.prototype.subSet = function(parentID, query) {
 
             return new Subset(this, parentID, query);

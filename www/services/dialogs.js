@@ -23,8 +23,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
-
 // ============================================================================
 /**
  * emDialogs - Service providing common dialogs
@@ -35,6 +33,8 @@
 EdenMobile.factory('emDialogs', [
     '$ionicModal', '$ionicPopover', '$ionicPopup', '$rootScope', '$timeout',
     function ($ionicModal, $ionicPopover, $ionicPopup, $rootScope, $timeout) {
+
+        "use strict";
 
         // ====================================================================
         /**
@@ -70,14 +70,14 @@ EdenMobile.factory('emDialogs', [
          */
         var error = function(message, explanation, callback) {
 
-            var errorPopup = $ionicPopup.show({
+            $ionicPopup.show({
                 title: message || 'Error',
                 subTitle: explanation,
                 buttons: [
                     {
                         text: '<b>Close</b>',
                         type: 'button-positive',
-                        onTap: function(e) {
+                        onTap: function() {
                             if (callback) {
                                 callback();
                             }
@@ -159,7 +159,7 @@ EdenMobile.factory('emDialogs', [
             var inputType = options.inputType || 'text',
                 template = '<input type="' + inputType + '" placeholder="' + options.inputPlaceholder + '" ng-model="data.input"><div class="error" ng-show="data.invalid">Invalid!</div>';
 
-            var stringInput = $ionicPopup.show({
+            $ionicPopup.show({
                 scope: scope,
                 template: template,
                 title: title,
@@ -167,7 +167,7 @@ EdenMobile.factory('emDialogs', [
                 buttons: [{
                     text: 'Cancel',
                     type: 'button-default',
-                    onTap: function(e) {
+                    onTap: function() {
                         if (cancelCallback) {
                             cancelCallback();
                         }
@@ -225,7 +225,7 @@ EdenMobile.factory('emDialogs', [
                 buttons: [
                     {
                         text: 'Cancel',
-                        onTap: function(e) {
+                        onTap: function() {
                             if (cancelCallback) {
                                 cancelCallback();
                             }
@@ -308,9 +308,6 @@ EdenMobile.factory('emDialogs', [
                 return;
             }
 
-            var resourceName = $scope.resourceName,
-                recordID = $scope.recordID;
-
             if ($scope.componentMenu) {
 
                 // Already rendered, just show it
@@ -320,10 +317,14 @@ EdenMobile.factory('emDialogs', [
 
                 // Add components to scope
                 var components = [],
-                    component;
-                for (var componentName in resource.components) {
-                    component = resource.components[componentName];
-                    components.push({title: component.title, name: componentName});
+                    description;
+
+                for (var alias in resource.activeComponents) {
+                    description = resource.activeComponents[alias];
+                    components.push({
+                        title: description.labelPlural || description.label || alias,
+                        name: alias
+                    });
                 }
                 $scope.components = components;
 

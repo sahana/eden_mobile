@@ -116,7 +116,7 @@ EdenMobile.controller("EMDataUpdate", [
 
             // Enable component menu when updating a master record
             if (targetName == resourceName) {
-                if (Object.keys(targetResource.components).length) {
+                if (Object.keys(targetResource.activeComponents).length) {
                     $scope.hasComponents = true;
                     $scope.openComponents = function($event) {
                         emDialogs.componentMenu($scope, $event, targetResource);
