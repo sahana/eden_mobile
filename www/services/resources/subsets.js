@@ -113,13 +113,13 @@ EdenMobile.factory('Subset', [
 
         // --------------------------------------------------------------------
         /**
-         * Extract records from this Subset (DRAFT)
+         * Extract records from this Subset
          *
          * @param {Array} fields - Array of Fields or field names to extract
          * @param {object} options - select options (orderby, limitby etc.)
          *
          * @returns {promise} - a promise that resolves into the extracted
-         *                      records
+         *                      records (Rows)
          */
         Subset.prototype.select = function(fields, options) {
 

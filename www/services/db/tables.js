@@ -585,7 +585,6 @@ EdenMobile.factory('Table', [
         /**
          * Add field defaults to a record before write
          *
-         * @param {object} fields - the Fields
          * @param {object} data - the data that are to be written
          * @param {boolean} visible - only add visible defaults (for forms)
          * @param {boolean} update - apply update-defaults rather than
@@ -593,14 +592,15 @@ EdenMobile.factory('Table', [
          *
          * @returns {object} - a new data object including default values
          */
-        Table.prototype._addDefaults = function(fields, data, visible, update) {
+        Table.prototype.addDefaults = function(data, visible, update) {
 
-            var record = {},
+            var fields = this.fields,
+                record = {},
                 field,
-                fieldName,
                 defaultValue;
 
-            for (fieldName in fields) {
+            for (var fieldName in fields) {
+
                 field = fields[fieldName];
                 if (!data.hasOwnProperty(fieldName)) {
                     if (visible && !field.readable) {
@@ -620,22 +620,6 @@ EdenMobile.factory('Table', [
                 }
             }
             return angular.extend(record, data);
-        };
-
-        // --------------------------------------------------------------------
-        /**
-         * Add field defaults to a record before write
-         *
-         * @param {object} data - the data that are to be written
-         * @param {boolean} visible - only add visible defaults (for forms)
-         * @param {boolean} update - apply update-defaults rather than
-         *                           create-defaults
-         *
-         * @returns {object} - a new data object including default values
-         */
-        Table.prototype.addDefaults = function(data, visible, update) {
-
-            return this._addDefaults(this.fields, data, visible, update);
         };
 
         // --------------------------------------------------------------------

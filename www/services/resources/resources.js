@@ -427,7 +427,7 @@ EdenMobile.factory('emResources', [
 
             // @todo: add resource name to data
 
-            return this.table._addDefaults(this.fields, data, visible, update);
+            return this.table.addDefaults.apply(this, [data, visible, update]);
         };
 
         // --------------------------------------------------------------------
@@ -794,6 +794,8 @@ EdenMobile.factory('emResources', [
          *                               parameters
          * @param {function} onError - error callback, receives the error
          *                             message as parameter
+         *
+         * TODO deprecate when EMDataUpdate migrated to Subsets
          */
         Resource.prototype.openComponent = function(recordID, componentName, onSuccess, onError) {
 
