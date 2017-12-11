@@ -124,14 +124,13 @@ EdenMobile.controller("EMDataList", [
                             recordID: recordID
                         };
 
+                    $scope.insertable = false;
+                    $scope.createView = "#";
+
                     if (componentName) {
 
-                        // Component action links
                         linkParams.componentName = componentName;
-                        $scope.parentView = $state.href('data.update', linkParams);
-                        $scope.createView = $state.href('data.componentCreate', linkParams);
 
-                        // Open component
                         var component = resource.component(componentName);
                         if (!component) {
                             // Undefined component
@@ -144,20 +143,22 @@ EdenMobile.controller("EMDataList", [
                                 });
                             $scope.records = [];
                         } else {
+                            // Component action links
+                            $scope.parentView = $state.href('data.update', linkParams);
+                            if (component.settings.insertable !== false) {
+                                $scope.insertable = true;
+                                $scope.createView = $state.href('data.componentCreate', linkParams);
+                            }
+                            // Open component
                             updateDataList(component.subSet(recordID));
                         }
                     } else {
-
                         // Master action links
                         $scope.parentView = $state.href('data.resources');
-                        if (resource.settings.insertable) {
+                        if (resource.settings.insertable !== false) {
                             $scope.insertable = true;
                             $scope.createView = $state.href('data.create', linkParams);
-                        } else {
-                            $scope.insertable = false;
-                            $scope.createView = "#";
                         }
-
                         // Open master
                         updateDataList(resource.subSet());
                     }

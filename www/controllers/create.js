@@ -23,8 +23,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
-
 // ============================================================================
 /**
  * Create-Form Controller
@@ -35,6 +33,8 @@
 EdenMobile.controller('EMDataCreate', [
     '$scope', '$state', '$stateParams', 'emDialogs', 'emFiles', 'emResources',
     function($scope, $state, $stateParams, emDialogs, emFiles, emResources) {
+
+        "use strict";
 
         // --------------------------------------------------------------------
         // Read state params
@@ -63,7 +63,7 @@ EdenMobile.controller('EMDataCreate', [
                     var returnTo,
                         returnParams = {resourceName: resourceName};
 
-                    if (!!componentName) {
+                    if (componentName) {
                         // Go back to the component record list
                         returnTo = 'data.component';
                         returnParams.recordID = recordID;
@@ -74,7 +74,7 @@ EdenMobile.controller('EMDataCreate', [
                     }
                     $state.go(returnTo, returnParams, {location: 'replace'});
                 });
-            }
+            };
 
             emResources.open(resourceName).then(function(resource) {
 
@@ -101,12 +101,13 @@ EdenMobile.controller('EMDataCreate', [
         /**
          * Configure the form for the target resource
          *
-         * @param {Resource} targetResource - the target resource
+         * @param {Subset} subset - the subset of the target resource where
+         *                          to add the record
          */
-        var configureForm = function(targetResource, componentKey) {
+        var configureForm = function(subset) {
 
-            var targetName = targetResource.name,
-                tableName = targetResource.tableName;
+            var targetResource = subset.resource,
+                targetName = targetResource.name;
 
             // Configure the form title
             var strings = targetResource.strings,
@@ -127,12 +128,13 @@ EdenMobile.controller('EMDataCreate', [
                     }
                 }
                 if (!empty) {
-                    // Add component parent link
-                    if (!!componentKey) {
-                        form[componentKey] = recordID;
-                    }
-                    // Commit to database and redirect to list
-                    targetResource.insert(form, confirmCreate);
+                    subset.insert(form).then(
+                        function() {
+                            confirmCreate();
+                        },
+                        function(error) {
+                            emDialogs.error('Could not create record', error, $scope.returnToList);
+                        });
                 }
             };
 
@@ -193,26 +195,25 @@ EdenMobile.controller('EMDataCreate', [
 
             // Access the resource, then populate the form
             emResources.open(resourceName).then(function(resource) {
-                if (!!componentName) {
-                    var hook = resource.components[componentName],
-                        componentKey = hook.joinby;
-                    resource.openComponent(recordID, componentName,
-                        function(component) {
-                            // Configure for component-create
-                            configureForm(component, componentKey);
-                        },
-                        function(error) {
-                            // Undefined component
-                            emDialogs.error(error, null, function() {
-                                // Go back to master record
-                                $state.go('data.update',
-                                    {resourceName: resourceName, recordID: recordID},
-                                    {location: 'replace', reload: true});
-                            });
+
+                if (componentName) {
+
+                    var component = resource.component(componentName);
+                    if (!component) {
+                        // Undefined component
+                        emDialogs.error('Undefined component', componentName, function() {
+                            // Go back to master record
+                            $state.go('data.update',
+                                {resourceName: resourceName, recordID: recordID},
+                                {location: 'replace', reload: true});
                         });
+                    } else {
+                        // Open component form
+                        configureForm(component.subSet(recordID));
+                    }
                 } else {
-                    // Configure for master-create
-                    configureForm(resource);
+                    // Open master form
+                    configureForm(resource.subSet());
                 }
             });
         };

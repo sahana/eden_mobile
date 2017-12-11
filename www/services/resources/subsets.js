@@ -82,6 +82,37 @@ EdenMobile.factory('Subset', [
 
         // --------------------------------------------------------------------
         /**
+         * Insert a new record into this subset, and establish the required
+         * link to the parent record
+         *
+         * @param {object} data - the record data
+         *
+         * @returns {promise} - a promise that resolves into the ID of the
+         *                      newly created record
+         */
+        Subset.prototype.insert = function(data) {
+
+            var resource = this.resource,
+                parent = resource.parent,
+                parentID = this.parentID;
+
+            if (parentID && parent && !resource.link) {
+
+                var self = this;
+                return this._lookupKey(parent, parentID, resource.pkey).then(
+                    function(parentKey) {
+                        data[resource.fkey] = parentKey;
+                        return self._insertRecord(data);
+                    });
+
+            } else {
+
+                return this._insertRecord(data);
+            }
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Extract records from this Subset (DRAFT)
          *
          * @param {Array} fields - Array of Fields or field names to extract
@@ -92,12 +123,12 @@ EdenMobile.factory('Subset', [
          */
         Subset.prototype.select = function(fields, options) {
 
-            var deferred = $q.defer();
+            var deferred = $q.defer(),
+                parent = this._parentQuery(),
+                table = this.table,
+                set = table;
 
-            var parent = this.parentQuery(),
-                table = this.table;
-
-            var set = table;
+            // Add parent joins+query
             if (parent.joins) {
                 parent.joins.forEach(function(join) {
                     set = set.join(join);
@@ -106,10 +137,13 @@ EdenMobile.factory('Subset', [
             if (parent.query) {
                 set = set.where(parent.query);
             }
+
+            // Add subset query
             if (this.query) {
                 set = set.where(this.query);
             }
 
+            // Extract the rows, then resolve
             set.select(fields, options,
                 function(rows) {
                     deferred.resolve(rows);
@@ -132,7 +166,7 @@ EdenMobile.factory('Subset', [
          * @property {Array} joins - Array of on-expressions to join
          *                           the parent table
          */
-        Subset.prototype.parentQuery = function() {
+        Subset.prototype._parentQuery = function() {
 
             var resource = this.resource,
                 parent = resource.parent,
@@ -170,6 +204,126 @@ EdenMobile.factory('Subset', [
             }
 
             return {joins: joins, query: query};
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Create a new record
+         *
+         * @param {object} data - the record data
+         *
+         * @returns {promise} - a promise that resolves into the record ID
+         *                      of the newly created record
+         */
+        Subset.prototype._insertRecord = function(data) {
+
+            var deferred = $q.defer(),
+                resource = this.resource,
+                parentID = this.parentID,
+                record = resource.addDefaults(data, false, false),
+                self = this;
+
+            resource.table.insert(record,
+                function(insertID) {
+                    if (resource.link && parentID) {
+                        self._insertLink(insertID).then(
+                            function() {
+                                deferred.resolve(insertID);
+                            },
+                            function(error) {
+                                deferred.reject(error);
+                            });
+                    } else {
+                         deferred.resolve(insertID);
+                    }
+                },
+                function(error) {
+                    deferred.reject(error);
+                });
+
+            return deferred.promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Create a link table entry for a new component record
+         *
+         * @param {integer} recordID - the record ID of the new component
+         *                             record
+         *
+         * @returns {promise} - a promise that is resolved when the link
+         *                      table entry has been created (linkID), or
+         *                      no link table entry is required (undefined)
+         */
+        Subset.prototype._insertLink = function(recordID) {
+
+            var resource = this.resource,
+                parentID = this.parentID,
+                link = resource.link;
+
+            if (!parentID || !link) {
+                return $q.resolve();
+            }
+
+            var parent = resource.parent,
+                deferred = $q.defer(),
+                self = this;
+
+            self._lookupKey(parent, parentID, resource.pkey).then(function(lkey) {
+                self._lookupKey(resource, recordID, resource.fkey).then(function(rkey) {
+
+                    var data = {};
+                    data[resource.lkey] = lkey;
+                    data[resource.rkey] = rkey;
+
+                    link.table.insert(data,
+                        function(insertID) {
+                            deferred.resolve(insertID);
+                        },
+                        function(error) {
+                            deferred.reject(error);
+                        });
+                });
+            });
+
+            return deferred.promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Look up a key from a record
+         *
+         * @param {Resource} resource - the resource
+         * @param {integer} recordID - the record ID
+         * @param {string} key - the name of the key to look up
+         *
+         * @returns {promise} - a promise that resolves into the value
+         *                      of the key in the target record
+         */
+        Subset.prototype._lookupKey = function(resource, recordID, key) {
+
+            if (key == 'id') {
+                // No look-up required, resolve immediately
+                return $q.resolve(recordID);
+            }
+
+            var deferred = $q.defer(),
+                table = resource.table;
+
+            table.where(table.$('id').equals(recordID))
+                 .select([key], {limitby: 1},
+                function(rows) {
+                    if (!rows.length) {
+                        deferred.reject('record not found');
+                    } else {
+                        deferred.resolve(rows[0].$(key));
+                    }
+                },
+                function(error) {
+                    deferred.reject(error);
+                });
+
+            return deferred.promise;
         };
 
         // ====================================================================
