@@ -55,14 +55,10 @@ EdenMobile.controller("EMDataList", [
          */
         var updateDataList = function(subset) {
 
-            // Get strings
-            var resource = subset.resource,
-                strings = resource.strings,
-                listTitle = resource.name;
-            if (strings) {
-                listTitle = strings.namePlural || strings.name || listTitle;
-            }
-            $scope.listTitle = listTitle;
+            var resource = subset.resource;
+
+            // List title
+            $scope.listTitle = resource.getLabel(true);
 
             // Get card config, determine fields to extract
             var cardConfig = resource.card,

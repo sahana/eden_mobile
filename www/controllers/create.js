@@ -106,16 +106,10 @@ EdenMobile.controller('EMDataCreate', [
          */
         var configureForm = function(subset) {
 
-            var targetResource = subset.resource,
-                targetName = targetResource.name;
+            var resource = subset.resource;
 
-            // Configure the form title
-            var strings = targetResource.strings,
-                formTitle = targetName;
-            if (strings) {
-                formTitle = strings.name || formTitle;
-            }
-            $scope.formTitle = formTitle;
+            // Set form title
+            $scope.formTitle = resource.getLabel();
 
             // Configure the submit-function
             $scope.submit = function(form) {
@@ -141,7 +135,7 @@ EdenMobile.controller('EMDataCreate', [
             // Populate scope with default values
             var master = $scope.master,
                 form = $scope.form,
-                data = targetResource.addDefaults({}, true, false),
+                data = resource.addDefaults({}, true, false),
                 fieldName,
                 value;
             for (fieldName in data) {

@@ -112,18 +112,13 @@ EdenMobile.directive('emResource', [
             emResources.open(resourceName).then(function(resource) {
 
                 var strings = resource.strings,
-                    cardLabel = resource.name,
-                    cardIcon = 'ion-folder',
+                    cardIcon = strings && strings.icon || 'ion-folder',
+                    cardLabel = resource.getLabel(true),
                     showComponent = '';
 
                 if (!resource.main) {
                     // Hide component or lookup resources when $scope.main==true
                     showComponent = ' ng-hide="main"';
-                }
-
-                if (strings) {
-                    cardLabel = strings.namePlural || strings.name || cardLabel;
-                    cardIcon = strings.icon || cardIcon;
                 }
 
                 // Construct the data card template

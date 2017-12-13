@@ -450,7 +450,8 @@ EdenMobile.factory('emResources', [
                 }
             }
             if (!label) {
-                label = this.name;
+                var name = this.name;
+                label = emUtils.capitalize(name.slice(name.indexOf('_') + 1));
             }
 
             return label;

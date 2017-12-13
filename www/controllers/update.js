@@ -105,32 +105,25 @@ EdenMobile.controller("EMDataUpdate", [
         /**
          * Configure and populate the scope with the target record
          *
-         * @param {Resource} targetResource: the target resource
-         * @param {string} query: the component query (in component view)
+         * @param {Subset} subset: the subset containing the target record
          * @param {integer} targetID: the target record ID
          */
-        var configureForm = function(targetResource, query, targetID) {
+        var configureForm = function(subset, targetID) {
 
-            var targetName = targetResource.name,
-                tableName = targetResource.tableName;
+            var resource = subset.resource;
 
             // Enable component menu when updating a master record
-            if (targetName == resourceName) {
-                if (Object.keys(targetResource.activeComponents).length) {
+            if (!resource.parent) {
+                if (Object.keys(resource.activeComponents).length) {
                     $scope.hasComponents = true;
                     $scope.openComponents = function($event) {
-                        emDialogs.componentMenu($scope, $event, targetResource);
+                        emDialogs.componentMenu($scope, $event, resource);
                     };
                 }
             }
 
-            // Configure the form title
-            var strings = targetResource.strings,
-                formTitle = targetName;
-            if (strings) {
-                formTitle = strings.name || formTitle;
-            }
-            $scope.formTitle = formTitle;
+            // Set form title
+            $scope.formTitle = resource.getLabel();
 
             // Configure submit-function
             $scope.submit = function(form) {
@@ -144,7 +137,7 @@ EdenMobile.controller("EMDataUpdate", [
                 }
                 if (!empty) {
                     // Commit to database, then redirect
-                    var table = targetResource.table;
+                    var table = resource.table;
                     table.where(table.$('id').equals(targetID)).update(form,
                         function() {
                             onUpdate();
@@ -158,7 +151,7 @@ EdenMobile.controller("EMDataUpdate", [
                     'Delete Record',
                     'Are you sure you want to delete this record?',
                     function() {
-                        var table = targetResource.table;
+                        var table = resource.table;
                         table.where(table.$('id').equals(targetID)).delete(
                             function() {
                                 onDelete();
@@ -166,24 +159,19 @@ EdenMobile.controller("EMDataUpdate", [
                     });
             };
 
-            // Construct the query
-            var recordQuery = tableName + '.id=' + targetID;
-            if (!!query) {
-                query = query + ' AND ' + recordQuery;
-            } else {
-                query = recordQuery;
-            }
-
             // Extract current record and populate form and master
-            var fields = targetResource.fields,
+            var table = subset.table,
+                fields = resource.fields,
                 fieldNames = Object.keys(fields),
                 master = $scope.master,
                 form = $scope.form;
-            targetResource.select(fieldNames, query, function(records /* , result */) {
-                if (records.length == 1) {
 
+            subset.where(table.$('id').equals(targetID))
+                  .select(fieldNames, {limitby: 1}).then(function(rows) {
+
+                if (rows.length == 1) {
                     // Prepopulare the scope with current record data
-                    var row = records[0],
+                    var record = rows[0]._(),
                         field,
                         fieldName,
                         value;
@@ -192,25 +180,20 @@ EdenMobile.controller("EMDataUpdate", [
                         if (!field.readable && fieldName != 'llrepr') {
                             continue;
                         }
-                        value = row[fieldName];
+                        value = record[fieldName];
                         if (value !== undefined) {
                             master[fieldName] = value;
                             form[fieldName] = value;
                         }
                     }
-
-                    // Update scope
-                    $scope.$apply();
-
                 } else {
-
                     // Show error popup, then go back to list
                     emDialogs.error('Record not found', null, function() {
 
                         var returnTo,
                             returnParams = {resourceName: resourceName};
 
-                        if (!!componentName) {
+                        if (componentName) {
                             // Go back to the component record list
                             returnTo = 'data.component';
                             returnParams.recordID = recordID;
@@ -223,7 +206,6 @@ EdenMobile.controller("EMDataUpdate", [
                     });
                 }
             });
-
         };
 
         // --------------------------------------------------------------------
@@ -273,24 +255,23 @@ EdenMobile.controller("EMDataUpdate", [
             // Access the resource, then populate the form
             emResources.open(resourceName).then(function(resource) {
 
-                if (!!componentName) {
-                    resource.openComponent(recordID, componentName,
-                        function(component, query) {
-                            // Configure for component record
-                            configureForm(component, query, componentID);
-                        },
-                        function(error) {
-                            // Undefined component
-                            emDialogs.error(error, null, function() {
-                                // Go back to master record
-                                $state.go('data.update',
-                                    {resourceName: resourceName, recordID: recordID},
-                                    {location: 'replace', reload: true});
-                            });
+                if (componentName) {
+                    var component = resource.component(componentName);
+                    if (!component) {
+                        // Undefined component
+                        emDialogs.error('Undefined component', componentName, function() {
+                            // Go back to master record
+                            $state.go('data.update',
+                                {resourceName: resourceName, recordID: recordID},
+                                {location: 'replace', reload: true});
                         });
+                    } else {
+                        // Open component record
+                        configureForm(component.subSet(recordID), componentID);
+                    }
                 } else {
-                    // Configure for master record
-                    configureForm(resource, null, recordID);
+                    // Open master record
+                    configureForm(resource.subSet(), recordID);
                 }
             });
         };
