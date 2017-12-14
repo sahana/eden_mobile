@@ -157,6 +157,58 @@ EdenMobile.factory('Subset', [
 
         // --------------------------------------------------------------------
         /**
+         * Bulk-update all records in this Subset
+         *
+         * @param {object} data - the data to write
+         *
+         * @returns {promise} - a promise that resolves into the number of
+         *                      updated records (affectedRows)
+         */
+        Subset.prototype.update = function(data) {
+
+            var self = this;
+
+            return this._flatSet().then(function(set) {
+                if (set) {
+                    return self._update(set, data);
+                } else {
+                    // Subset is empty
+                    return $q.resolve(0);
+                }
+            });
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Bulk-delete all records in this subset
+         *
+         * @returns {promise} - a promise that resolves into the number of
+         *                      deleted records (affectedRows)
+         */
+        Subset.prototype.delete = function() {
+
+            var self = this;
+
+            return this._flatSet().then(function(set) {
+                if (set) {
+                    return self._delete(set);
+                } else {
+                    // Subset is empty
+                    return $q.resolve(0);
+                }
+            });
+        };
+
+        // --------------------------------------------------------------------
+        // TODO docstring
+        Subset.prototype.count = function() {
+
+            // TODO implement
+
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Helper function to construct the parent query and joins
          *
          * @returns {Parent} - query and joins
@@ -318,6 +370,117 @@ EdenMobile.factory('Subset', [
                     } else {
                         deferred.resolve(rows[0].$(key));
                     }
+                },
+                function(error) {
+                    deferred.reject(error);
+                });
+
+            return deferred.promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Get a flat Set without joins for this Subset (DRY helper for
+         * bulk update/delete)
+         *
+         * @returns {promise} - a promise that resolves into a Set, or
+         *                      undefined if the Subset contains no records
+         */
+        Subset.prototype._flatSet = function() {
+
+            var result,
+                parent = this._parentQuery(),
+                table = this.table,
+                set = table;
+
+            // Add parent joins+query
+            if (parent.joins) {
+                parent.joins.forEach(function(join) {
+                    set = set.join(join);
+                }, this);
+            }
+            if (parent.query) {
+                set = set.where(parent.query);
+            }
+
+            // Add subset query
+            if (this.query) {
+                set = set.where(this.query);
+            }
+
+            if (set.isJoin()) {
+
+                var deferred = $q.defer(),
+                    pkey = table.$('id');
+
+                set.select([pkey],
+                    function(rows) {
+                        if (rows.length) {
+                            var query = pkey.in(rows.map(function(row) {
+                                return row.$(pkey);
+                            }));
+                            deferred.resolve(table.where(query));
+                        } else {
+                            // Subset is empty
+                            deferred.resolve();
+                        }
+                    },
+                    function(error) {
+                        deferred.reject(error);
+                    });
+
+                result = deferred.promise;
+
+            } else {
+
+                result = $q.resolve(set);
+            }
+
+            return result;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Update data in a Set (DRY helper for update())
+         *
+         * @param {Set} set - the set
+         * @param {object} data - the data to write
+         *
+         * @returns {promise} - a promise that resolves into the number of
+         *                      updated records (affectedRows)
+         */
+        Subset.prototype._update = function(set, data) {
+
+            var deferred = $q.defer(),
+                delta = this.resource.addDefaults(data, false, true);
+
+            set.update(delta,
+                function(affectedRows) {
+                    deferred.resolve(affectedRows);
+                },
+                function(error) {
+                    deferred.reject(error);
+                });
+
+            return deferred.promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Delete records in a Set (DRY helper for delete())
+         *
+         * @param {Set} set - the set
+         *
+         * @returns {promise} - a promise that resolves into the number of
+         *                      deleted records (affectedRows)
+         */
+        Subset.prototype._delete = function(set) {
+
+            var deferred = $q.defer();
+
+            set.delete(
+                function(affectedRows) {
+                    deferred.resolve(affectedRows);
                 },
                 function(error) {
                     deferred.reject(error);

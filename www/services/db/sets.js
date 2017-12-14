@@ -438,6 +438,17 @@
 
     // ------------------------------------------------------------------------
     /**
+     * Test whether this Set is a join (helper to hide internal properties)
+     *
+     * @returns {bool} - true if this set is a join
+     */
+    Set.prototype.isJoin = function() {
+
+        return !!(this._join.length || this._left.length);
+    };
+
+    // ------------------------------------------------------------------------
+    /**
      * Select data from this Set
      *
      * @param {Array} columns - array of column expressions, can be
@@ -627,7 +638,7 @@
      */
     Set.prototype.update = function(data, options, onSuccess, onError) {
 
-        if (this._join.length || this._left.length) {
+        if (this.isJoin()) {
             throw new Error('Cannot update a join');
         }
 
@@ -720,7 +731,7 @@
      */
     Set.prototype.delete = function(options, onSuccess, onError) {
 
-        if (this._join.length || this._left.length) {
+        if (this.isJoin()) {
             throw new Error('Cannot delete from a join');
         }
 

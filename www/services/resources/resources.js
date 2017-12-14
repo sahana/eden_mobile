@@ -656,20 +656,6 @@ EdenMobile.factory('emResources', [
 
         // --------------------------------------------------------------------
         /**
-         * Add a new record to this resource
-         *
-         * @param {object} data - the data for the record
-         * @param {function} callback - callback function: function(insertID)
-         */
-        Resource.prototype.insert = function(data, callback) {
-
-            var record = this.addDefaults(data, false, false);
-
-            this.table.insert(record, callback);
-        };
-
-        // --------------------------------------------------------------------
-        /**
          * Define a Subset of this resource
          *
          * @param {integer} parentID - the parent record ID (optional,
@@ -684,12 +670,26 @@ EdenMobile.factory('emResources', [
 
         // --------------------------------------------------------------------
         /**
+         * Add a new record to this resource
+         *
+         * @param {object} data - the data for the record
+         *
+         * @returns {promise} - a promise that resolves into the new record ID
+         */
+        Resource.prototype.insert = function(data) {
+
+            return this.subSet().insert(data);
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Select records from this resource
          *
          * @param {Array} fields - array of field names
          * @param {string} query - SQL WHERE expression
          * @param {function} callback - callback function:
          *                              function(records, result)
+         * TODO rewrite for subset
          */
         Resource.prototype.select = function(fields, query, callback) {
 
@@ -722,11 +722,26 @@ EdenMobile.factory('emResources', [
 
         // --------------------------------------------------------------------
         /**
+         * Bulk-update all records in this resource
+         *
+         * @param {object} data - the data to write
+         *
+         * @returns {promise} - a promise that resolves into the number of
+         *                      updated records (affectedRows)
+         */
+        Resource.prototype.update = function(data) {
+
+            return this.subSet().update(data);
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Count the records in this resource
          *
          * @param {string} query - SQL WHERE expression
          * @param {function} callback - callback function:
          *                              function(resourceName, numRows)
+         * TODO rewrite for subset
          */
         Resource.prototype.count = function(query, callback) {
 
