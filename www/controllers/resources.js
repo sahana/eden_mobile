@@ -23,8 +23,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
-
 // ============================================================================
 /**
  * EMResourceList - Resource List Controller
@@ -36,15 +34,17 @@ EdenMobile.controller("EMResourceList", [
     '$scope', '$stateParams', 'emResources',
     function($scope, $stateParams, emResources) {
 
+        "use strict";
+
         var addResourceData = function(resourceName) {
             emResources.open(resourceName).then(function(resource) {
-                resource.count(function(name, numRows) {
-                    $scope.resources.push({
-                        name: name,
-                        numRows: numRows
+                resource.count().then(
+                    function(numRows) {
+                        $scope.resources.push({
+                            name: resource.name,
+                            numRows: numRows
+                        });
                     });
-                    $scope.$apply();
-                });
             });
         };
 

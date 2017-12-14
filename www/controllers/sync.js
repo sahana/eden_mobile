@@ -23,8 +23,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
-
 // ============================================================================
 /**
  * Controller for synchronisation page
@@ -32,6 +30,8 @@
 EdenMobile.controller('EMSync', [
     '$ionicModal', '$rootScope', '$scope', 'emResources', 'emServer', 'emSync', 'emSyncLog',
     function($ionicModal, $rootScope, $scope, emResources, emServer, emSync, emSyncLog) {
+
+        "use strict";
 
         $scope.formList = [];
         $scope.resourceList = [];
@@ -129,7 +129,7 @@ EdenMobile.controller('EMSync', [
                 $scope.resourceListModal.remove();
             }
 
-            emResources.resourceList(function(resourceList) {
+            emResources.resourceList().then(function(resourceList) {
                 $scope.resourceListLoading = false;
                 $scope.resourceList = emSync.updateResourceList($scope.resourceList, resourceList);
                 countSelected();

@@ -200,11 +200,43 @@ EdenMobile.factory('Subset', [
         };
 
         // --------------------------------------------------------------------
-        // TODO docstring
+        /**
+         * Count records in this subset
+         *
+         * @returns {promise} - a promise that resolves into the number of
+         *                      records in this subset (numRows)
+         */
         Subset.prototype.count = function() {
 
-            // TODO implement
+            var deferred = $q.defer(),
+                parent = this._parentQuery(),
+                table = this.table,
+                set = table;
 
+            // Add parent joins+query
+            if (parent.joins) {
+                parent.joins.forEach(function(join) {
+                    set = set.join(join);
+                }, this);
+            }
+            if (parent.query) {
+                set = set.where(parent.query);
+            }
+
+            // Add subset query
+            if (this.query) {
+                set = set.where(this.query);
+            }
+
+            set.count(
+                function(numRows) {
+                    deferred.resolve(numRows);
+                },
+                function(error) {
+                    deferred.reject(error);
+                });
+
+            return deferred.promise;
         };
 
         // --------------------------------------------------------------------

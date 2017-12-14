@@ -191,14 +191,9 @@ EdenMobile.factory('emSync', [
          */
         var getResourceList = function(currentList) {
 
-            var deferred = $q.defer();
-
-            emResources.resourceList(function(resourceList) {
-                resourceList = updateResourceList(currentList, resourceList);
-                deferred.resolve(resourceList);
+            return emResources.resourceList().then(function(resourceList) {
+                return updateResourceList(currentList, resourceList);
             });
-
-            return deferred.promise;
         };
 
         // ====================================================================

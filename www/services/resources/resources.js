@@ -738,25 +738,12 @@ EdenMobile.factory('emResources', [
         /**
          * Count the records in this resource
          *
-         * @param {string} query - SQL WHERE expression
-         * @param {function} callback - callback function:
-         *                              function(resourceName, numRows)
-         * TODO rewrite for subset
+         * @returns {promise} - a promise that resolves into the number of
+         *                      records in this resource (numRows)
          */
-        Resource.prototype.count = function(query, callback) {
+        Resource.prototype.count = function() {
 
-            if (arguments.length == 1) {
-                callback = query;
-                query = null;
-            }
-
-            var resourceName = this.name;
-            this.table.where(this.extendQuery(query))
-                      .count(function(numRows) {
-                if (typeof callback == 'function') {
-                    callback(resourceName, numRows);
-                }
-            });
+            return this.subSet().count();
         };
 
         // --------------------------------------------------------------------
@@ -1183,40 +1170,62 @@ EdenMobile.factory('emResources', [
              *                             with resourceList being a list of
              *                             {resource:Resource, numRows:integer}
              */
-            resourceList: function(callback) {
+            resourceList: function() {
 
                 var names = {},
+                    resource,
                     resourceList = [],
                     resourceName;
 
                 for (resourceName in resources) {
-                    names[resourceName] = null;
+                    resource = resources[resourceName];
+                    if (!resource.parent) {
+                        names[resourceName] = null;
+                    }
                 }
 
                 if (!Object.keys(names).length) {
-                    callback(resourceList);
+                    return $q.resolve(resourceList);
                 }
 
-                var addResourceInfo = function(resourceName, numRows) {
-                    resourceList.push({
-                        resource: resources[resourceName],
-                        numRows: numRows
-                    });
-                    delete names[resourceName];
-                    if (Object.keys(names).length === 0 && callback) {
-                        callback(resourceList);
-                    }
+                var addResourceInfo = function(resourceName, deferred) {
+                    return function(numRows) {
+                        resourceList.push({
+                            resource: resources[resourceName],
+                            numRows: numRows
+                        });
+                        deferred.resolve();
+                    };
                 };
 
-                var resource,
-                    tableName,
-                    query;
+                var resourceLookups = [],
+                    table,
+                    synchronizedOn,
+                    modifiedOn,
+                    query,
+                    addInfo,
+                    deferred;
+
                 for (resourceName in names) {
+
                     resource = resources[resourceName];
-                    tableName = resource.tableName;
-                    query = 'synchronized_on IS NULL OR synchronized_on<modified_on';
-                    resource.count(query, addResourceInfo);
+                    table = resource.table;
+
+                    synchronizedOn = table.$('synchronized_on');
+                    modifiedOn = table.$('modified_on');
+                    query = synchronizedOn.is(null).or(
+                            synchronizedOn.lessThan(modifiedOn));
+
+                    deferred = $q.defer();
+                    resourceLookups.push(deferred.promise);
+
+                    addInfo = addResourceInfo(resourceName, deferred);
+                    table.where(query).count(addInfo);
                 }
+
+                return $q.all(resourceLookups).then(function() {
+                    return resourceList;
+                });
             }
         };
 
