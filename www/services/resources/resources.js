@@ -64,9 +64,6 @@ EdenMobile.factory('emResources', [
             this.tableName = table.name;
             table.resources[name] = this;
 
-            // Base Filter
-            this.query = null;
-
             // Sync Dates
             this.schemaDate = null;
             this.lastSync = null;
@@ -112,7 +109,6 @@ EdenMobile.factory('emResources', [
             if (!parent) {
                 this.registerComponents();
             }
-            this.components = settings.components || {}; // @todo: obsolete
 
             // UI Configuration
             this.strings = settings.strings || {};
@@ -179,7 +175,7 @@ EdenMobile.factory('emResources', [
          *
          * @returns {Resource} - the component resource
          */
-        Resource.prototype._attachComponent = function(alias) {
+        Resource.prototype.attachComponent = function(alias) {
 
             var component = this._components[alias];
 
@@ -258,7 +254,7 @@ EdenMobile.factory('emResources', [
         Resource.prototype.component = function(alias) {
 
             var components = this._components,
-                component = components[alias] || this._attachComponent(alias);
+                component = components[alias] || this.attachComponent(alias);
 
             if (component) {
                 return component;
@@ -278,7 +274,7 @@ EdenMobile.factory('emResources', [
                 componentAlias = alias.slice(0, -6);
                 var hook = hooks[componentAlias];
                 if (hook && hook.link) {
-                    component = this._attachComponent(componentAlias);
+                    component = this.attachComponent(componentAlias);
                     return component && component.link;
                 } else {
                     return component; // undefined
@@ -295,7 +291,7 @@ EdenMobile.factory('emResources', [
             }
             for (componentAlias in hooks) {
                 if (suffix(hooks[componentAlias].link) == alias) {
-                    component = this._attachComponent(componentAlias);
+                    component = this.attachComponent(componentAlias);
                     return component && component.link;
                 }
             }
@@ -347,70 +343,6 @@ EdenMobile.factory('emResources', [
             }
 
             return table;
-        };
-
-        // --------------------------------------------------------------------
-        /**
-         * Save the schema for this resource in the em_resource table
-         */
-        Resource.prototype.saveSchema = function() {
-
-            var name = this.name,
-                fields = this.fields,
-                fieldName,
-                field,
-                fieldDef = {};
-
-            // Encode the schema
-            for (fieldName in fields) {
-                field = fields[fieldName];
-                if (!field.meta) {
-                    fieldDef[fieldName] = field.description();
-                }
-            }
-            var schema = {
-                'name': name,
-                'tablename': this.tableName,
-                'controller': this.controller,
-                'function': this.function,
-                'fields': fieldDef,
-                'settings': this.settings,
-                'main': this.main
-            };
-
-            // Save the schema
-            emDB.table('em_resource').then(function(table) {
-                var dbSet = table.where(table.$('name').equals(name));
-                dbSet.select(['id'], {limit: 1}, function(rows) {
-                    if (rows.length) {
-                        dbSet.update(schema);
-                    } else {
-                        table.insert(schema);
-                    }
-                });
-            });
-        };
-
-        // --------------------------------------------------------------------
-        /**
-         * Extend a query with the resource query
-         *
-         * @param {string} query - the query (SQL WHERE expression)
-         *
-         * @returns {string} - the extended query
-         */
-        Resource.prototype.extendQuery = function(query) {
-
-            var q = this.query;
-
-            if (query) {
-                if (q) {
-                    q += ' AND (' + query + ')';
-                } else {
-                    q = query;
-                }
-            }
-            return q;
         };
 
         // --------------------------------------------------------------------
@@ -850,6 +782,48 @@ EdenMobile.factory('emResources', [
             });
 
             return record;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Save the schema for this resource in the em_resource table
+         */
+        Resource.prototype.saveSchema = function() {
+
+            var name = this.name,
+                fields = this.fields,
+                fieldName,
+                field,
+                fieldDef = {};
+
+            // Encode the schema
+            for (fieldName in fields) {
+                field = fields[fieldName];
+                if (!field.meta) {
+                    fieldDef[fieldName] = field.description();
+                }
+            }
+            var schema = {
+                'name': name,
+                'tablename': this.tableName,
+                'controller': this.controller,
+                'function': this.function,
+                'fields': fieldDef,
+                'settings': this.settings,
+                'main': this.main
+            };
+
+            // Save the schema
+            emDB.table('em_resource').then(function(table) {
+                var dbSet = table.where(table.$('name').equals(name));
+                dbSet.select(['id'], {limit: 1}, function(rows) {
+                    if (rows.length) {
+                        dbSet.update(schema);
+                    } else {
+                        table.insert(schema);
+                    }
+                });
+            });
         };
 
         // --------------------------------------------------------------------
