@@ -89,6 +89,7 @@ EdenMobile.factory('emResources', [
                 } else {
                     field = table.fields[fieldName].clone();
                 }
+                field.resource = this;
                 fields[fieldName] = field;
             }
             this.fields = fields;
@@ -656,12 +657,25 @@ EdenMobile.factory('emResources', [
 
         // --------------------------------------------------------------------
         /**
-         * Define a Subset of this resource
+         * Define a Subset of this Resource
          *
-         * @param {integer} parentID - the parent record ID (optional,
-         *                             for components)
          * @param {Expression} query - the filter query for the subset
          *
+         * @returns {Subset} - the Subset
+         */
+        Resource.prototype.where = function(query) {
+
+            return new Subset(this, query);
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Define a Subset of this Resource with a parent record ID
+         *
+         * @param {integer} parentID - the parent record ID (optional)
+         * @param {Expression} query - the filter query for the subset
+         *
+         * @returns {Subset} - the Subset
          */
         Resource.prototype.subSet = function(parentID, query) {
 
@@ -685,39 +699,15 @@ EdenMobile.factory('emResources', [
         /**
          * Select records from this resource
          *
-         * @param {Array} fields - array of field names
-         * @param {string} query - SQL WHERE expression
-         * @param {function} callback - callback function:
-         *                              function(records, result)
-         * TODO rewrite for subset
+         * @param {Array} fields - Array of Fields or field names to extract
+         * @param {object} options - select options (orderby, limitby etc.)
+         *
+         * @returns {promise} - a promise that resolves into the extracted
+         *                      records (Rows)
          */
-        Resource.prototype.select = function(fields, query, callback) {
+        Resource.prototype.select = function(fields, options) {
 
-            switch(arguments.length) {
-                case 1:
-                    callback = fields;
-                    fields = null;
-                    query = null;
-                    break;
-                case 2:
-                    callback = query;
-                    if (typeof fields == 'string') {
-                        query = fields;
-                        fields = null;
-                    } else {
-                        query = null;
-                    }
-                    break;
-                default:
-                    break;
-            }
-
-            this.table.where(this.extendQuery(query))
-                      .select(fields, function(rows) {
-                if (callback) {
-                    callback(rows.map(function(row) { return row._(); }));
-                }
-            });
+            return new Subset(this).select(fields, options);
         };
 
         // --------------------------------------------------------------------
@@ -767,14 +757,17 @@ EdenMobile.factory('emResources', [
                 // Try looking it up from the UUID
                 var uuid = record.uuid;
                 if (!!uuid) {
-                    // Look it up
-                    var query = 'uuid="' + uuid + '"';
-                    this.select(['id'], query, function(records) {
-                        if (records.length) {
-                            recordID = records[0].id;
-                        }
-                        deferred.resolve(recordID);
-                    });
+                    this.where(this.fields.uuid.is(uuid))
+                        .select(['id'], {limitby: 1}).then(
+                        function(rows) {
+                            if (rows.length) {
+                                recordID = rows[0].$('id');
+                            }
+                            deferred.resolve(recordID);
+                        },
+                        function(error) {
+                            deferred.reject(error);
+                        });
                 } else {
                     // No way to identify the record (yet)
                     // @todo: try unique fields

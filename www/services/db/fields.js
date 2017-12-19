@@ -119,8 +119,9 @@ EdenMobile.factory('Field', [
          */
         Field.prototype.toSQL = function() {
 
-            var table = this.table,
+            var table = this.getTable(),
                 prefix;
+
             if (table) {
                 prefix = '' + table;
                 if (table._original) {
@@ -150,7 +151,8 @@ EdenMobile.factory('Field', [
         Field.prototype.columnAlias = function(tableName) {
 
             var alias = this.name,
-                table = this.table;
+                table = this.getTable();
+
             if (table) {
                 if (tableName && table.name !== tableName) {
                     alias = table.name + '.' + alias;
@@ -410,6 +412,24 @@ EdenMobile.factory('Field', [
             }
 
             return jsValue;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Get the Table this fields belongs to
+         *
+         * @returns {Table} - the table
+         */
+        Field.prototype.getTable = function() {
+
+            var table = this.table;
+            if (!table) {
+                var resource = this.resource;
+                if (resource) {
+                    table = resource.table;
+                }
+            }
+            return table;
         };
 
         // --------------------------------------------------------------------
