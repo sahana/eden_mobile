@@ -38,7 +38,7 @@ EdenMobile.factory('SyncJob', [
          * @param {string} tableName - the table name
          * @param {object} ref - reference details to construct the server URL
          *                       to access the form or data, object
-         *                       {c:controller, f:function, vars:vars}
+         *                       {c:controller, f:function, v:vars}
          */
         function SyncJob(run, type, mode, resourceName, tableName, ref) {
 
@@ -49,7 +49,7 @@ EdenMobile.factory('SyncJob', [
 
             this.resourceName = resourceName;
             this.tableName = tableName;
-            this.ref = ref;
+            this.ref = angular.copy(ref);
 
             this.status = 'pending';
             this.error = null;
