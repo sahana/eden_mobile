@@ -317,12 +317,18 @@ EdenMobile.factory('emDialogs', [
 
                 // Add components to scope
                 var components = [],
-                    description;
+                    description,
+                    title;
 
                 for (var alias in resource.activeComponents) {
                     description = resource.activeComponents[alias];
+                    if (description.multiple) {
+                        title = description.labelPlural || description.label || alias;
+                    } else {
+                        title = description.label || description.labelPlural || alias;
+                    }
                     components.push({
-                        title: description.labelPlural || description.label || alias,
+                        title: title,
                         name: alias
                     });
                 }

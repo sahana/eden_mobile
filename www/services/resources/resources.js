@@ -161,7 +161,8 @@ EdenMobile.factory('emResources', [
                 emComponents.addComponent(table, alias, description);
                 activeComponent = {
                     label: description.label || emUtils.capitalize(alias),
-                    labelPlural: description.plural || emUtils.capitalize(alias)
+                    labelPlural: description.labelPlural || emUtils.capitalize(alias),
+                    multiple: description.multiple
                 };
                 activeComponents[alias] = activeComponent;
             }
