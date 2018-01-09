@@ -286,7 +286,7 @@ EdenMobile.factory('SchemaImport', [
                     'fkey',
                     'multiple',
                     'label',
-                    'labelPlural'
+                    'plural'
                 ];
 
             componentOpts.forEach(function(key) {

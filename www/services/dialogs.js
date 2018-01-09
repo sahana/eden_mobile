@@ -323,9 +323,9 @@ EdenMobile.factory('emDialogs', [
                 for (var alias in resource.activeComponents) {
                     description = resource.activeComponents[alias];
                     if (description.multiple) {
-                        title = description.labelPlural || description.label || alias;
+                        title = description.plural || description.label || alias;
                     } else {
-                        title = description.label || description.labelPlural || alias;
+                        title = description.label || description.plural || alias;
                     }
                     components.push({
                         title: title,
