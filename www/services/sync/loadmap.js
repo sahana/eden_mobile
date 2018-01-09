@@ -395,15 +395,8 @@ EdenMobile.factory('LoadMap', [
             var self = this,
                 tableName = table.name,
                 exportFields = this.exportFields(table),
-                parts = tableName.split('_'),
+                defaultAlias = tableName.slice(tableName.indexOf('_') + 1) || tableName,
                 parentKey = hook.fkey;
-
-            if (parts.length > 1) {
-                parts.shift();
-                var defaultAlias = parts.join('_');
-            } else {
-                var defaultAlias = tableName;
-            }
 
             if (hook.link) {
 

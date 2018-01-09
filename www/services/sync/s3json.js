@@ -321,16 +321,9 @@ EdenMobile.factory('emS3JSON', [
         Record.prototype.addComponent = function(table, hooks, name, items) {
 
             // Component or link table
-            var parts = name.split('_'),
+            var defaultAlias = name.slice(name.indexOf('_') + 1) || name,
                 unknown = {},
                 links = {};
-
-            if (parts.length > 1) {
-                parts.shift();
-                var defaultAlias = parts.join('_');
-            } else {
-                var defaultAlias = name;
-            }
 
             items.forEach(function(item) {
 
