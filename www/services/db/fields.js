@@ -614,6 +614,49 @@ EdenMobile.factory('Field', [
 
         // --------------------------------------------------------------------
         /**
+         * Get a type-specific default representation of a field value,
+         * as fallback for representation functions
+         *
+         * @param {*} value - the field value
+         * @param {string} none - the representation to return
+         *                        for null/undefined values
+         *
+         * @returns {string} - a string representing the value
+         */
+        Field.prototype.reprDefault = function(value, none) {
+
+            if (value === null || value === undefined) {
+                return none;
+            }
+
+            var reprStr;
+
+            // Type-specific default representations
+            switch(this.type) {
+                case 'date':
+                    reprStr = value.toLocaleDateString();
+                    break;
+                case 'datetime':
+                    reprStr = value.toLocaleString();
+                    break;
+                case 'boolean':
+                    // TODO: i18n
+                    if (value) {
+                        reprStr = 'yes';
+                    } else {
+                        reprStr = 'no';
+                    }
+                    break;
+                default:
+                    reprStr = '' + value;
+                    break;
+            }
+
+            return reprStr;
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Convert a JSON value from Sahana server to internal format
          *
          * @param {mixed} value - the raw value from import JSON

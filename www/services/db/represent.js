@@ -122,9 +122,8 @@ EdenMobile.factory('Represent', [
 
             } else {
 
-                // Just convert into string
-                // TODO type-specific representation (e.g. boolean=>Yes|No)
-                reprStr = $q.resolve('' + value);
+                // Fall back to default representation
+                reprStr = $q.resolve(field.reprDefault(value), this.none);
             }
 
             // Add to the set
@@ -218,10 +217,9 @@ EdenMobile.factory('Represent', [
 
             } else {
 
-                // Resolve everything as string
-                // TODO type-specific representation (e.g. boolean=>Yes|No)
+                // Fall back to default representation
                 for (value in repr) {
-                    repr[value] = '' + value;
+                    repr[value] = field.reprDefault(value, this.none);
                 }
                 result = $q.resolve(repr);
             }
