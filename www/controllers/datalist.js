@@ -139,14 +139,28 @@ EdenMobile.controller("EMDataList", [
                                 });
                             $scope.records = [];
                         } else {
-                            // Component action links
-                            $scope.parentView = $state.href('data.update', linkParams);
-                            if (component.settings.insertable !== false) {
-                                $scope.insertable = true;
-                                $scope.createView = $state.href('data.componentCreate', linkParams);
+                            var subset = component.subSet(recordID);
+                            if (component.multiple) {
+                                // Open component list
+                                $scope.parentView = $state.href('data.update', linkParams);
+                                // Component action links
+                                if (component.settings.insertable !== false) {
+                                    $scope.insertable = true;
+                                    $scope.createView = $state.href('data.componentCreate', linkParams);
+                                }
+                                updateDataList(subset);
+                            } else {
+                                // Open the Update form directly
+                                subset.select(['id'], function(rows) {
+                                    rows.forEach(function(row) {
+                                        linkParams.componentID = row.data.id;
+                                        $state.go('data.componentUpdate', linkParams, {
+                                            location: 'replace',
+                                            reload: true
+                                        });
+                                    });
+                                });
                             }
-                            // Open component
-                            updateDataList(component.subSet(recordID));
                         }
                     } else {
                         // Master action links

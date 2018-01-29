@@ -207,6 +207,10 @@ EdenMobile.factory('emResources', [
                     if (!linkName || linkTable) {
 
                         var name = this.name + '.' + alias,
+                            description = this.settings.components[alias],
+                            label,
+                            plural,
+                            strings = {},
                             pkey = hook.pkey,
                             fkey = hook.fkey;
 
@@ -214,6 +218,16 @@ EdenMobile.factory('emResources', [
                         component.alias = alias;
                         component.pkey = pkey;
                         component.fkey = fkey;
+                        component.multiple = hook.multiple;
+                        label = description.label;
+                        if (label) {
+                            strings.name = label;
+                        }
+                        plural = description.plural;
+                        if (plural) {
+                            strings.namePlural = plural;
+                        }
+                        component.strings = strings;
 
                         if (linkTable) {
 

@@ -170,7 +170,7 @@ EdenMobile.controller("EMDataUpdate", [
                   .select(fieldNames, {limitby: 1}).then(function(rows) {
 
                 if (rows.length == 1) {
-                    // Prepopulare the scope with current record data
+                    // Prepopulate the scope with current record data
                     var record = rows[0]._(),
                         field,
                         fieldName,
@@ -226,24 +226,6 @@ EdenMobile.controller("EMDataUpdate", [
             };
             $scope.reset();
 
-            // Click-handler for return-to-list button
-            $scope.returnToList = function() {
-
-                var returnTo,
-                    returnParams = {resourceName: resourceName};
-
-                if (componentName) {
-                    // Go back to the component record list
-                    returnTo = 'data.component';
-                    returnParams.recordID = recordID;
-                    returnParams.componentName = componentName;
-                } else {
-                    // Go back to the master record list
-                    returnTo = 'data.list';
-                }
-                $state.go(returnTo, returnParams, {location: 'replace'});
-            };
-
             // Initialize Components Menu
             if ($scope.componentMenu) {
                 $scope.componentMenu.remove();
@@ -255,8 +237,36 @@ EdenMobile.controller("EMDataUpdate", [
             // Access the resource, then populate the form
             emResources.open(resourceName).then(function(resource) {
 
+                var component;
+
                 if (componentName) {
-                    var component = resource.component(componentName);
+                    component = resource.component(componentName);
+                }
+
+                // Click-handler for return-to-list button
+                $scope.returnToList = function() {
+
+                    var returnTo,
+                        returnParams = {resourceName: resourceName};
+
+                    if (componentName) {
+                        returnParams.recordID = recordID;
+                        if (component.multiple) {
+                            // Go back to the component record list
+                            returnTo = 'data.component';
+                            returnParams.componentName = componentName;
+                        } else {
+                            // Go back to the main record update
+                            returnTo = 'data.update';
+                        }
+                    } else {
+                        // Go back to the master record list
+                        returnTo = 'data.list';
+                    }
+                    $state.go(returnTo, returnParams, {location: 'replace'});
+                };
+
+                if (componentName) {
                     if (!component) {
                         // Undefined component
                         emDialogs.error('Undefined component', componentName, function() {
