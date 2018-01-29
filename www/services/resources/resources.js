@@ -221,11 +221,11 @@ EdenMobile.factory('emResources', [
                         component.multiple = hook.multiple;
                         label = description.label;
                         if (label) {
-                            strings.name = label;
+                            strings.label = label;
                         }
                         plural = description.plural;
                         if (plural) {
-                            strings.namePlural = plural;
+                            strings.plural = plural;
                         }
                         component.strings = strings;
 
@@ -391,10 +391,10 @@ EdenMobile.factory('emResources', [
 
             if (strings) {
                 if (plural) {
-                    label = strings.namePlural;
+                    label = strings.plural;
                 }
                 if (!label) {
-                    label = strings.name;
+                    label = strings.label;
                 }
             }
             if (!label) {

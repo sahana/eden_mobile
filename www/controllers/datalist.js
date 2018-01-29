@@ -150,15 +150,21 @@ EdenMobile.controller("EMDataList", [
                                 }
                                 updateDataList(subset);
                             } else {
-                                // Open the Update form directly
-                                subset.select(['id'], function(rows) {
-                                    rows.forEach(function(row) {
-                                        linkParams.componentID = row.data.id;
+                                subset.select(['id'], {limitby:1}, function(rows) {
+                                    if (rows.length) {
+                                        // Open the Update form directly
+                                        linkParams.componentID = rows[0].$('id');
                                         $state.go('data.componentUpdate', linkParams, {
                                             location: 'replace',
                                             reload: true
                                         });
-                                    });
+                                    } else {
+                                        // Open the Create form directly
+                                        $state.go('data.componentCreate', linkParams, {
+                                            location: 'replace',
+                                            reload: true
+                                        });
+                                    }
                                 });
                             }
                         }
