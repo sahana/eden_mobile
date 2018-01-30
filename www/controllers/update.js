@@ -251,12 +251,10 @@ EdenMobile.controller("EMDataUpdate", [
                 // - default: return to master record list
                 var component,
                     returnState = 'data.list',
-                    returnParams = {
-                        resourceName: resourceName,
-                        recordID: recordID
-                    };
+                    returnParams = {resourceName: resourceName};
 
                 if (componentName) {
+                    returnParams.recordID = recordID;
                     component = resource.component(componentName);
                     if (!component) {
                         // Undefined component:
@@ -269,7 +267,6 @@ EdenMobile.controller("EMDataUpdate", [
                     } else if (component.multiple) {
                         // Return to component record list
                         returnState = 'data.component';
-                        returnParams.recordID = recordID;
                         returnParams.componentName = componentName;
                     } else {
                         // Return to master record update-form

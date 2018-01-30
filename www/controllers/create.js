@@ -31,8 +31,8 @@
  * @memberof EdenMobile
  */
 EdenMobile.controller('EMDataCreate', [
-    '$scope', '$state', '$stateParams', 'emDialogs', 'emFiles', 'emResources',
-    function($scope, $state, $stateParams, emDialogs, emFiles, emResources) {
+    '$q', '$scope', '$state', '$stateParams', 'emDialogs', 'emFiles', 'emResources',
+    function($q, $scope, $state, $stateParams, emDialogs, emFiles, emResources) {
 
         "use strict";
 
@@ -169,42 +169,50 @@ EdenMobile.controller('EMDataCreate', [
             };
             $scope.reset();
 
-            // Click-handler for return-to-list button
+            // Click-handler for back-button
+            var onReturn = $q.defer();
             $scope.returnToParentView = function() {
-
-                var returnTo,
-                    returnParams = {resourceName: resourceName};
-
-                if (componentName) {
-                    // Go back to the component record list
-                    returnTo = 'data.component';
-                    returnParams.recordID = recordID;
-                    returnParams.componentName = componentName;
-                } else {
-                    // Go back to the master record list
-                    returnTo = 'data.list';
-                }
-                $state.go(returnTo, returnParams, {location: 'replace'});
+                onReturn.promise.then(function(returnTo) {
+                    $state.go(returnTo.state, returnTo.params, {
+                        location: 'replace'
+                    });
+                });
             };
 
             // Access the resource, then populate the form
             emResources.open(resourceName).then(function(resource) {
 
-                if (componentName) {
+                // Determine where to return to upon "Back"
+                // - default: return to master record list
+                var component,
+                    returnState = 'data.list',
+                    returnParams = {resourceName: resourceName};
 
-                    var component = resource.component(componentName);
+                if (componentName) {
+                    returnParams.recordID = recordID;
+                    component = resource.component(componentName);
                     if (!component) {
-                        // Undefined component
-                        emDialogs.error('Undefined component', componentName, function() {
-                            // Go back to master record
-                            $state.go('data.update',
-                                {resourceName: resourceName, recordID: recordID},
-                                {location: 'replace', reload: true});
-                        });
+                        // Undefined component:
+                        // - show error message, then return to master immediately
+                        returnState = 'data.update';
+                        emDialogs.error('Undefined component', componentName,
+                            function() {
+                                $scope.returnToParentView();
+                            });
+                    } else if (component.multiple) {
+                        // Return to component record list
+                        returnState = 'data.component';
+                        returnParams.componentName = componentName;
                     } else {
-                        // Open component form
-                        configureForm(component.subSet(recordID));
+                        // Return to master record update-form
+                        returnState = 'data.update';
                     }
+                }
+                onReturn.resolve({state: returnState, params: returnParams});
+
+                if (componentName) {
+                    // Open component form
+                    configureForm(component.subSet(recordID));
                 } else {
                     // Open master form
                     configureForm(resource.subSet());
