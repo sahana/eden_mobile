@@ -141,30 +141,30 @@ EdenMobile.controller("EMDataList", [
                         } else {
                             var subset = component.subSet(recordID);
                             if (component.multiple) {
-                                // Open component list
+                                // Set parent view to master update form
                                 $scope.parentView = $state.href('data.update', linkParams);
                                 // Component action links
                                 if (component.settings.insertable !== false) {
                                     $scope.insertable = true;
                                     $scope.createView = $state.href('data.componentCreate', linkParams);
                                 }
+                                // Open component record list
                                 updateDataList(subset);
                             } else {
                                 subset.select(['id'], {limitby:1}, function(rows) {
+                                    var dest;
                                     if (rows.length) {
                                         // Open the Update form directly
+                                        dest = 'data.componentUpdate';
                                         linkParams.componentID = rows[0].$('id');
-                                        $state.go('data.componentUpdate', linkParams, {
-                                            location: 'replace',
-                                            reload: true
-                                        });
                                     } else {
                                         // Open the Create form directly
-                                        $state.go('data.componentCreate', linkParams, {
-                                            location: 'replace',
-                                            reload: true
-                                        });
+                                        dest = 'data.componentCreate';
                                     }
+                                    $state.go(dest, linkParams, {
+                                        location: 'replace',
+                                        reload: true
+                                    });
                                 });
                             }
                         }
@@ -175,7 +175,7 @@ EdenMobile.controller("EMDataList", [
                             $scope.insertable = true;
                             $scope.createView = $state.href('data.create', linkParams);
                         }
-                        // Open master
+                        // Open master record list
                         updateDataList(resource.subSet());
                     }
                 }

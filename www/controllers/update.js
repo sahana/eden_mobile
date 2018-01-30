@@ -31,8 +31,8 @@
  * @memberof EdenMobile
  */
 EdenMobile.controller("EMDataUpdate", [
-    '$scope', '$state', '$stateParams', 'emDialogs', 'emFiles', 'emResources',
-    function($scope, $state, $stateParams, emDialogs, emFiles, emResources) {
+    '$q', '$scope', '$state', '$stateParams', 'emDialogs', 'emFiles', 'emResources',
+    function($q, $scope, $state, $stateParams, emDialogs, emFiles, emResources) {
 
         "use strict";
 
@@ -234,51 +234,53 @@ EdenMobile.controller("EMDataUpdate", [
             $scope.hasComponents = false;
             $scope.openComponents = null;
 
+            // Click-handler for back-button
+            var onReturn = $q.defer();
+            $scope.returnToParentView = function() {
+                onReturn.promise.then(function(returnTo) {
+                    $state.go(returnTo.state, returnTo.params, {
+                        location: 'replace'
+                    });
+                });
+            };
+
             // Access the resource, then populate the form
             emResources.open(resourceName).then(function(resource) {
 
-                var component;
+                // Determine where to return to upon "Back"
+                // - default: return to master record list
+                var component,
+                    returnState = 'data.list',
+                    returnParams = {
+                        resourceName: resourceName,
+                        recordID: recordID
+                    };
 
                 if (componentName) {
                     component = resource.component(componentName);
-                }
-
-                // Click-handler for return-to-list button
-                $scope.returnToList = function() {
-
-                    var returnTo,
-                        returnParams = {resourceName: resourceName};
-
-                    if (componentName) {
+                    if (!component) {
+                        // Undefined component:
+                        // - show error message, then return to master immediately
+                        returnState = 'data.update';
+                        emDialogs.error('Undefined component', componentName,
+                            function() {
+                                $scope.returnToParentView();
+                            });
+                    } else if (component.multiple) {
+                        // Return to component record list
+                        returnState = 'data.component';
                         returnParams.recordID = recordID;
-                        if (component.multiple) {
-                            // Go back to the component record list
-                            returnTo = 'data.component';
-                            returnParams.componentName = componentName;
-                        } else {
-                            // Go back to the main record update
-                            returnTo = 'data.update';
-                        }
+                        returnParams.componentName = componentName;
                     } else {
-                        // Go back to the master record list
-                        returnTo = 'data.list';
+                        // Return to master record update-form
+                        returnState = 'data.update';
                     }
-                    $state.go(returnTo, returnParams, {location: 'replace'});
-                };
+                }
+                onReturn.resolve({state: returnState, params: returnParams});
 
                 if (componentName) {
-                    if (!component) {
-                        // Undefined component
-                        emDialogs.error('Undefined component', componentName, function() {
-                            // Go back to master record
-                            $state.go('data.update',
-                                {resourceName: resourceName, recordID: recordID},
-                                {location: 'replace', reload: true});
-                        });
-                    } else {
-                        // Open component record
-                        configureForm(component.subSet(recordID), componentID);
-                    }
+                    // Open component record
+                    configureForm(component.subSet(recordID), componentID);
                 } else {
                     // Open master record
                     configureForm(resource.subSet(), recordID);

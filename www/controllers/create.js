@@ -127,7 +127,7 @@ EdenMobile.controller('EMDataCreate', [
                             confirmCreate();
                         },
                         function(error) {
-                            emDialogs.error('Could not create record', error, $scope.returnToList);
+                            emDialogs.error('Could not create record', error, $scope.returnToParentView);
                         });
                 }
             };
@@ -170,7 +170,7 @@ EdenMobile.controller('EMDataCreate', [
             $scope.reset();
 
             // Click-handler for return-to-list button
-            $scope.returnToList = function() {
+            $scope.returnToParentView = function() {
 
                 var returnTo,
                     returnParams = {resourceName: resourceName};
