@@ -525,13 +525,13 @@
 
                             if (locationID) {
                                 // Read the Location record
-                                emResources.open('gis_location').then(function(resource) {
+                                emResources.open('gis_location').then(function(locationResource) {
 
-                                    var subset = resource.subSet(locationID);
-                                    subset.select(['addr_street', 'parent'], {limitby:1}).then(function(rows) {
-                                        if (rows.length) {
+                                    var locationSubset = locationResource.subSet(locationID);
+                                    locationSubset.select(['addr_street', 'parent'], {limitby:1}).then(function(locationRows) {
+                                        if (locationRows.length) {
                                             // Read relevant attributes
-                                            var row = rows[0],
+                                            var row = locationRows[0],
                                                 record = {};
                                             record.addr_street = row.$('addr_street');
                                             //record.addr_postcode = row.$('addr_postcode');
