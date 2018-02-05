@@ -463,8 +463,14 @@
 
                 // Create the Address input
                 // @ToDo: Show this only when configured to do so
-                var address_input = angular.element('<input type="text" name="addr_street">')
-                                           .attr('value', attr.record.addr_street);
+                var record = attr.record,
+                    scopeName = attr.ngModel.split('.')[0],
+                    fieldName = attr.field,
+                    widgetName = 'emLocationWidget',
+                    ngModel = scopeName + '.' + widgetName + '.' + fieldName + '.addr_street',
+                    address_input = angular.element('<input type="text">')
+                                           .attr('ng-model', ngModel)
+                                           .attr('ng-init', ngModel + '="' + record.addr_street +'"');
 
                 // Hidden Input attributes
                 copyAttr(attr, address_input, [

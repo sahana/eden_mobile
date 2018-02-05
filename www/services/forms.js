@@ -52,7 +52,7 @@ EdenMobile.factory('emForms', [
                 custom_widget = fieldDescription.widget || (fieldDescription.settings && fieldDescription.settings.widget);
 
             if (field.hasOptions()) {
-                if ((custom_widget === Object(custom_widget)) && custom_widget["type"] == "location") {
+                if ((custom_widget === Object(custom_widget)) && custom_widget.type == "location") {
                     widgetType = '<em-location-widget>';
                 } else {
                     widgetType = '<em-options-widget>';
