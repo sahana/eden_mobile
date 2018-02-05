@@ -39,6 +39,7 @@ EdenMobile.factory('emForms', [
         /**
          * Build a form widget, applying em-*-widget directives
          *
+         * @param {Resource} resource - the resource the form is for
          * @param {object} field - the field parameters (from schema)
          * @param {object} attr - attributes for the widget
          */
@@ -47,7 +48,8 @@ EdenMobile.factory('emForms', [
             var fieldType = field.type,
                 writable = field.writable,
                 widgetType,
-                custom_widget = field._description.widget || (field._description.settings && field._description.settings.widget);
+                fieldDescription = field._description,
+                custom_widget = fieldDescription.widget || (fieldDescription.settings && fieldDescription.settings.widget);
 
             if (field.hasOptions()) {
                 if ((custom_widget === Object(custom_widget)) && custom_widget["type"] == "location") {
@@ -84,7 +86,7 @@ EdenMobile.factory('emForms', [
             // Pass resource and field name to widget
             widget.attr('resource', resource.name);
             widget.attr('field', field.name);
-            widget.attr('widget', custom_widget);
+            widget.attr('widget', custom_widget); // Doesn't work for Objects
 
             // Set disabled when not writable
             if (writable === false) {
@@ -185,7 +187,6 @@ EdenMobile.factory('emForms', [
                               .attr('name', 'data')
                               .attr('novalidate', 'novalidate'),
                 formRows = angular.element('<div class="list">');
-
 
             // Determine form fields
             var fieldName,

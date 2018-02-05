@@ -435,8 +435,60 @@
      * @example <em-location-widget>
      */
     EdenMobile.directive('emLocationWidget', [
-        '$compile',
-        function($compile) {
+        '$compile', 'emDialogs', 'emResources',
+        function($compile, emDialogs, emResources) {
+
+            /**
+             * Widget renderer (DRY helper)
+             *
+             * @param {object} $scope - reference to the current scope
+             * @param {DOMNode} elem - the angular-enhanced DOM node for
+             *                         the element applying the directive
+             * @param {object} attr - object containing the attributes of
+             *                        the element
+             */
+            var _renderWidget = function($scope, elem, attr) {
+                // Create the label
+                var label = angular.element('<span>')
+                                   .addClass('input-label')
+                                   .html(attr.label || '');
+
+                // Create the hidden input
+                var hidden_input = angular.element('<input type="hidden">');
+
+                // Hidden Input attributes
+                copyAttr(attr, hidden_input, [
+                    'ngModel'
+                ]);
+
+                // Create the Address input
+                // @ToDo: Show this only when configured to do so
+                var address_input = angular.element('<input type="text">')
+                                           .text(attr.record.addr_street);
+
+                // Hidden Input attributes
+                copyAttr(attr, address_input, [
+                    'disabled',
+                    'placeholder'
+                ]);
+
+                // Build the widget
+                var widget = angular.element('<label>')
+                                    .addClass('item item-input item-stacked-label')
+                                    .append(label)
+                                    .append(hidden_input)
+                                    .append(address_input);
+
+                // Widget attributes
+                copyAttr(attr, widget, [
+                    'ngShow'
+                ]);
+
+                // Compile the widget against the scope, then
+                // render it in place of the directive
+                var compiled = $compile(widget)($scope);
+                elem.replaceWith(compiled);
+            };
 
             /**
              * Widget renderer
@@ -449,38 +501,62 @@
              */
             var renderWidget = function($scope, elem, attr) {
 
-                // Create the label
-                var label = angular.element('<span>')
-                                   .addClass('input-label')
-                                   .html(attr.label || '');
+                var recordID = $scope.$parent.recordID;
 
-                // Create the input
-                var input = angular.element('<input type="text">');
+                if (recordID) {
+                    // Update form
+                    // Read the Main record
+                    emResources.open(attr.resource).then(function(resource) {
+                        var fieldName = attr.field,
+                            subset = resource.subSet(recordID);
 
-                // Input attributes
-                copyAttr(attr, input, [
-                    //'ngChange',
-                    'ngModel',
-                    'disabled',
-                    'placeholder'
-                ]);
+                        subset.select([fieldName], {limitby:1}).then(function(rows) {
+                            var locationID;
+                            if (rows.length) {
+                                locationID = rows[0].$(fieldName);
+                            } else {
+                                // We don't have this record...so...?
+                                emDialogs.error('Error', 'Cannot read Record',
+                                    function() {
+                                        $state.go('data.resources',
+                                            {location: 'replace', reload: true});
+                                    });
+                            }
 
-                // Build the widget
-                var widget = angular.element('<label>')
-                                    .addClass('item item-input item-stacked-label')
-                                    .append(label)
-                                    .append(input);
+                            if (locationID) {
+                                // Read the Location record
+                                emResources.open('gis_location').then(function(resource) {
 
-                // Widget attributes
-                copyAttr(attr, widget, [
-                    'ngShow',
-                    'parent'
-                ]);
-
-                // Compile the widget against the scope, then
-                // render it in place of the directive
-                var compiled = $compile(widget)($scope);
-                elem.replaceWith(compiled);
+                                    var subset = resource.subSet(locationID);
+                                    subset.select(['addr_street', 'parent'], {limitby:1}).then(function(rows) {
+                                        if (rows.length) {
+                                            // Read relevant attributes
+                                            var row = rows[0],
+                                                record = {};
+                                            record.addr_street = row.$('addr_street');
+                                            //record.addr_postcode = row.$('addr_postcode');
+                                            record.parent = row.$('parent');
+                                            attr.record = record;
+                                        } else {
+                                            // We don't have this record...so...?
+                                            emDialogs.error('Error', 'Cannot read Location',
+                                                function() {
+                                                    $state.go('data.resources',
+                                                        {location: 'replace', reload: true});
+                                                });
+                                        }
+                                        _renderWidget($scope, elem, attr);
+                                    });
+                                });
+                            } else {
+                                _renderWidget($scope, elem, attr);
+                            }
+                        });
+                    });
+                } else {
+                    // Create form
+                    _renderWidget($scope, elem, attr);
+                }
             };
 
             return {
