@@ -463,8 +463,8 @@
 
                 // Create the Address input
                 // @ToDo: Show this only when configured to do so
-                var address_input = angular.element('<input type="text">')
-                                           .text(attr.record.addr_street);
+                var address_input = angular.element('<input type="text" name="addr_street">')
+                                           .attr('value', attr.record.addr_street);
 
                 // Hidden Input attributes
                 copyAttr(attr, address_input, [
@@ -508,7 +508,7 @@
                     // Read the Main record
                     emResources.open(attr.resource).then(function(resource) {
                         var fieldName = attr.field,
-                            subset = resource.subSet(recordID);
+                            subset = resource.where(resource.getTable().$('id').is(recordID));
 
                         subset.select([fieldName], {limitby:1}).then(function(rows) {
                             var locationID;
@@ -527,15 +527,18 @@
                                 // Read the Location record
                                 emResources.open('gis_location').then(function(locationResource) {
 
-                                    var locationSubset = locationResource.subSet(locationID);
-                                    locationSubset.select(['addr_street', 'parent'], {limitby:1}).then(function(locationRows) {
+                                    var locationSubset = locationResource.where(locationResource.getTable().$('id').is(locationID)),
+                                        fields = ['addr_street'//,
+                                                  //'parent' // For current usecase, this will stay the same, we don't need to pull this back yet
+                                                  ];
+                                    locationSubset.select(fields, {limitby:1}).then(function(locationRows) {
                                         if (locationRows.length) {
                                             // Read relevant attributes
                                             var row = locationRows[0],
                                                 record = {};
                                             record.addr_street = row.$('addr_street');
                                             //record.addr_postcode = row.$('addr_postcode');
-                                            record.parent = row.$('parent');
+                                            //record.parent = row.$('parent');
                                             attr.record = record;
                                         } else {
                                             // We don't have this record...so...?
