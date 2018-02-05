@@ -46,12 +46,15 @@ EdenMobile.factory('emForms', [
 
             var fieldType = field.type,
                 writable = field.writable,
-                widgetType;
-
-            // @todo: ability to override the widget
+                widgetType,
+                custom_widget = field._description.widget || (field._description.settings && field._description.settings.widget);
 
             if (field.hasOptions()) {
-                widgetType = '<em-options-widget>';
+                if ((custom_widget === Object(custom_widget)) && custom_widget["type"] == "location") {
+                    widgetType = '<em-location-widget>';
+                } else {
+                    widgetType = '<em-options-widget>';
+                }
             } else {
                 switch(fieldType) {
                     case 'boolean':
@@ -81,7 +84,7 @@ EdenMobile.factory('emForms', [
             // Pass resource and field name to widget
             widget.attr('resource', resource.name);
             widget.attr('field', field.name);
-            widget.attr('widget', field._description.settings && field._description.settings.widget);
+            widget.attr('widget', custom_widget);
 
             // Set disabled when not writable
             if (writable === false) {

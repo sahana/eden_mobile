@@ -415,6 +415,82 @@
 
     // ========================================================================
     /**
+     * Location widget (directive)
+     *
+     * @class emLocationWidget
+     * @memberof EdenMobile
+     *
+     * NB Currently this supports just a single usecase: setting the Address
+     *    field with a hidden parent Lx
+     *
+     * @ToDo: Add Postcode
+     * @ToDo: Add Parent SELECT(s)
+     * @ToDo: Allow just selection of an Lx
+     * @ToDo: Add Lat/Lon
+     * @ToDo: Add Map
+     * @ToDo: Add Polygon
+     *
+     * @returns {string} - the text entered (or null if empty)
+     *
+     * @example <em-location-widget>
+     */
+    EdenMobile.directive('emLocationWidget', [
+        '$compile',
+        function($compile) {
+
+            /**
+             * Widget renderer
+             *
+             * @param {object} $scope - reference to the current scope
+             * @param {DOMNode} elem - the angular-enhanced DOM node for
+             *                         the element applying the directive
+             * @param {object} attr - object containing the attributes of
+             *                        the element
+             */
+            var renderWidget = function($scope, elem, attr) {
+
+                // Create the label
+                var label = angular.element('<span>')
+                                   .addClass('input-label')
+                                   .html(attr.label || '');
+
+                // Create the input
+                var input = angular.element('<input type="text">');
+
+                // Input attributes
+                copyAttr(attr, input, [
+                    //'ngChange',
+                    'ngModel',
+                    'disabled',
+                    'placeholder'
+                ]);
+
+                // Build the widget
+                var widget = angular.element('<label>')
+                                    .addClass('item item-input item-stacked-label')
+                                    .append(label)
+                                    .append(input);
+
+                // Widget attributes
+                copyAttr(attr, widget, [
+                    'ngShow',
+                    'parent'
+                ]);
+
+                // Compile the widget against the scope, then
+                // render it in place of the directive
+                var compiled = $compile(widget)($scope);
+                elem.replaceWith(compiled);
+            };
+
+            return {
+                link: renderWidget
+            };
+        }
+    ]);
+
+    // ========================================================================
+    /**
      * Photo widget (directive)
      *
      * @class emPhotoWidget

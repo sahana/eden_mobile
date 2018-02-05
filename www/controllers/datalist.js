@@ -151,7 +151,7 @@ EdenMobile.controller("EMDataList", [
                                 // Open component record list
                                 updateDataList(subset);
                             } else {
-                                subset.select(['id'], {limitby:1}, function(rows) {
+                                subset.select(['id'], {limitby:1}).then(function(rows) {
                                     var dest;
                                     if (rows.length) {
                                         // Open the Update form directly
