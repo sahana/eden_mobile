@@ -435,8 +435,109 @@
      * @example <em-location-widget>
      */
     EdenMobile.directive('emLocationWidget', [
-        '$compile', 'emDialogs', 'emResources',
-        function($compile, emDialogs, emResources) {
+        '$q', '$compile', 'emDialogs', 'emResources',
+        function($q, $compile, emDialogs, emResources) {
+
+            var locationProperties = ['addr_street'];
+
+            /**
+             * Create or update a location record from widget scope
+             *
+             * @param {integer} locationID - the location record ID
+             * @param {object} data - the data (=local scope)
+             *
+             * @returns {promise} - a promise that resolves into the
+             *                      ID of the newly created or updated
+             *                      location record
+             */
+            var createOrUpdateLocation = function(locationID, data) {
+
+                return emResources.open('gis_location').then(function(resource) {
+
+                    // Filter widget scope for valid location properties
+                    var locationData = {};
+                    locationProperties.forEach(function(propName) {
+                        locationData[propName] = data[propName];
+                    });
+
+                    if (locationID) {
+                        // Update existing location
+                        var table = resource.table;
+                        return resource.where(table.$('id').is(locationID))
+                                       .update(locationData)
+                                       .then(function() {
+                                           return locationID;
+                                       });
+                    } else {
+                        // Create new location
+                        return resource.insert(locationData);
+                    }
+                });
+            };
+
+            /**
+             * Apply the widget logic
+             *
+             * @param {object} $scope - the local scope (of the widget)
+             * @param {object} attr - the widget attributes
+             */
+            var applyWidgetLogic = function($scope, attr) {
+
+                var ngModel = attr.ngModel,
+                    scopeName = ngModel.split('.')[0],
+                    fieldName = attr.field,
+                    deferred,
+                    locationID;
+
+                // Upon FormSubmission, create or update the location
+                $scope.$on('FormSubmission', function() {
+                    if (deferred) {
+                        // Create or update location record
+                        locationID = createOrUpdateLocation(locationID, $scope);
+                        deferred.resolve(locationID);
+                    }
+                });
+
+                // Watch the main model (=the location ID) for
+                // updates from the controller
+                $scope.$watch(ngModel, function(newVal) {
+                    if (!isNaN(newVal - 0)) {
+                        // An existing location to populate the widget
+                        locationID = newVal;
+
+                        // Load the location data
+                        emResources.open('gis_location').then(function(resource) {
+                            var table = resource.getTable();
+                            resource.where(table.$('id').is(locationID))
+                                    .select(['id', 'addr_street'], {limitby: 1}).then(
+                                function(rows) {
+                                    if (rows.length) {
+                                        // Populate the form
+                                        var locationData = rows[0]._();
+                                        $scope.addr_street = locationData.addr_street;
+                                    } else {
+                                        locationID = null;
+                                    }
+                                });
+                        });
+                    }
+                });
+
+                // Watch widget model for changes, and mark as
+                // deferred once there are any values
+                $scope.$watchGroup(locationProperties, function(newValues) {
+                    var form = $scope.$parent[scopeName];
+                    if (!deferred && form) {
+                        var values = newValues.filter(function(v) {
+                                return v !== undefined;
+                            });
+                        if (values.length) {
+                            deferred = $q.defer();
+                            form[fieldName] = deferred.promise;
+                        }
+                    }
+                });
+            };
 
             /**
              * Widget renderer (DRY helper)
@@ -447,30 +548,17 @@
              * @param {object} attr - object containing the attributes of
              *                        the element
              */
-            var _renderWidget = function($scope, elem, attr) {
+            var renderWidget = function($scope, elem, attr) {
+
                 // Create the label
                 var label = angular.element('<span>')
                                    .addClass('input-label')
                                    .html(attr.label || '');
 
-                // Create the hidden input
-                var hidden_input = angular.element('<input type="hidden">');
-
-                // Hidden Input attributes
-                copyAttr(attr, hidden_input, [
-                    'ngModel'
-                ]);
-
                 // Create the Address input
                 // @ToDo: Show this only when configured to do so
-                var record = attr.record,
-                    scopeName = attr.ngModel.split('.')[0],
-                    fieldName = attr.field,
-                    widgetName = 'emLocationWidget',
-                    ngModel = scopeName + '.' + widgetName + '.' + fieldName + '.addr_street',
-                    address_input = angular.element('<input type="text">')
-                                           .attr('ng-model', ngModel)
-                                           .attr('ng-init', ngModel + '="' + record.addr_street +'"');
+                var address_input = angular.element('<input type="text">')
+                                           .attr('ng-model', 'addr_street');
 
                 // Hidden Input attributes
                 copyAttr(attr, address_input, [
@@ -482,7 +570,6 @@
                 var widget = angular.element('<label>')
                                     .addClass('item item-input item-stacked-label')
                                     .append(label)
-                                    .append(hidden_input)
                                     .append(address_input);
 
                 // Widget attributes
@@ -494,78 +581,9 @@
                 // render it in place of the directive
                 var compiled = $compile(widget)($scope);
                 elem.replaceWith(compiled);
-            };
 
-            /**
-             * Widget renderer
-             *
-             * @param {object} $scope - reference to the current scope
-             * @param {DOMNode} elem - the angular-enhanced DOM node for
-             *                         the element applying the directive
-             * @param {object} attr - object containing the attributes of
-             *                        the element
-             */
-            var renderWidget = function($scope, elem, attr) {
-
-                var recordID = $scope.$parent.recordID;
-
-                if (recordID) {
-                    // Update form
-                    // Read the Main record
-                    emResources.open(attr.resource).then(function(resource) {
-                        var fieldName = attr.field,
-                            subset = resource.where(resource.getTable().$('id').is(recordID));
-
-                        subset.select([fieldName], {limitby:1}).then(function(rows) {
-                            var locationID;
-                            if (rows.length) {
-                                locationID = rows[0].$(fieldName);
-                            } else {
-                                // We don't have this record...so...?
-                                emDialogs.error('Error', 'Cannot read Record',
-                                    function() {
-                                        $state.go('data.resources',
-                                            {location: 'replace', reload: true});
-                                    });
-                            }
-
-                            if (locationID) {
-                                // Read the Location record
-                                emResources.open('gis_location').then(function(locationResource) {
-
-                                    var locationSubset = locationResource.where(locationResource.getTable().$('id').is(locationID)),
-                                        fields = ['addr_street'//,
-                                                  //'parent' // For current usecase, this will stay the same, we don't need to pull this back yet
-                                                  ];
-                                    locationSubset.select(fields, {limitby:1}).then(function(locationRows) {
-                                        if (locationRows.length) {
-                                            // Read relevant attributes
-                                            var row = locationRows[0],
-                                                record = {};
-                                            record.addr_street = row.$('addr_street');
-                                            //record.addr_postcode = row.$('addr_postcode');
-                                            //record.parent = row.$('parent');
-                                            attr.record = record;
-                                        } else {
-                                            // We don't have this record...so...?
-                                            emDialogs.error('Error', 'Cannot read Location',
-                                                function() {
-                                                    $state.go('data.resources',
-                                                        {location: 'replace', reload: true});
-                                                });
-                                        }
-                                        _renderWidget($scope, elem, attr);
-                                    });
-                                });
-                            } else {
-                                _renderWidget($scope, elem, attr);
-                            }
-                        });
-                    });
-                } else {
-                    // Create form
-                    _renderWidget($scope, elem, attr);
-                }
+                // Apply widget logic
+                applyWidgetLogic($scope, attr);
             };
 
             return {

@@ -113,23 +113,31 @@ EdenMobile.controller('EMDataCreate', [
 
             // Configure the submit-function
             $scope.submit = function(form) {
-                // Check if empty (@todo: form onvalidation)
-                var empty = true;
-                for (var field in form) {
-                    if (form[field] !== undefined && form[field] !== null) {
-                        empty = false;
-                        break;
+
+                // Broadcast form submission
+                $scope.$broadcast('FormSubmission');
+
+                // Proceed when all form data are ready for submission
+                $q.all(form).then(function(formData) {
+                    console.log(formData);
+                    // Check if empty (@todo: form onvalidation)
+                    var empty = true;
+                    for (var fn in formData) {
+                        if (formData[fn] !== undefined && formData[fn] !== null) {
+                            empty = false;
+                            break;
+                        }
                     }
-                }
-                if (!empty) {
-                    subset.insert(form).then(
-                        function() {
-                            confirmCreate();
-                        },
-                        function(error) {
-                            emDialogs.error('Could not create record', error, $scope.returnToParentView);
-                        });
-                }
+                    if (!empty) {
+                        subset.insert(formData).then(
+                            function() {
+                                confirmCreate();
+                            },
+                            function(error) {
+                                emDialogs.error('Could not create record', error, $scope.returnToParentView);
+                            });
+                    }
+                });
             };
 
             // Populate scope with default values

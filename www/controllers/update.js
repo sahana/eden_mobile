@@ -127,77 +127,28 @@ EdenMobile.controller("EMDataUpdate", [
 
             // Configure submit-function
             $scope.submit = function(form) {
-                var fieldName,
-                    table = resource.table,
-                    checkEmptyAndCommit = function(form) {
-                        // Check if empty (@todo: form onvalidation)
-                        var empty = true;
-                        for (fieldName in form) {
-                            if (form[fieldName] !== undefined && form[fieldName] !== null) {
-                                empty = false;
-                                break;
-                            }
-                        }
-                        if (!empty) {
-                            // Commit to database, then redirect
-                            table.where(table.$('id').equals(targetID)).update(form,
-                                function() {
-                                    onUpdate();
-                                });
-                        }
-                    };
 
-                // LocationWidgets
-                var fields = table.fields,
-                    locations = [];
-                for (fieldName in form) {
-                    if (fieldName == 'emLocationWidget') {
-                        var locationWidgets = form[fieldName];
-                        for (var locationFK in locationWidgets) {
-                            locations.push({
-                                id: form[locationFK],
-                                fk: locationFK,
-                                record: locationWidgets[locationFK]
-                            });
+                // Broadcast form submission
+                $scope.$broadcast('FormSubmission');
+
+                // Proceed when all form data are ready for submission
+                $q.all(form).then(function(formData) {
+                    console.log(formData);
+                    var empty = true;
+                    for (var fn in formData) {
+                        if (formData[fn] !== undefined && formData[fn] !== null) {
+                            empty = false;
+                            break;
                         }
                     }
-                }
-                if (locations.length) {
-                    // Commit Locations to database
-                    emDB.table('gis_location').then(function(locationTable) {
-                        var location,
-                            locationID,
-                            processNextLocation = function() {
-                                location = locations.pop();
-                                locationID = location.id;
-                                if (locationID) {
-                                    // Update existing location record
-                                    locationTable.where(locationTable.$('id').equals(locationID)).update(location.record,
-                                        function() {
-                                            if (locations.length) {
-                                                processNextLocation();
-                                            } else {
-                                                checkEmptyAndCommit(form);
-                                            }
-                                        });
-                                } else {
-                                    // Create new location record
-                                    locationTable.insert(location.record,
-                                        function(locationID) {
-                                            form[location.fk] = locationID;
-                                            if (locations.length) {
-                                                processNextLocation();
-                                            } else {
-                                                checkEmptyAndCommit(form);
-                                            }
-                                        });
-                                }
-                            };
-                            processNextLocation();
-                        });
-                } else {
-                    checkEmptyAndCommit(form);
-                }
+                    if (!empty) {
+                        // Commit to database, then redirect
+                        table.where(table.$('id').equals(targetID)).update(formData,
+                            function() {
+                                onUpdate();
+                            });
+                    }
+                });
             };
 
             // Configure delete-action
