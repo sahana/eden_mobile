@@ -500,36 +500,38 @@
 
                 // Watch the main model (=the location ID) for
                 // updates from the controller
-                $scope.$watch(ngModel, function(newVal) {
-                    if (!isNaN(newVal - 0)) {
-                        // An existing location to populate the widget
-                        locationID = newVal;
+                $scope.$watch(ngModel, function(newVal, oldVal) {
+                    if (newVal !== oldVal) {
+                        if (!isNaN(newVal - 0)) {
+                            // An existing location to populate the widget
+                            locationID = newVal;
 
-                        // Load the location data
-                        emResources.open('gis_location').then(function(resource) {
-                            var table = resource.getTable();
-                            resource.where(table.$('id').is(locationID))
-                                    .select(['id', 'addr_street'], {limitby: 1}).then(
-                                function(rows) {
-                                    if (rows.length) {
-                                        // Populate the form
-                                        var locationData = rows[0]._();
-                                        $scope.addr_street = locationData.addr_street;
-                                    } else {
-                                        locationID = null;
-                                    }
-                                });
-                        });
+                            // Load the location data
+                            emResources.open('gis_location').then(function(resource) {
+                                var table = resource.getTable();
+                                resource.where(table.$('id').is(locationID))
+                                        .select(['id', 'addr_street'], {limitby: 1}).then(
+                                    function(rows) {
+                                        if (rows.length) {
+                                            // Populate the form
+                                            var locationData = rows[0]._();
+                                            $scope.addr_street = locationData.addr_street;
+                                        } else {
+                                            locationID = null;
+                                        }
+                                    });
+                            });
+                        }
                     }
                 });
 
                 // Watch widget model for changes, and mark as
                 // deferred once there are any values
-                $scope.$watchGroup(locationProperties, function(newValues) {
+                $scope.$watchGroup(locationProperties, function(newValues, oldValues) {
                     var form = $scope.$parent[scopeName];
                     if (!deferred && form) {
-                        var values = newValues.filter(function(v) {
-                                return v !== undefined;
+                        var values = newValues.filter(function(v, i) {
+                                return v !== undefined && v !== oldValues[i];
                             });
                         if (values.length) {
                             deferred = $q.defer();
