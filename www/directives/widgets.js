@@ -430,7 +430,7 @@
      * @ToDo: Add Map
      * @ToDo: Add Polygon
      *
-     * @returns {string} - the text entered (or null if empty)
+     * @returns {integer} - the location record ID
      *
      * @example <em-location-widget>
      */
@@ -502,7 +502,7 @@
 
                     .then(function(rows) {
 
-                        // Populate the form
+                        // Populate the widget
                         if (rows.length) {
                             var locationData = rows[0]._();
                             $scope.addr_street = locationData.addr_street;
