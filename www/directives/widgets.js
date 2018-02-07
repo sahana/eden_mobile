@@ -441,10 +441,10 @@
             var locationProperties = ['addr_street'];
 
             /**
-             * Create or update a location record from widget scope
+             * Create or update a location record from widget input
              *
              * @param {integer} locationID - the location record ID
-             * @param {object} data - the data (=local scope)
+             * @param {object} data - the data (=from widget scope)
              *
              * @returns {promise} - a promise that resolves into the
              *                      ID of the newly created or updated
@@ -476,9 +476,48 @@
             };
 
             /**
-             * Apply the widget logic
+             * Load an existing location record and populate the widget
+             * with its details
              *
-             * @param {object} $scope - the local scope (of the widget)
+             * @param {object} $scope - the widget scope
+             * @param {integer} locationID - the record ID of the location
+             *                               record to be loaded
+             *
+             * @returns {integer} - the record ID of the newly loaded
+             *                      location record, or null if no
+             *                      record could be loaded
+             */
+            var loadLocation = function($scope, locationID) {
+
+                return emResources.open('gis_location')
+
+                    .then(function(resource) {
+
+                        // Load the location data
+                        var table = resource.getTable();
+                        return resource.where(table.$('id').is(locationID))
+                                       .select(['id', 'addr_street'], {limitby: 1});
+
+                    })
+
+                    .then(function(rows) {
+
+                        // Populate the form
+                        if (rows.length) {
+                            var locationData = rows[0]._();
+                            $scope.addr_street = locationData.addr_street;
+                        } else {
+                            locationID = null;
+                        }
+
+                        return locationID;
+                    });
+            };
+
+            /**
+             * Apply the widget logic (event handling)
+             *
+             * @param {object} $scope - the widget scope
              * @param {object} attr - the widget attributes
              */
             var applyWidgetLogic = function($scope, attr) {
@@ -489,38 +528,13 @@
                     deferred,
                     locationID;
 
-                // Upon FormSubmission, create or update the location
-                $scope.$on('FormSubmission', function() {
-                    if (deferred) {
-                        // Create or update location record
-                        locationID = createOrUpdateLocation(locationID, $scope);
-                        deferred.resolve(locationID);
-                    }
-                });
-
-                // Watch the main model (=the location ID) for
+                // Watch the main model (=the location_id field) for
                 // updates from the controller
                 $scope.$watch(ngModel, function(newVal, oldVal) {
                     if (newVal !== oldVal) {
                         if (!isNaN(newVal - 0)) {
                             // An existing location to populate the widget
-                            locationID = newVal;
-
-                            // Load the location data
-                            emResources.open('gis_location').then(function(resource) {
-                                var table = resource.getTable();
-                                resource.where(table.$('id').is(locationID))
-                                        .select(['id', 'addr_street'], {limitby: 1}).then(
-                                    function(rows) {
-                                        if (rows.length) {
-                                            // Populate the form
-                                            var locationData = rows[0]._();
-                                            $scope.addr_street = locationData.addr_street;
-                                        } else {
-                                            locationID = null;
-                                        }
-                                    });
-                            });
+                            locationID = loadLocation($scope, newVal);
                         }
                     }
                 });
@@ -539,10 +553,19 @@
                         }
                     }
                 });
+
+                // Upon FormSubmission, create or update the location
+                $scope.$on('FormSubmission', function() {
+                    if (deferred) {
+                        // Create or update location record
+                        locationID = createOrUpdateLocation(locationID, $scope);
+                        deferred.resolve(locationID);
+                    }
+                });
             };
 
             /**
-             * Widget renderer (DRY helper)
+             * Widget renderer
              *
              * @param {object} $scope - reference to the current scope
              * @param {DOMNode} elem - the angular-enhanced DOM node for
