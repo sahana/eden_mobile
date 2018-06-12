@@ -384,7 +384,7 @@
     /**
      * Get the SQL for orderby-option
      *
-     * @param {Array|number} orderby - the orderby option
+     * @param {Array|Expression} orderby - the orderby option
      *
      * @example
      *  orderby: [table.$('date').desc()]
@@ -430,6 +430,50 @@
 
         if (sql.length) {
             sql = 'ORDER BY ' + sql.join(', ');
+        } else {
+            sql = undefined;
+        }
+        return sql;
+    };
+
+    // ------------------------------------------------------------------------
+    /**
+     * Get the SQL for groupby-option
+     *
+     * @param {Array|Expression} groupby - the groupby option
+     *
+     * @example
+     *  groupby: table.$('id')
+     *
+     * @returns {string} - the SQL fragment for groupby
+     */
+    Set.prototype.groupbySQL = function(groupby) {
+
+        var sql = [],
+            tableName = this.table.name;
+
+        if (groupby) {
+
+            if (groupby.constructor !== Array) {
+                groupby = [groupby];
+            }
+            groupby.forEach(function(expr) {
+                if (typeof expr == 'string') {
+                    sql.push(expr);
+                } else {
+                    switch (expr.exprType) {
+                        case 'field':
+                            sql.push(expr.toSQL(tableName));
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            });
+        }
+
+        if (sql.length) {
+            sql = 'GROUP BY ' + sql.join(', ');
         } else {
             sql = undefined;
         }
@@ -517,6 +561,10 @@
 
         // Query options
         if (options) {
+            var groupby = this.groupbySQL(options.groupby);
+            if (groupby) {
+               sql.push(groupby);
+            }
             var orderby = this.orderbySQL(options.orderby);
             if (orderby) {
                sql.push(orderby);
