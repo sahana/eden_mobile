@@ -1,33 +1,69 @@
 {
-  "name": "cordova-sqlite-storage",
-  "version": "1.4.7",
-  "description": "Native interface to SQLite for PhoneGap/Cordova",
+  "_from": "cordova-sqlite-storage@3.1.0",
+  "_id": "cordova-sqlite-storage@3.1.0",
+  "_inBundle": false,
+  "_integrity": "sha512-DDng2zlJnXRqzevbKcJC7rxsN7Vd8QylhpuEXv0R0yM9WdVOAk5amJYqQBU3XIXPVYluzAuNRimvKs5+kRJaTw==",
+  "_location": "/cordova-sqlite-storage",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "version",
+    "registry": true,
+    "raw": "cordova-sqlite-storage@3.1.0",
+    "name": "cordova-sqlite-storage",
+    "escapedName": "cordova-sqlite-storage",
+    "rawSpec": "3.1.0",
+    "saveSpec": null,
+    "fetchSpec": "3.1.0"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/cordova-sqlite-storage/-/cordova-sqlite-storage-3.1.0.tgz",
+  "_shasum": "6bc6c2068ee41be2e5d541292e31e5e4c620c1f3",
+  "_spec": "cordova-sqlite-storage@3.1.0",
+  "_where": "/home/dominic/work/projects/sahana/eden_mobile/eden_mobile",
+  "author": {
+    "name": "various"
+  },
+  "bugs": {
+    "url": "https://github.com/xpbrew/cordova-sqlite-storage/issues"
+  },
+  "bundleDependencies": false,
   "cordova": {
     "id": "cordova-sqlite-storage",
     "platforms": [
       "android",
       "ios",
+      "osx",
       "windows"
     ]
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/litehelpers/Cordova-sqlite-storage.git"
+  "dependencies": {
+    "cordova-sqlite-storage-dependencies": "2.0.0"
   },
+  "deprecated": false,
+  "description": "Native interface to SQLite for PhoneGap/Cordova - cordova-sqlite-storage plugin version",
+  "devDependencies": {
+    "shelljs": "^0.8.3"
+  },
+  "homepage": "https://github.com/xpbrew/cordova-sqlite-storage",
   "keywords": [
     "sqlite",
     "ecosystem:cordova",
     "cordova-android",
     "cordova-ios",
+    "cordova-osx",
     "cordova-windows"
   ],
-  "author": "various",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/litehelpers/Cordova-sqlite-storage/issues"
+  "name": "cordova-sqlite-storage",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xpbrew/cordova-sqlite-storage.git"
   },
-  "homepage": "https://github.com/litehelpers/Cordova-sqlite-storage",
-  "dependencies": {
-    "cordova-sqlite-storage-dependencies": "1.0.0"
-  }
+  "scripts": {
+    "start": "node scripts/prepareSpec.js"
+  },
+  "version": "3.1.0"
 }

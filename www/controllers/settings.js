@@ -56,7 +56,7 @@ EdenMobile.controller("EMAbout", [
     function($scope) {
 
         var about = {
-            version: window.cordova.plugins.version.getAppVersion(),
+            version: '0.2.0', //window.cordova.plugins.version.getAppVersion(),
             vendor: "Sahana Software Foundation"
         };
         $scope.about = about;
