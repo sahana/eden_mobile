@@ -1,7 +1,7 @@
 /**
  * Sahana Eden Mobile - Schema Download (SyncTask)
  *
- * Copyright (c) 2016-2017 Sahana Software Foundation
+ * Copyright (c) 2016-2019 Sahana Software Foundation
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the

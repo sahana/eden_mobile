@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<!--
+    Sahana Eden Mobile
+
+    Copyright (c) 2016-2017: Sahana Software Foundation
+
+    Permission is hereby granted, free of charge, to any person obtaining
+    a copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to use, copy, modify, merge, publish,
+    distribute, sublicense, and/or sell copies of the Software, and to
+    permit persons to whom the Software is furnished to do so, subject to
+    the following conditions:
+
+    The above copyright notice and this permission notice shall be
+    included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+    LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+    OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+    WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+
+<html>
+    <head>
+        <!--
+            Customize this policy to fit your own app's needs. For more
+            guidance, see:
+                https://github.com/apache/cordova-plugin-whitelist/blob/master/README.md#content-security-policy
+            Some notes:
+                * gap: is required only on iOS (when using UIWebView) and
+                  is needed for JS->native communication
+                * https://ssl.gstatic.com is required only on Android and
+                  is needed for TalkBack to function properly
+                * Disables use of inline scripts in order to mitigate risk
+                  of XSS vulnerabilities. To change this:
+                    * Enable inline JS: add 'unsafe-inline' to default-src
+        -->
+
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; media-src *; connect-src *">
+        <meta name="format-detection" content="telephone=no">
+        <meta name="msapplication-tap-highlight" content="no">
+        <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width">
+
+        <link rel="stylesheet" type="text/css" href="vendor/ionic/css/ionic.css"/>
+        <link rel="stylesheet" type="text/css" href="styles/index.css"/>
+
+        <!-- Using bundle instead of individual libraries
+        <script type="text/javascript" src="vendor/ionic/js/ionic.js"></script>
+        <script type="text/javascript" src="vendor/angular/js/angular.js"></script>
+        <script type="text/javascript" src="vendor/angular/js/angular-animate.js"></script>
+        <script type="text/javascript" src="vendor/angular/js/angular-sanitize.js"></script>
+        <script type="text/javascript" src="vendor/angular/js/angular-ui-router.js"></script>
+        <script type="text/javascript" src="vendor/ionic/js/ionic-angular.js"></script>
+        -->
+        <script type="text/javascript" src="vendor/ionic/js/ionic.bundle.js"></script>
+        <script type="text/javascript" src="vendor/angular/js/angular-translate.js"></script>
+        <script type="text/javascript" src="vendor/angular/js/angular-translate-loader-static-files.js"></script>
+
+        <title>Sahana Eden Mobile</title>
+
+    </head>
+    <body>
+        <div class="app">
+
+            <ion-side-menus enable-menu-with-back-views="true">
+
+                <!-- Left menu -->
+                <ion-side-menu side="left">
+                    <div class="bar bar-header bar-energized">
+                    </div>
+                    <ul class="list has-header">
+                        <a menu-close="true" class="item" href="#/" translate="Home"></a>
+                        <a menu-close="true" class="item" href="#/data/resources" translate="Data"></a>
+                        <a menu-close="true" class="item" href="#/sync" translate="Synchronize"></a>
+                        <a menu-close="true" class="item" href="#/settings" translate="Settings"></a>
+                    </ul>
+                </ion-side-menu>
+
+                <!-- Main content -->
+                <ion-side-menu-content>
+                    <section eden-topbar="exp"></section>
+                    <ion-nav-view></ion-nav-view>
+                    <section eden-footer="exp"></section>
+                </ion-side-menu-content>
+
+            </ion-side-menus>
+
+        </div>
+        <script type="text/javascript" src="cordova.js"></script>
+
+        <!-- Application and Config -->
+        <script type="text/javascript" src="index.js"></script>
+
+        <script type="text/javascript" src="apps/default/routing.js"></script>
+        <script type="text/javascript" src="config/i18n.js"></script>
+        <script type="text/javascript" src="config/schema.js"></script>
+        <script type="text/javascript" src="config/settings.js"></script>
+
+        <!-- emUtils -->
+        <script type="text/javascript" src="services/utils.js"></script>
+
+        <!-- emDB -->
+        <script type="text/javascript" src="services/db/expressions.js"></script>
+        <script type="text/javascript" src="services/db/sets.js"></script>
+        <script type="text/javascript" src="services/db/fields.js"></script>
+        <script type="text/javascript" src="services/db/represent.js"></script>
+        <script type="text/javascript" src="services/db/tables.js"></script>
+        <script type="text/javascript" src="services/db/files.js"></script>
+        <script type="text/javascript" src="services/db/db.js"></script>
+
+        <!-- emConfig -->
+        <script type="text/javascript" src="services/config.js"></script>
+
+        <!-- emResources -->
+        <script type="text/javascript" src="services/resources/joins.js"></script>
+        <script type="text/javascript" src="services/resources/selectors.js"></script>
+        <script type="text/javascript" src="services/resources/resources.js"></script>
+        <script type="text/javascript" src="services/resources/components.js"></script>
+        <script type="text/javascript" src="services/resources/subsets.js"></script>
+
+        <!-- emDialogs -->
+        <script type="text/javascript" src="services/dialogs.js"></script>
+
+        <!-- emServer -->
+        <script type="text/javascript" src="services/server.js"></script>
+
+        <!-- emSync -->
+        <script type="text/javascript" src="services/sync/s3json.js"></script>
+        <script type="text/javascript" src="services/sync/log.js"></script>
+        <script type="text/javascript" src="services/sync/task.js"></script>
+        <script type="text/javascript" src="services/sync/file_download.js"></script>
+        <script type="text/javascript" src="services/sync/data_download.js"></script>
+        <script type="text/javascript" src="services/sync/data_import.js"></script>
+        <script type="text/javascript" src="services/sync/data_export.js"></script>
+        <script type="text/javascript" src="services/sync/data_upload.js"></script>
+        <script type="text/javascript" src="services/sync/schema_download.js"></script>
+        <script type="text/javascript" src="services/sync/default_lookup.js"></script>
+        <script type="text/javascript" src="services/sync/schema_import.js"></script>
+        <script type="text/javascript" src="services/sync/dependency.js"></script>
+        <script type="text/javascript" src="services/sync/loadmap.js"></script>
+        <script type="text/javascript" src="services/sync/job.js"></script>
+        <script type="text/javascript" src="services/sync/run.js"></script>
+        <script type="text/javascript" src="services/sync/sync.js"></script>
+
+        <!-- emForms -->
+        <script type="text/javascript" src="services/forms.js"></script>
+
+        <!-- Directives -->
+        <script type="text/javascript" src="directives/widgets.js"></script>
+        <script type="text/javascript" src="directives/forms.js"></script>
+        <script type="text/javascript" src="directives/lists.js"></script>
+
+        <!-- Controllers -->
+        <script type="text/javascript" src="controllers/default.js"></script>
+        <script type="text/javascript" src="controllers/resources.js"></script>
+        <script type="text/javascript" src="controllers/datalist.js"></script>
+        <script type="text/javascript" src="controllers/create.js"></script>
+        <script type="text/javascript" src="controllers/update.js"></script>
+        <script type="text/javascript" src="controllers/sync.js"></script>
+        <script type="text/javascript" src="controllers/settings.js"></script>
+    </body>
+</html>

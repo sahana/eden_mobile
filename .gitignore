@@ -5,4 +5,4 @@ platforms
 node_modules
 www/config/local.json
 package-lock.json
-
+config.xml

@@ -1,7 +1,7 @@
 /**
  * Sahana Eden Mobile - State Routing and Menu Directives
  *
- * Copyright (c) 2016-2017: Sahana Software Foundation
+ * Copyright (c) 2016-2019 Sahana Software Foundation
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -32,7 +32,7 @@ EdenMobile.config(['$stateProvider', '$urlRouterProvider',
         $stateProvider
             .state('index', {
                 url: '/',
-                templateUrl: 'views/home.html'
+                templateUrl: 'apps/ee/views/home.html'
             })
             .state('data', {
                 'abstract': true,
@@ -122,19 +122,19 @@ EdenMobile.config(['$stateProvider', '$urlRouterProvider',
             });
 
         // Default to index state
-        $urlRouterProvider.otherwise("/");
+        $urlRouterProvider.otherwise("/data");
 
     }
 ]);
 
 EdenMobile.directive('edenTopbar', function() {
     return {
-        templateUrl: 'views/topbar.html'
+        templateUrl: 'apps/ee/views/topbar.html'
     };
 });
 
 EdenMobile.directive('edenFooter', function() {
     return {
-        templateUrl: 'views/footer.html'
+        templateUrl: 'apps/ee/views/footer.html'
     };
 });
