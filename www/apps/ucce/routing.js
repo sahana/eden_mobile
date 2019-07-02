@@ -1,5 +1,5 @@
 /**
- * Sahana Eden Mobile - State Routing and Menu Directives
+ * UCCE Survey Tool - State Routing and Menu Directives
  *
  * Copyright (c) 2016-2019 Sahana Software Foundation
  *
@@ -129,12 +129,12 @@ EdenMobile.config(['$stateProvider', '$urlRouterProvider',
 
 EdenMobile.directive('edenTopbar', function() {
     return {
-        templateUrl: 'apps/ee/views/topbar.html'
+        templateUrl: 'apps/ucce/views/topbar.html'
     };
 });
 
 EdenMobile.directive('edenFooter', function() {
     return {
-        templateUrl: 'apps/ee/views/footer.html'
+        templateUrl: 'apps/ucce/views/footer.html'
     };
 });

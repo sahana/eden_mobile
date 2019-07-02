@@ -2,12 +2,12 @@
 <widget id="org.sahanafoundation.eden_mobile" version="0.2.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <name>EdenMobile</name>
     <description>
-        A mobile application for Sahana Eden
+        UCCE Survey Tool
     </description>
     <author email="sahana-eden@googlegroups.com" href="http://eden.sahanafoundation.org">
         Sahana Eden Project
     </author>
-    <content src="ee.html" />
+    <content src="ucce.html" />
     <access origin="*" />
     <icon src="www/img/logo.png" />
     <allow-intent href="http://*/*" />
