@@ -23,44 +23,48 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
+(function() {
 
-// ============================================================================
-/**
- * Controller for configuration settings form
- */
-EdenMobile.controller("EMSettings", [
-    '$scope', 'emConfig', 'emDialogs',
-    function($scope, emConfig, emDialogs) {
+    "use strict";
 
-        emConfig.apply(function(settings) {
+    // ========================================================================
+    /**
+     * Controller for configuration settings form
+     */
+    EdenMobile.controller("EMSettings", [
+        '$scope', 'emConfig',
+        function($scope, emConfig) {
 
-            // Copy the current settings into scope
-            $scope.settings = settings.copy();
+            emConfig.apply(function(settings) {
 
-            // Provide an update method
-            $scope.update = function() {
-                settings.update($scope.settings);
-                settings.save();
+                // Copy the current settings into scope
+                $scope.settings = settings.copy();
+
+                // Provide an update method
+                $scope.update = function() {
+                    settings.update($scope.settings);
+                    settings.save();
+                };
+            });
+        }
+    ]);
+
+    // ========================================================================
+    /**
+     * Controller to display the "About" section in settings
+     */
+    EdenMobile.controller("EMAbout", [
+        '$scope',
+        function($scope) {
+
+            var about = {
+                version: window.AppVersion.version,
+                vendor: "Sahana Software Foundation"
             };
-        });
-    }
-]);
+            $scope.about = about;
+        }
+    ]);
 
-// ============================================================================
-/**
- * Controller to display the "About" section in settings
- */
-EdenMobile.controller("EMAbout", [
-    '$scope',
-    function($scope) {
-
-        var about = {
-            version: '0.2.0', //window.cordova.plugins.version.getAppVersion(),
-            vendor: "Sahana Software Foundation"
-        };
-        $scope.about = about;
-    }
-]);
+})();
 
 // END ========================================================================
