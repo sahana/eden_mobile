@@ -23,118 +23,123 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-"use strict";
+(function() {
 
-EdenMobile.config(['$stateProvider', '$urlRouterProvider',
-    function($stateProvider, $urlRouterProvider) {
+    "use strict";
 
-        // Default states
-        $stateProvider
-            .state('index', {
-                url: '/',
-                templateUrl: 'apps/ee/views/home.html'
-            })
-            .state('data', {
-                'abstract': true,
-                url: '/data',
-                template: '<ion-nav-view name="data"></ion-nav-view>'
-            })
-            .state('data.resources', {
-                url: '/resources',
-                views: {
-                    'data': {
-                        templateUrl: 'views/data/resources.html',
-                        controller: "EMResourceList"
-                    }
-                }
-            })
-            .state('data.list', {
-                url: '/{resourceName}',
-                views: {
-                    'data': {
-                        templateUrl: 'views/data/datalist.html',
-                        controller: "EMDataList"
-                    }
-                }
-            })
-            .state('data.create', {
-                url: '/{resourceName}/create',
-                views: {
-                    'data': {
-                        templateUrl: 'views/data/create.html',
-                        controller: "EMDataCreate"
-                    }
-                }
-            })
-            .state('data.update', {
-                url: '/{resourceName}/{recordID:int}',
-                views: {
-                    'data': {
-                        templateUrl: 'views/data/update.html',
-                        controller: "EMDataUpdate"
-                    }
-                }
-            })
-            .state('data.component', {
-                url: '/{resourceName}/{recordID:int}/{componentName}',
-                views: {
-                    'data': {
-                        templateUrl: 'views/data/datalist.html',
-                        controller: "EMDataList"
-                    }
-                }
-            })
-            .state('data.componentCreate', {
-                url: '/{resourceName}/{recordID:int}/{componentName}/create',
-                views: {
-                    'data': {
-                        templateUrl: 'views/data/create.html',
-                        controller: "EMDataCreate"
-                    }
-                }
-            })
-            .state('data.componentUpdate', {
-                url: '/{resourceName}/{recordID:int}/{componentName}/{componentID:int}',
-                views: {
-                    'data': {
-                        templateUrl: 'views/data/update.html',
-                        controller: "EMDataUpdate"
-                    }
-                }
-            })
-            .state('sync', {
-                url: '/sync',
-                templateUrl: 'views/sync/index.html',
-                controller: "EMSync"
-            })
-            .state('settings', {
-                url: '/settings',
-                views: {
-                    '': {
-                        templateUrl: 'views/settings/index.html',
-                        controller: "EMSettings"
-                    },
-                    'about': {
-                        templateUrl: 'views/settings/about.html',
-                        controller: "EMAbout"
-                    }
-                }
-            });
+    EdenMobile.config(['$stateProvider', '$urlRouterProvider',
+        function($stateProvider, $urlRouterProvider) {
 
-        // Default to index state
-        $urlRouterProvider.otherwise("/data");
+            // Default states
+            $stateProvider
+                .state('index', {
+                    url: '/',
+                    templateUrl: 'apps/ucce/views/home.html'
+                })
+                .state('data', {
+                    'abstract': true,
+                    url: '/data',
+                    template: '<ion-nav-view name="data"></ion-nav-view>'
+                })
+                .state('data.resources', {
+                    url: '/resources',
+                    views: {
+                        'data': {
+                            templateUrl: 'views/data/resources.html',
+                            controller: "EMResourceList"
+                        }
+                    }
+                })
+                .state('data.list', {
+                    url: '/{resourceName}',
+                    views: {
+                        'data': {
+                            templateUrl: 'views/data/datalist.html',
+                            controller: "EMDataList"
+                        }
+                    }
+                })
+                .state('data.create', {
+                    url: '/{resourceName}/create',
+                    views: {
+                        'data': {
+                            templateUrl: 'views/data/create.html',
+                            controller: "EMDataCreate"
+                        }
+                    }
+                })
+                .state('data.update', {
+                    url: '/{resourceName}/{recordID:int}',
+                    views: {
+                        'data': {
+                            templateUrl: 'views/data/update.html',
+                            controller: "EMDataUpdate"
+                        }
+                    }
+                })
+                .state('data.component', {
+                    url: '/{resourceName}/{recordID:int}/{componentName}',
+                    views: {
+                        'data': {
+                            templateUrl: 'views/data/datalist.html',
+                            controller: "EMDataList"
+                        }
+                    }
+                })
+                .state('data.componentCreate', {
+                    url: '/{resourceName}/{recordID:int}/{componentName}/create',
+                    views: {
+                        'data': {
+                            templateUrl: 'views/data/create.html',
+                            controller: "EMDataCreate"
+                        }
+                    }
+                })
+                .state('data.componentUpdate', {
+                    url: '/{resourceName}/{recordID:int}/{componentName}/{componentID:int}',
+                    views: {
+                        'data': {
+                            templateUrl: 'views/data/update.html',
+                            controller: "EMDataUpdate"
+                        }
+                    }
+                })
+                .state('sync', {
+                    url: '/sync',
+                    // For TESTING: custom sync homepage
+                    templateUrl: 'apps/ucce/views/sync/index.html',
+                    controller: "EMSync"
+                })
+                .state('settings', {
+                    url: '/settings',
+                    views: {
+                        '': {
+                            templateUrl: 'views/settings/index.html',
+                            controller: "EMSettings"
+                        },
+                        'about': {
+                            templateUrl: 'views/settings/about.html',
+                            controller: "EMAbout"
+                        }
+                    }
+                });
 
-    }
-]);
+            // Default to index state
+            $urlRouterProvider.otherwise("/data");
 
-EdenMobile.directive('edenTopbar', function() {
-    return {
-        templateUrl: 'apps/ucce/views/topbar.html'
-    };
-});
+        }
+    ]);
 
-EdenMobile.directive('edenFooter', function() {
-    return {
-        templateUrl: 'apps/ucce/views/footer.html'
-    };
-});
+    EdenMobile.directive('edenTopbar', function() {
+        return {
+            templateUrl: 'apps/ucce/views/topbar.html'
+        };
+    });
+
+    EdenMobile.directive('edenFooter', function() {
+        return {
+            templateUrl: 'apps/ucce/views/footer.html'
+        };
+    });
+
+})();

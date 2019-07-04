@@ -270,6 +270,62 @@ EdenMobile.factory('emDB', [
             return tablesLoaded.promise;
         };
 
+        // --------------------------------------------------------------------
+        /**
+         * Clean the database (=drop all user tables)
+         *
+         * @returns {promise} - a promise that is resolved when the clean
+         *                      process is complete
+         */
+        Database.prototype._clean = function() {
+
+            var adapter = this._adapter,
+                deferred = $q.defer();
+
+            // Callback after successful clean
+            var onSuccess = function() {
+                adapter.executeSql('PRAGMA foreign_keys = ON;', [],
+                    function() {
+                        deferred.resolve();
+                    },
+                    function(error) {
+                        deferred.reject(error);
+                    });
+            };
+
+            // Callback after error during clean
+            var onError = function(error) {
+                adapter.executeSql('PRAGMA foreign_keys = ON;');
+                deferred.reject(error);
+            };
+
+            // Helper to quote table names
+            var quoted = function(obj) {
+                return "'" + ('' + obj).replace(/'/g, "''") + "'";
+            };
+
+            // The actual clean-process
+            var tables = this.tables;
+            adapter.executeSql('PRAGMA foreign_keys = OFF;', [], function() {
+                adapter.transaction(function(tx) {
+                    Object.keys(tables).forEach(function(tableName) {
+                        if (tableName.slice(0, 3) == 'em_') {
+                            // Skip system tables
+                            return;
+                        }
+                        var quotedName = quoted(tableName);
+                        tx.executeSql('DELETE FROM em_resource WHERE tablename=' + quotedName + ';');
+                        tx.executeSql('DELETE FROM em_object WHERE tablename=' + quotedName + ';');
+                        tx.executeSql('DELETE FROM em_schema WHERE name=' + quotedName + ';');
+                        tx.executeSql('DROP TABLE IF EXISTS ' + tableName + ';');
+                        delete tables[tableName];
+                    });
+                }, onError, onSuccess);
+            }, onError);
+
+            return deferred.promise;
+        };
+
         // ====================================================================
         // Open the default database
         //
@@ -383,6 +439,24 @@ EdenMobile.factory('emDB', [
                 });
 
                 return tableDefined.promise;
+            },
+
+            /**
+             * Clean the database (=drop all user tables)
+             *
+             * @returns {promise} - a promise that is resolved when the clean
+             *                      process is complete
+             *
+             * @note: this process is irreversible, all data in user tables that
+             *        have not yet been uploaded to the server will be lost
+             * @note: caller must take care of any in-memory objects and processes
+             *        that may still try to access user tables; use emReset for
+             *        this rather than calling emDB.clean directly
+             */
+            clean: function() {
+                return db.ready.then(function() {
+                    return db._clean();
+                });
             }
         };
 

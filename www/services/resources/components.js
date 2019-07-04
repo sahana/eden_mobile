@@ -156,12 +156,42 @@ EdenMobile.factory('emComponents', [
             return hook;
         };
 
+        // --------------------------------------------------------------------
+        /**
+         * Remove all component hooks involving user tables
+         */
+        var reset = function() {
+
+            var isUserTable = function(tn) {
+                return tn.slice(0, 3) != 'em_';
+            };
+
+            Object.keys(hooks).forEach(function(tableName) {
+
+                if (isUserTable(tableName)) {
+                    // Drop all hooks
+                    delete hooks[tableName];
+                    return;
+                }
+
+                var tableHooks = hooks[tableName];
+                Object.keys(tableHooks).forEach(function(alias) {
+                    var hook = tableHooks[alias];
+                    // Drop the hook if the target table or the link are not system tables
+                    if (isUserTable(hook.tableName) || isUserTable(hook.link)) {
+                        delete tableHooks[alias];
+                    }
+                });
+            });
+        };
+
         // ====================================================================
         var api = {
 
             addComponent: addComponent,
             getHooks: getHooks,
-            getComponent: getComponent
+            getComponent: getComponent,
+            reset: reset
         };
 
         return api;

@@ -1144,6 +1144,27 @@ EdenMobile.factory('emResources', [
             },
 
             /**
+             * Remove all resources for user tables
+             */
+            reset: function() {
+
+                // Drop all component hooks with user tables
+                emComponents.reset();
+
+                // Clean resources
+                var loaded = resources;
+                resources = {};
+
+                // Restore resources for system tables (if there are any)
+                for (var resourceName in loaded) {
+                    var resource = loaded[resourceName];
+                    if (resource.tableName.slice(0, 3) == 'em_') {
+                        resources[resourceName] = resource;
+                    }
+                }
+            },
+
+            /**
              * Get a list of available resources with the numbers of
              * records updated since the last synchronization with the
              * server.

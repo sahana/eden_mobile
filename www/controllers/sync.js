@@ -28,8 +28,8 @@
  * Controller for synchronisation page
  */
 EdenMobile.controller('EMSync', [
-    '$ionicModal', '$rootScope', '$scope', 'emResources', 'emServer', 'emSync', 'emSyncLog',
-    function($ionicModal, $rootScope, $scope, emResources, emServer, emSync, emSyncLog) {
+    '$ionicModal', '$rootScope', '$scope', 'emResources', 'emServer', 'emSync', 'emSyncLog', 'emReset',
+    function($ionicModal, $rootScope, $scope, emResources, emServer, emSync, emSyncLog, emReset) {
 
         "use strict";
 
@@ -151,6 +151,21 @@ EdenMobile.controller('EMSync', [
                 return;
             } else {
                 emSync.synchronize($scope.formList, $scope.resourceList);
+            }
+        };
+
+        /**
+         * For TESTING: function to trigger DB reset
+         * TODO move this into the right place, add a confirmation dialog
+         */
+        $scope.dbreset = function() {
+            if ($rootScope.syncInProgress) {
+                return;
+            } else {
+                $rootScope.syncInProgress = true;
+                emReset.reset().then(function() {
+                    $rootScope.syncInProgress = false;
+                });
             }
         };
 

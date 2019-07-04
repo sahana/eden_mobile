@@ -1,0 +1,43 @@
+<ion-view view-title="Synchronization">
+    <ion-content class="has-header has-footer">
+        <h2 class="padding" translate="Synchronize"></h2>
+        <div class="list card">
+            <div class="item item-icon-right" ng-click="!syncInProgress && !formListLoading && !resourceListLoading && selectForms()">
+                <i class="icon ion-arrow-right-b" ng-show="!formListLoading"></i>
+                <ion-spinner class="icon" ng-show="formListLoading" icon="dots"></ion-spinner>
+                <h3>Forms</h3>
+                <p><small>{{selectedForms}}</small></p>
+            </div>
+            <div class="item item-icon-right" ng-click="!syncInProgress && !formListLoading && !resourceListLoading && selectResources()">
+                <i class="icon ion-arrow-right-b" ng-show="!resourceListLoading"></i>
+                <ion-spinner class="icon" ng-show="resourceListLoading" icon="dots"></ion-spinner>
+                <h3>Data</h3>
+                <p><small>{{selectedResources}}</small></p>
+            </div>
+        </div>
+        <div class="padding">
+            <button type="button" ng-disabled="syncInProgress || formListLoading || resourceListLoading" ng-click="synchronize()" class="button button-block button-positive">
+                Synchronize
+            </button>
+        </div>
+        <!-- For testing: DB Reset Button -->
+        <div class="padding">
+            <button type="button" ng-disabled="syncInProgress || formListLoading || resourceListLoading" ng-click="dbreset()" class="button button-block button-assertive">
+                Reset
+            </button>
+        </div>
+        <div class="padding" ng-show="!!syncStage">
+            <ion-spinner class="icon" icon="dots"></ion-spinner>
+            <span>{{syncStage}}</span>
+            <span ng-show="!!syncProgress">{{syncProgress[0]}} / {{syncProgress[1]}}</span>
+            <span ng-show="!!syncActivity">({{syncActivity}})</span>
+        </div>
+        <div class="list card">
+            <div type="button" class="item item-icon-right" ng-click="!syncInProgress && !syncLogLoading && viewResults()">
+                <i class="icon ion-arrow-right-b" ng-show="!syncLogLoading"></i>
+                <ion-spinner class="icon" ng-show="syncLogLoading" icon="dots"></ion-spinner>
+                <h3>View Results</h3>
+            </div>
+        </div>
+    </ion-content>
+</ion-view>
