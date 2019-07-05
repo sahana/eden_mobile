@@ -106,8 +106,7 @@
                 })
                 .state('sync', {
                     url: '/sync',
-                    // For TESTING: custom sync homepage
-                    templateUrl: 'apps/ucce/views/sync/index.html',
+                    templateUrl: 'views/sync/index.html',
                     controller: "EMSync"
                 })
                 .state('settings', {
