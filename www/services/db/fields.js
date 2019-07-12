@@ -30,6 +30,60 @@ EdenMobile.factory('Field', [
         "use strict";
 
         // ====================================================================
+        // List Encoding/Decoding
+        //
+        var sep = '|',              // the item separator
+            esc = '\\|',            // the escaped item separator
+            cut = '%__cut__%';      // the cutter
+
+        // As regular expressions:
+        var sepExpr = /\|/g,
+            escExpr = /\\\|/g,
+            cutExpr = RegExp(cut, 'g');
+
+        /**
+         * Encode an array of values as |-separated string
+         *
+         * @param {Array} a - the value array
+         *
+         * @returns {string} - the encoded string
+         */
+        var listEncode = function(a) {
+
+            return sep + a.map(function(item) {
+                if (item === null || item === undefined) {
+                    return '';
+                }
+                return ('' + item).replace(sepExpr, esc);
+            }).join(sep) + sep;
+        };
+
+        /**
+         * Decode a |-separated string into a value array
+         *
+         * @param {string} s - the encoded string
+         * @param {string} type - the expected value type (other than string)
+         *
+         * @returns {Array} - the value array
+         */
+        var listDecode = function(s, type) {
+
+            var decoded = s.slice(1, s.length - 1).replace(escExpr, cut).split(sep).map(function(item) {
+                return item.replace(cutExpr, sep);
+            });
+            switch(type) {
+                case 'integer':
+                    decoded = decoded.map(function(item) {
+                        return (item - 0) || null;
+                    });
+                    break;
+                default:
+                    break;
+            }
+            return decoded;
+        };
+
+        // ====================================================================
         /**
          * Field constructor
          *
@@ -212,6 +266,8 @@ EdenMobile.factory('Field', [
                 case 'time':
                 case 'datetime':
                 case 'json':
+                case 'list:integer':
+                case 'list:string':
                 case 'upload':
                     sqlType = 'TEXT';
                     break;
@@ -311,6 +367,13 @@ EdenMobile.factory('Field', [
                     }
                     break;
 
+                case 'list:integer':
+                case 'list:string':
+                    if (value.constructor === Array) {
+                        value = listEncode(value);
+                    }
+                    break;
+
                 default:
                     // Just use the fallback
                     break;
@@ -369,6 +432,10 @@ EdenMobile.factory('Field', [
                     case 'json':
                         sqlValue = JSON.stringify(jsValue);
                         break;
+                    case 'list:integer':
+                    case 'list:string':
+                        sqlValue = listEncode(jsValue);
+                        break;
                     default:
                         break;
                 }
@@ -405,6 +472,12 @@ EdenMobile.factory('Field', [
                         break;
                     case 'json':
                         jsValue = JSON.parse(sqlValue);
+                        break;
+                    case 'list:integer':
+                        jsValue = listDecode(sqlValue, 'integer');
+                        break;
+                    case 'list:string':
+                        jsValue = listDecode(sqlValue);
                         break;
                     default:
                         break;
