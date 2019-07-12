@@ -303,6 +303,24 @@ EdenMobile.factory('emS3JSON', [
                 case 'text':
                     this.data[fieldName] = value + '';
                     break;
+                case 'list:integer':
+                case 'list:string':
+                    // Value should be a list
+                    if (value.constructor === Array) {
+                        this.data[fieldName] = value.map(function(v) {
+                            if (v == null || v == undefined) {
+                                v = '';
+                            }
+                            if (fieldType == 'list:integer') {
+                                return (v - 0) || null;
+                            } else {
+                                return '' + v;
+                            }
+                        });
+                    } else {
+                        this.data[fieldName] = null;
+                    }
+                    break;
                 default:
                     break;
             }
@@ -679,6 +697,10 @@ EdenMobile.factory('emS3JSON', [
                     case 'string':
                     case 'text':
                         data[fieldName] = value;
+                        break;
+                    case 'list:integer':
+                    case 'list:string':
+                        data[fieldName] = {'@value': value};
                         break;
                     default:
                         // Ignore

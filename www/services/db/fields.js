@@ -50,6 +50,9 @@ EdenMobile.factory('Field', [
          */
         var listEncode = function(a) {
 
+            if (a.constructor !== Array) {
+                a = [a];
+            }
             return sep + a.map(function(item) {
                 if (item === null || item === undefined) {
                     return '';
