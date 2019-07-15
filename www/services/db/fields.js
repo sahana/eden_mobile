@@ -690,6 +690,33 @@ EdenMobile.factory('Field', [
 
         // --------------------------------------------------------------------
         /**
+         * Convert a JSON value from Sahana server to internal format
+         *
+         * @param {mixed} value - the raw value from import JSON
+         *
+         * @returns {mixed} - the JS field value
+         */
+
+        Field.prototype.parse = function(value) {
+
+            var parsed = value;
+
+            if (value !== null) {
+                switch(this.type) {
+                    case 'date':
+                    case 'datetime':
+                        // Comes in as ISO string => convert to date
+                        parsed = new Date(value);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            return parsed;
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Get a type-specific default representation of a field value,
          * as fallback for representation functions
          *
@@ -729,33 +756,6 @@ EdenMobile.factory('Field', [
             }
 
             return reprStr;
-        };
-
-        // --------------------------------------------------------------------
-        /**
-         * Convert a JSON value from Sahana server to internal format
-         *
-         * @param {mixed} value - the raw value from import JSON
-         *
-         * @returns {mixed} - the JS field value
-         */
-
-        Field.prototype.parse = function(value) {
-
-            var parsed = value;
-
-            if (value !== null) {
-                switch(this.type) {
-                    case 'date':
-                    case 'datetime':
-                        // Comes in as ISO string => convert to date
-                        parsed = new Date(value);
-                        break;
-                    default:
-                        break;
-                }
-            }
-            return parsed;
         };
 
         // ====================================================================

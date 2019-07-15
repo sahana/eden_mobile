@@ -303,6 +303,10 @@ EdenMobile.factory('emS3JSON', [
                 case 'text':
                     this.data[fieldName] = value + '';
                     break;
+                case 'json':
+                    // Already parsed (via @value attribute)
+                    this.data[fieldName] = value;
+                    break;
                 case 'list:integer':
                 case 'list:string':
                     // Value should be a list
@@ -697,6 +701,9 @@ EdenMobile.factory('emS3JSON', [
                     case 'string':
                     case 'text':
                         data[fieldName] = value;
+                        break;
+                    case 'json':
+                        data[fieldName] = JSON.stringify(value);
                         break;
                     case 'list:integer':
                     case 'list:string':
