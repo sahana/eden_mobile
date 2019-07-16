@@ -142,6 +142,8 @@ EdenMobile.controller("EMDataUpdate", [
                         }
                     }
                     if (!empty) {
+                        // Update is final => reset incomplete-flag
+                        formData.em_incomplete = false;
                         // Commit to database, then redirect
                         table.where(table.$('id').equals(targetID)).update(formData,
                             function() {

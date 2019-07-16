@@ -147,6 +147,7 @@ EdenMobile.factory('DataImport', [
 
                             // Set synchronized_on to now
                             data.synchronized_on = new Date();
+                            data.em_incomplete = false;
                             table.where(table.$('id').equals(recordID)).update(data,
                                 function(numRowsAffected) {
                                     if (numRowsAffected) {

@@ -723,6 +723,7 @@ EdenMobile.factory('LoadMap', [
                     // Which fields to extract?
                     var fields = Object.keys(self.requiredItems),
                         exportFields = self.exportFields(table);
+
                     exportFields.forEach(function(fieldName) {
                         if (fields.indexOf(fieldName) == -1) {
                             fields.push(fieldName);
@@ -735,8 +736,10 @@ EdenMobile.factory('LoadMap', [
                         requiredUIDs = Object.keys(self.pending),
                         synchronizedOn = table.$('synchronized_on'),
                         modifiedOn = table.$('modified_on'),
-                        unsynchronized = synchronizedOn.is(null).or(
-                                         synchronizedOn.lessThan(modifiedOn));
+                        unsynchronized = allOf(
+                            table.$('em_incomplete').is(false),
+                            synchronizedOn.is(null).or(synchronizedOn.lessThan(modifiedOn))
+                        );
 
                     if (all) {
                         // Initial load of primary table:

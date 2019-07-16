@@ -222,6 +222,14 @@ EdenMobile.factory('emDefaultSchema', ['emUtils', function (emUtils) {
                 return new Date();
             }
         },
+        'em_incomplete': {
+            // Flag to indicate that the record is incomplete,
+            // and not ready for upload yet
+            type: 'boolean',
+            defaultValue: false,
+            readable: false,
+            writable: false
+        },
         'synchronized_on': {
             type: 'datetime',
             readable: false,
