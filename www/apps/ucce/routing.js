@@ -23,7 +23,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-(function() {
+(function(EdenMobile) {
 
     "use strict";
 
@@ -32,45 +32,35 @@
 
             // Default states
             $stateProvider
+                // Index page (currently unused in this app)
                 .state('index', {
                     url: '/',
                     templateUrl: 'apps/ucce/views/home.html'
                 })
+
+                // Survey-specific states
+                .state('surveys', {
+                    url: '/surveys',
+                    controller: 'EMSurveyList',
+                    templateUrl: 'views/data/surveys.html'
+                })
+                .state('responses', {
+                    url: '/{resourceName}/responses',
+                    controller: 'EMResponseList',
+                    templateUrl: 'views/data/responses.html'
+                })
+                .state('wizard', {
+                    // Can use 0 as record ID to create a new record
+                    url: '/{resourceName}/{recordID:int}/wizard',
+                    controller: 'EMFormWizard',
+                    templateUrl: 'views/data/wizard.html'
+                })
+
+                // Standard CRUD states
                 .state('data', {
                     'abstract': true,
                     url: '/data',
                     template: '<ion-nav-view name="data"></ion-nav-view>'
-                })
-                .state('data.surveys', {
-                    url: '/surveys',
-                    views: {
-                        'data': {
-                            controller: 'EMSurveyList',
-                            templateUrl: 'views/data/surveys.html'
-                        }
-                    }
-                })
-                .state('data.responses', {
-                    url: '/{resourceName}/responses',
-                    views: {
-                        'data': {
-                            controller: 'EMResponseList',
-                            templateUrl: 'views/data/responses.html'
-                        }
-                    }
-                })
-                .state('data.wizard', {
-                    // Can use 0 as record ID to create a new record
-                    // TODO move to top-level (data state has no controller, so no common view)
-                    // TODO split up into multiple states
-                    //      wizard.create, wizard.update
-                    url: '/{resourceName}/{recordID:int}/wizard',
-                    views: {
-                        'data': {
-                            controller: 'EMFormWizard',
-                            templateUrl: 'views/data/wizard.html'
-                        }
-                    }
                 })
                 .state('data.resources', {
                     url: '/resources',
@@ -135,11 +125,15 @@
                         }
                     }
                 })
+
+                // Sync
                 .state('sync', {
                     url: '/sync',
                     templateUrl: 'views/sync/index.html',
                     controller: "EMSync"
                 })
+
+                // Settings
                 .state('settings', {
                     url: '/settings',
                     views: {
@@ -154,8 +148,8 @@
                     }
                 });
 
-            // Default to index state
-            $urlRouterProvider.otherwise("/data/surveys");
+            // Default to survey list (for now)
+            $urlRouterProvider.otherwise("/surveys");
 
         }
     ]);
@@ -172,4 +166,4 @@
         };
     });
 
-})();
+})(EdenMobile);
