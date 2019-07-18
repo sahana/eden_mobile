@@ -41,6 +41,37 @@
                     url: '/data',
                     template: '<ion-nav-view name="data"></ion-nav-view>'
                 })
+                .state('data.surveys', {
+                    url: '/surveys',
+                    views: {
+                        'data': {
+                            controller: 'EMSurveyList',
+                            templateUrl: 'views/data/surveys.html'
+                        }
+                    }
+                })
+                .state('data.responses', {
+                    url: '/{resourceName}/responses',
+                    views: {
+                        'data': {
+                            controller: 'EMResponseList',
+                            templateUrl: 'views/data/responses.html'
+                        }
+                    }
+                })
+                .state('data.wizard', {
+                    // Can use 0 as record ID to create a new record
+                    // TODO move to top-level (data state has no controller, so no common view)
+                    // TODO split up into multiple states
+                    //      wizard.create, wizard.update
+                    url: '/{resourceName}/{recordID:int}/wizard',
+                    views: {
+                        'data': {
+                            controller: 'EMFormWizard',
+                            templateUrl: 'views/data/wizard.html'
+                        }
+                    }
+                })
                 .state('data.resources', {
                     url: '/resources',
                     views: {
@@ -124,7 +155,7 @@
                 });
 
             // Default to index state
-            $urlRouterProvider.otherwise("/data");
+            $urlRouterProvider.otherwise("/data/surveys");
 
         }
     ]);

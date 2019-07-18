@@ -1042,6 +1042,69 @@ EdenMobile.factory('emResources', [
             });
         };
 
+        // --------------------------------------------------------------------
+        // TODO docstring
+        // TODO improve (mainly comments)
+        var resourceList = function() {
+
+            var names = {},
+                resource,
+                resourceList = [],
+                resourceName;
+
+            for (resourceName in resources) {
+                resource = resources[resourceName];
+                if (!resource.parent) {
+                    names[resourceName] = null;
+                }
+            }
+
+            if (!Object.keys(names).length) {
+                return $q.resolve(resourceList);
+            }
+
+            var addResourceInfo = function(resourceName, deferred) {
+                return function(numRows) {
+                    resourceList.push({
+                        resource: resources[resourceName],
+                        numRows: numRows
+                    });
+                    deferred.resolve();
+                };
+            };
+
+            var resourceLookups = [],
+                table,
+                synchronizedOn,
+                modifiedOn,
+                query,
+                addInfo,
+                deferred;
+
+            for (resourceName in names) {
+
+                resource = resources[resourceName];
+                table = resource.table;
+
+                synchronizedOn = table.$('synchronized_on');
+                modifiedOn = table.$('modified_on');
+                query = table.$('em_incomplete').is(false).and(
+                        synchronizedOn.is(null).or(
+                        synchronizedOn.lessThan(modifiedOn)));
+
+                deferred = $q.defer();
+                resourceLookups.push(deferred.promise);
+
+                addInfo = addResourceInfo(resourceName, deferred);
+                table.where(query).count(addInfo);
+            }
+
+            return $q.all(resourceLookups).then(function() {
+                return resourceList;
+            });
+        };
+
+        // --------------------------------------------------------------------
         // Load all resources on init
         loadResources();
 
@@ -1169,65 +1232,15 @@ EdenMobile.factory('emResources', [
              * records updated since the last synchronization with the
              * server.
              *
-             * @param {function} callback: callback, function(resourceList)
-             *                             with resourceList being a list of
-             *                             {resource:Resource, numRows:integer}
+             * @returns {promise} - a promise that resolves into an Array
+             *                      of objects:
+             *                          {resource: the Resource
+             *                           numRows: number of unsynced rows
+             *                           }
              */
             resourceList: function() {
-
-                var names = {},
-                    resource,
-                    resourceList = [],
-                    resourceName;
-
-                for (resourceName in resources) {
-                    resource = resources[resourceName];
-                    if (!resource.parent) {
-                        names[resourceName] = null;
-                    }
-                }
-
-                if (!Object.keys(names).length) {
-                    return $q.resolve(resourceList);
-                }
-
-                var addResourceInfo = function(resourceName, deferred) {
-                    return function(numRows) {
-                        resourceList.push({
-                            resource: resources[resourceName],
-                            numRows: numRows
-                        });
-                        deferred.resolve();
-                    };
-                };
-
-                var resourceLookups = [],
-                    table,
-                    synchronizedOn,
-                    modifiedOn,
-                    query,
-                    addInfo,
-                    deferred;
-
-                for (resourceName in names) {
-
-                    resource = resources[resourceName];
-                    table = resource.table;
-
-                    synchronizedOn = table.$('synchronized_on');
-                    modifiedOn = table.$('modified_on');
-                    query = synchronizedOn.is(null).or(
-                            synchronizedOn.lessThan(modifiedOn));
-
-                    deferred = $q.defer();
-                    resourceLookups.push(deferred.promise);
-
-                    addInfo = addResourceInfo(resourceName, deferred);
-                    table.where(query).count(addInfo);
-                }
-
-                return $q.all(resourceLookups).then(function() {
-                    return resourceList;
+                return resourcesLoaded.then(function() {
+                    return resourceList();
                 });
             }
         };

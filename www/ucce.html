@@ -74,6 +74,7 @@
                     </div>
                     <ul class="list has-header">
 <!--                         <a menu-close="true" class="item" href="#/" translate="Home"></a> -->
+                        <a menu-close="true" class="item" ui-sref="data.surveys" translate="Surveys"></a>
                         <a menu-close="true" class="item" href="#/data/resources" translate="Data"></a>
                         <a menu-close="true" class="item" href="#/sync" translate="Synchronize"></a>
                         <a menu-close="true" class="item" href="#/settings" translate="Settings"></a>
@@ -82,9 +83,9 @@
 
                 <!-- Main content -->
                 <ion-side-menu-content>
-                    <section eden-topbar="exp"></section>
+<!--                    <section eden-topbar="exp"></section>-->
                     <ion-nav-view></ion-nav-view>
-                    <section eden-footer="exp"></section>
+<!--                     <section eden-footer="exp"></section> -->
                 </ion-side-menu-content>
 
             </ion-side-menus>
@@ -156,11 +157,14 @@
         <script type="text/javascript" src="directives/widgets.js"></script>
         <script type="text/javascript" src="directives/forms.js"></script>
         <script type="text/javascript" src="directives/lists.js"></script>
+        <script type="text/javascript" src="directives/surveys.js"></script>
 
         <!-- Controllers -->
         <script type="text/javascript" src="controllers/default.js"></script>
         <script type="text/javascript" src="controllers/resources.js"></script>
+        <script type="text/javascript" src="controllers/surveys.js"></script>
         <script type="text/javascript" src="controllers/datalist.js"></script>
+        <script type="text/javascript" src="controllers/responses.js"></script>
         <script type="text/javascript" src="controllers/create.js"></script>
         <script type="text/javascript" src="controllers/update.js"></script>
         <script type="text/javascript" src="controllers/sync.js"></script>
