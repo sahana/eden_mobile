@@ -1,0 +1,23 @@
+.survey-card-top {
+    background-color: #00aaa0;
+}
+.survey-card-content {
+    h2 {
+        padding: 0.5rem;
+        text-align: center;
+    }
+    table {
+        width: 90%;
+        text-align: left;
+        margin: 1rem;
+    }
+}
+.col.survey-unlink {
+    text-align: right;
+}
+.button[disabled] {
+    background-color: #ccc;
+}
+.item-centered {
+    text-align: center;
+}

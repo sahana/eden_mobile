@@ -1,9 +1,8 @@
 <div class="card">
-  <!-- TODO move styles into CSS -->
-  <div class="item item-divider" style="background-color:#00aaa0;"></div>
-  <div class="item item-text-wrap">
-    <h2 style="padding:0.5rem;text-align:center;">{{surveyTitle}}</h2>
-    <table style="width:90%;text-align:left;margin:1rem;">
+  <div class="item item-divider survey-card-top"></div>
+  <div class="item item-text-wrap survey-card-content">
+    <h2>{{surveyTitle}}</h2>
+    <table>
       <tr>
         <td><h3>Complete Responses</h3></td><!-- TODO i18n -->
         <td>{{completeResponses}}</td>
@@ -13,8 +12,8 @@
         <td>{{unsyncedResponses}}</td>
       </tr>
     </table>
-    <div class="item" style="text-align:center">
-      <a class="button" style="background-color:#ff7a5a;color:whitesmoke;">Start Survey</a>
-    </div>
+  </div>
+  <div class="item item-centered">
+    <a class="button button-energized">Start Survey</a>
   </div>
 </div>
