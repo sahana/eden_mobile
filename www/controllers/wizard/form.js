@@ -31,14 +31,64 @@
  * @memberof EdenMobile
  */
 EdenMobile.controller("EMFormWizard", [
-    '$scope', '$state', '$stateParams', 'emResources',
-    function($scope, $state, $stateParams, emResources) {
+    '$q', '$scope', '$state', '$stateParams', 'emResources',
+    function($q, $scope, $state, $stateParams, emResources) {
 
         "use strict";
 
         var resourceName = $stateParams.resourceName,
             recordID = $stateParams.recordID;
 
+        // --------------------------------------------------------------------
+        /**
+         * Retrieve the record (or defaults) to populate the form
+         *
+         * @param {Resource} resource - the Resource
+         * @param {integer} recordID - the record ID
+         *
+         * @returns {promise} - a promise that resolves into the form data
+         */
+        var retrieveRecord = function(resource, recordID) {
+
+            var formData = {},
+                table = resource.table,
+                fields = resource.fields;
+
+            if (recordID) {
+
+                // Extract the record, then populate formData from it
+                return resource.where(table.$('id').is(recordID))
+                               .select(Object.keys(fields), {limitby: 1})
+                               .then(function(rows) {
+
+                    var record = rows[0]._(),
+                        fieldName,
+                        field,
+                        value;
+
+                    for (fieldName in fields) {
+                        field = fields[fieldName];
+                        if (!field.readable && fieldName != 'llrepr') {
+                            continue;
+                        }
+                        value = record[fieldName];
+                        if (value !== undefined) {
+                            formData[fieldName] = value;
+                        }
+                    }
+                    return formData;
+                });
+
+            } else {
+
+                // Populate formData from defaults
+                return $q.resolve(resource.addDefaults(formData, true, false));
+            }
+        };
+
+        // --------------------------------------------------------------------
+        // Main process
+        //
         emResources.open(resourceName).then(function(resource) {
 
             // Set top bar title
@@ -62,22 +112,7 @@ EdenMobile.controller("EMFormWizard", [
                 ],
             ];
 
-            // Populate the form data
-            // TODO retrieve the actual record
-            $scope.recordStatus = {
-                recordID: recordID,
-                incomplete: !recordID,
-            }
-            $scope.formData = {
-                field1: 'value1',
-                field2: 'value2',
-                field3: 'value3',
-                field4: 'value4',
-                field5: 'value5',
-                field6: 'value6'
-            };
-
-            // TODO document what this is for
+            // Object to store the current form status
             $scope.formStatus = {
                 activeSection: 0,
                 final: false
@@ -85,11 +120,19 @@ EdenMobile.controller("EMFormWizard", [
 
             // TODO provide a scope method to interim-save the record
 
-            // Open the form
-            // TODO pass section as parameter
-            // TODO $state.go only when resource/record info ready
-            $state.go('wizard.form', {reload: true});
+            // Populate the form data, then open the form
+            retrieveRecord(resource, recordID).then(function(formData) {
+                $scope.recordStatus = {
+                    recordID: recordID,
+                    incomplete: !recordID,
+                };
+                $scope.formData = formData;
 
+                // Open the form
+                // TODO pass section as parameter
+                // TODO $state.go only when resource/record info ready
+                $state.go('wizard.form', {reload: true});
+            });
         });
     }
 ]);
