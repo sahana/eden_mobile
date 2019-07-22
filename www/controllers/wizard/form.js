@@ -27,12 +27,12 @@
 /**
  * Form Wizard Controller
  *
- * @class EMFormWizard
+ * @class EMFormWizardController
  * @memberof EdenMobile
  */
-EdenMobile.controller("EMFormWizard", [
-    '$q', '$scope', '$state', '$stateParams', 'emResources',
-    function($q, $scope, $state, $stateParams, emResources) {
+EdenMobile.controller("EMFormWizardController", [
+    '$q', '$scope', '$state', '$stateParams', 'emFormWizard', 'emResources',
+    function($q, $scope, $state, $stateParams, emFormWizard, emResources) {
 
         "use strict";
 
@@ -94,23 +94,8 @@ EdenMobile.controller("EMFormWizard", [
             // Set top bar title
             $scope.title = resource.getLabel(true);
 
-            // Mockup form info
-            // TODO retrieve the resource information
-            // TODO implement service to deliver the form config
-            $scope.formConfig = [
-                [
-                    {type: 'input', field: 'field1'},
-                    {type: 'input', field: 'field2'},
-                    {type: 'input', field: 'field3'},
-                ],
-                [
-                    {type: 'input', field: 'field4'},
-                    {type: 'input', field: 'field5'},
-                ],
-                [
-                    {type: 'input', field: 'field6'},
-                ],
-            ];
+            // Get the form configuration and store it in scope
+            $scope.formConfig = emFormWizard.getSections(resource);
 
             // Object to store the current form status
             $scope.formStatus = {

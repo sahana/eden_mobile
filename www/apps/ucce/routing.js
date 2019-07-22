@@ -55,7 +55,7 @@
                     // Can use 0 as record ID to create a new record
                     cache: false,
                     url: '/{resourceName}/{recordID:int}/wizard',
-                    controller: 'EMFormWizard',
+                    controller: 'EMFormWizardController',
                     template: '<ion-nav-view></ion-nav-view>'
                 })
                 .state('wizard.form', {
@@ -63,7 +63,7 @@
                     params: {
                         section: null
                     },
-                    controller: 'EMFormSection',
+                    controller: 'EMFormSectionController',
                     templateUrl: 'views/wizard/form.html'
                 })
                 // Standard CRUD states

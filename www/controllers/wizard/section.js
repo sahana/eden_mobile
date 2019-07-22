@@ -27,32 +27,37 @@
 /**
  * Form Section Controller
  *
- * @class EMFormSection
+ * @class EMFormSectionController
  * @memberof EdenMobile
  */
-EdenMobile.controller("EMFormSection", [
+EdenMobile.controller("EMFormSectionController", [
     '$scope', '$stateParams',
     function($scope, $stateParams) {
 
         "use strict";
 
+        // Determine the active section and update form status
         var section = $stateParams.section,
             formStatus = $scope.formStatus,
             activeSection;
-
-        // Determine the active section and update form status
         if (section === null) {
             activeSection = formStatus.activeSection;
         } else {
             activeSection = section + 1;
         }
-        if (activeSection + 1 >= $scope.formConfig.length) {
-            formStatus.final = true;
+
+        // Get the section config from (parent) scope
+        var sectionConfig = $scope.formConfig[activeSection];
+        if (!sectionConfig) {
+            // TODO handle missing section config?
         }
+
+        // Update form status
+        formStatus.final = sectionConfig.final;
         formStatus.activeSection = activeSection;
 
-        // This is the info about the current section:
-        $scope.sectionConfig = $scope.formConfig[formStatus.activeSection];
+        // Store fields in scope for em-form-section directive
+        $scope.sectionConfig = sectionConfig.fields;
 
         // TODO have prev/next and abort information for section
         // TODO catch navigateAway and allow to stay on form or discard
