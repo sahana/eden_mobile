@@ -31,8 +31,8 @@
  * @memberof EdenMobile
  */
 EdenMobile.controller("EMFormSectionController", [
-    '$scope', '$stateParams',
-    function($scope, $stateParams) {
+    '$ionicSideMenuDelegate', '$scope', '$rootScope', '$stateParams',
+    function($ionicSideMenuDelegate, $scope, $rootScope, $stateParams) {
 
         "use strict";
 
@@ -62,6 +62,15 @@ EdenMobile.controller("EMFormSectionController", [
         // TODO have prev/next and abort information for section
         // TODO catch navigateAway and allow to stay on form or discard
         //      incomplete record
+
+        // Disable content dragging to reveal the side menu
+        $scope.$on('$ionicView.enter', function() {
+            $ionicSideMenuDelegate.canDragContent(false);
+            var cleanup = $rootScope.$on('$stateChangeStart', function() {
+                $ionicSideMenuDelegate.canDragContent(true);
+                cleanup();
+            });
+        });
     }
 ]);
 

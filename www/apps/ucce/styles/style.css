@@ -1,31 +1,41 @@
 /* line 1, scss/theme/_theme.scss */
+.bar-header {
+  border-top: 1px solid whitesmoke;
+}
+/* line 3, scss/theme/_theme.scss */
+.bar-header .button.icon,
+.bar-header .title {
+  color: whitesmoke;
+}
+
+/* line 8, scss/theme/_theme.scss */
 .survey-card-top {
   background-color: #00aaa0;
 }
 
-/* line 5, scss/theme/_theme.scss */
+/* line 12, scss/theme/_theme.scss */
 .survey-card-content h2 {
   padding: 0.5rem;
   text-align: center;
 }
-/* line 9, scss/theme/_theme.scss */
+/* line 16, scss/theme/_theme.scss */
 .survey-card-content table {
   width: 90%;
   text-align: left;
   margin: 1rem;
 }
 
-/* line 15, scss/theme/_theme.scss */
+/* line 22, scss/theme/_theme.scss */
 .col.survey-unlink {
   text-align: right;
 }
 
-/* line 18, scss/theme/_theme.scss */
+/* line 25, scss/theme/_theme.scss */
 .button[disabled] {
   background-color: #ccc;
 }
 
-/* line 21, scss/theme/_theme.scss */
+/* line 28, scss/theme/_theme.scss */
 .item-centered {
   text-align: center;
 }

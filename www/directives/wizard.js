@@ -71,6 +71,26 @@
 
     // ========================================================================
     /**
+     * Directive for em-wizard-header: the top bar in the wizard view
+     */
+    EdenMobile.directive('emWizardHeader', [
+
+        '$compile',
+        function($compile) {
+
+            //var renderHeader = function($scope, elem, attr) {
+            //
+            //};
+
+            return {
+                //link: renderHeader,
+                templateUrl: 'views/wizard/header.html'
+            };
+        }
+    ]);
+
+    // ========================================================================
+    /**
      * Directive for em-form-row
      *
      * TODO design+implement this

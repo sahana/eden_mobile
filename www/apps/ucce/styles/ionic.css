@@ -5382,7 +5382,7 @@ address {
 
 /* line 151, ../../../vendor/ionic/scss/_type.scss */
 a {
-  color: #387ef5;
+  color: #00aaa0;
 }
 
 /* line 155, ../../../vendor/ionic/scss/_type.scss */
@@ -5703,9 +5703,9 @@ a.subdued:last-child {
 }
 /* line 81, ../../../vendor/ionic/scss/_bar.scss */
 .bar.bar-positive {
-  border-color: #0c60ee;
-  background-color: #387ef5;
-  background-image: linear-gradient(0deg, #0c60ee, #0c60ee 50%, transparent 50%);
+  border-color: #007770;
+  background-color: #00aaa0;
+  background-image: linear-gradient(0deg, #007770, #007770 50%, transparent 50%);
   color: #fff;
 }
 /* line 69, ../../../vendor/ionic/scss/_mixins.scss */
@@ -5714,7 +5714,7 @@ a.subdued:last-child {
 }
 /* line 83, ../../../vendor/ionic/scss/_bar.scss */
 .bar.bar-positive.bar-footer {
-  background-image: linear-gradient(180deg, #0c60ee, #0c60ee 50%, transparent 50%);
+  background-image: linear-gradient(180deg, #007770, #007770 50%, transparent 50%);
 }
 /* line 87, ../../../vendor/ionic/scss/_bar.scss */
 .bar.bar-calm {
@@ -6009,8 +6009,8 @@ a.subdued:last-child {
 
 /* line 300, ../../../vendor/ionic/scss/_bar.scss */
 .bar-positive .button {
-  border-color: #0c60ee;
-  background-color: #387ef5;
+  border-color: #007770;
+  background-color: #00aaa0;
   color: #fff;
 }
 /* line 11, ../../../vendor/ionic/scss/_mixins.scss */
@@ -6020,8 +6020,8 @@ a.subdued:last-child {
 }
 /* line 15, ../../../vendor/ionic/scss/_mixins.scss */
 .bar-positive .button.active, .bar-positive .button.activated {
-  border-color: #0c60ee;
-  background-color: #0c60ee;
+  border-color: #007770;
+  background-color: #007770;
 }
 /* line 26, ../../../vendor/ionic/scss/_mixins.scss */
 .bar-positive .button.button-clear {
@@ -6391,16 +6391,16 @@ a.subdued:last-child {
 /* line 55, ../../../vendor/ionic/scss/_tabs.scss */
 .tabs-positive > .tabs,
 .tabs.tabs-positive {
-  border-color: #0c60ee;
-  background-color: #387ef5;
-  background-image: linear-gradient(0deg, #0c60ee, #0c60ee 50%, transparent 50%);
+  border-color: #007770;
+  background-color: #00aaa0;
+  background-image: linear-gradient(0deg, #007770, #007770 50%, transparent 50%);
   color: #fff;
 }
 /* line 86, ../../../vendor/ionic/scss/_mixins.scss */
 .tabs-positive > .tabs .tab-item .badge,
 .tabs.tabs-positive .tab-item .badge {
   background-color: #fff;
-  color: #387ef5;
+  color: #00aaa0;
 }
 
 /* line 60, ../../../vendor/ionic/scss/_tabs.scss */
@@ -6565,7 +6565,7 @@ a.subdued:last-child {
 }
 /* line 93, ../../../vendor/ionic/scss/_tabs.scss */
 .tabs-striped.tabs-positive .tabs {
-  background-color: #387ef5;
+  background-color: #00aaa0;
 }
 /* line 96, ../../../vendor/ionic/scss/_tabs.scss */
 .tabs-striped.tabs-positive .tab-item {
@@ -6750,7 +6750,7 @@ a.subdued:last-child {
 }
 /* line 139, ../../../vendor/ionic/scss/_tabs.scss */
 .tabs-striped.tabs-background-positive .tabs {
-  background-color: #387ef5;
+  background-color: #00aaa0;
   background-image: none;
 }
 /* line 139, ../../../vendor/ionic/scss/_tabs.scss */
@@ -6827,7 +6827,7 @@ a.subdued:last-child {
 }
 /* line 169, ../../../vendor/ionic/scss/_tabs.scss */
 .tabs-striped.tabs-color-positive .tab-item {
-  color: rgba(56, 126, 245, 0.4);
+  color: rgba(0, 170, 160, 0.4);
   opacity: 1;
 }
 /* line 172, ../../../vendor/ionic/scss/_tabs.scss */
@@ -6837,8 +6837,8 @@ a.subdued:last-child {
 /* line 175, ../../../vendor/ionic/scss/_tabs.scss */
 .tabs-striped.tabs-color-positive .tab-item.tab-item-active, .tabs-striped.tabs-color-positive .tab-item.active, .tabs-striped.tabs-color-positive .tab-item.activated {
   margin-top: -2px;
-  color: #387ef5;
-  border: 0 solid #387ef5;
+  color: #00aaa0;
+  border: 0 solid #00aaa0;
   border-top-width: 2px;
 }
 /* line 182, ../../../vendor/ionic/scss/_tabs.scss */
@@ -6989,9 +6989,9 @@ a.subdued:last-child {
 
 /* line 128, ../../../vendor/ionic/scss/_tabs.scss */
 .tabs-background-positive .tabs, .tabs-background-positive > .tabs {
-  background-color: #387ef5;
-  background-image: linear-gradient(0deg, #0c60ee, #0c60ee 50%, transparent 50%);
-  border-color: #0c60ee;
+  background-color: #00aaa0;
+  background-image: linear-gradient(0deg, #007770, #007770 50%, transparent 50%);
+  border-color: #007770;
 }
 
 /* line 128, ../../../vendor/ionic/scss/_tabs.scss */
@@ -7076,7 +7076,7 @@ a.subdued:last-child {
 
 /* line 148, ../../../vendor/ionic/scss/_tabs.scss */
 .tabs-color-positive .tab-item {
-  color: rgba(56, 126, 245, 0.4);
+  color: rgba(0, 170, 160, 0.4);
   opacity: 1;
 }
 /* line 151, ../../../vendor/ionic/scss/_tabs.scss */
@@ -7085,8 +7085,8 @@ a.subdued:last-child {
 }
 /* line 154, ../../../vendor/ionic/scss/_tabs.scss */
 .tabs-color-positive .tab-item.tab-item-active, .tabs-color-positive .tab-item.active, .tabs-color-positive .tab-item.activated {
-  color: #387ef5;
-  border: 0 solid #387ef5;
+  color: #00aaa0;
+  border: 0 solid #00aaa0;
 }
 /* line 159, ../../../vendor/ionic/scss/_tabs.scss */
 .tabs-color-positive .tab-item.tab-item-active .badge, .tabs-color-positive .tab-item.active .badge, .tabs-color-positive .tab-item.activated .badge {
@@ -7239,12 +7239,12 @@ ion-tabs.tabs-color-active-positive .tab-item {
 }
 /* line 271, ../../../vendor/ionic/scss/_tabs.scss */
 ion-tabs.tabs-color-active-positive .tab-item.tab-item-active, ion-tabs.tabs-color-active-positive .tab-item.active, ion-tabs.tabs-color-active-positive .tab-item.activated {
-  color: #387ef5;
+  color: #00aaa0;
 }
 /* line 282, ../../../vendor/ionic/scss/_tabs.scss */
 ion-tabs.tabs-striped.tabs-color-active-positive .tab-item.tab-item-active, ion-tabs.tabs-striped.tabs-color-active-positive .tab-item.active, ion-tabs.tabs-striped.tabs-color-active-positive .tab-item.activated {
-  border-color: #387ef5;
-  color: #387ef5;
+  border-color: #00aaa0;
+  color: #00aaa0;
 }
 /* line 269, ../../../vendor/ionic/scss/_tabs.scss */
 ion-tabs.tabs-color-active-calm .tab-item {
@@ -7538,7 +7538,7 @@ ion-tabs.tabs-striped.tabs-color-active-dark .tab-item.tab-item-active, ion-tabs
 .tab-item.tab-item-active.tab-item-positive,
 .tab-item.active.tab-item-positive,
 .tab-item.activated.tab-item-positive {
-  color: #387ef5;
+  color: #00aaa0;
 }
 /* line 500, ../../../vendor/ionic/scss/_tabs.scss */
 .tab-item.tab-item-active.tab-item-calm,
@@ -8288,8 +8288,8 @@ ion-tabs.tabs-striped.tabs-color-active-dark .tab-item.tab-item-active, ion-tabs
 }
 /* line 77, ../../../vendor/ionic/scss/_items.scss */
 .item.item-positive {
-  border-color: #0c60ee;
-  background-color: #387ef5;
+  border-color: #007770;
+  background-color: #00aaa0;
   color: #fff;
 }
 /* line 80, ../../../vendor/ionic/scss/_items.scss */
@@ -8406,8 +8406,8 @@ ion-tabs.tabs-striped.tabs-color-active-dark .tab-item.tab-item-active, ion-tabs
 .item-complex.activated .item-content.item-positive,
 .item .item-content.active.item-positive,
 .item .item-content.activated.item-positive {
-  border-color: #0c60ee;
-  background-color: #0c60ee;
+  border-color: #007770;
+  background-color: #007770;
 }
 /* line 105, ../../../vendor/ionic/scss/_mixins.scss */
 .item.active.item-positive.item-complex > .item-content,
@@ -8416,8 +8416,8 @@ ion-tabs.tabs-striped.tabs-color-active-dark .tab-item.tab-item-active, ion-tabs
 .item-complex.activated .item-content.item-positive.item-complex > .item-content,
 .item .item-content.active.item-positive.item-complex > .item-content,
 .item .item-content.activated.item-positive.item-complex > .item-content {
-  border-color: #0c60ee;
-  background-color: #0c60ee;
+  border-color: #007770;
+  background-color: #007770;
 }
 /* line 129, ../../../vendor/ionic/scss/_items.scss */
 .item.active.item-calm,
@@ -8675,19 +8675,19 @@ a.item-content {
 }
 /* line 262, ../../../vendor/ionic/scss/_items.scss */
 .item-complex.item-positive > .item-content {
-  border-color: #0c60ee;
-  background-color: #387ef5;
+  border-color: #007770;
+  background-color: #00aaa0;
   color: #fff;
 }
 /* line 264, ../../../vendor/ionic/scss/_items.scss */
 .item-complex.item-positive > .item-content.active, .item-complex.item-positive > .item-content:active {
-  border-color: #0c60ee;
-  background-color: #0c60ee;
+  border-color: #007770;
+  background-color: #007770;
 }
 /* line 105, ../../../vendor/ionic/scss/_mixins.scss */
 .item-complex.item-positive > .item-content.active.item-complex > .item-content, .item-complex.item-positive > .item-content:active.item-complex > .item-content {
-  border-color: #0c60ee;
-  background-color: #0c60ee;
+  border-color: #007770;
+  background-color: #007770;
 }
 /* line 268, ../../../vendor/ionic/scss/_items.scss */
 .item-complex.item-calm > .item-content {
@@ -9573,7 +9573,7 @@ button.item.item-button-right {
 /* line 35, ../../../vendor/ionic/scss/_badge.scss */
 .tabs .tab-item .badge.badge-positive,
 .badge.badge-positive {
-  background-color: #387ef5;
+  background-color: #00aaa0;
   color: #fff;
 }
 /* line 38, ../../../vendor/ionic/scss/_badge.scss */
@@ -10496,8 +10496,8 @@ ion-slides {
 }
 /* line 23, ../../../vendor/ionic/scss/_spinner.scss */
 .spinner.spinner-positive {
-  stroke: #387ef5;
-  fill: #387ef5;
+  stroke: #00aaa0;
+  fill: #00aaa0;
 }
 /* line 27, ../../../vendor/ionic/scss/_spinner.scss */
 .spinner.spinner-calm {
@@ -10560,7 +10560,7 @@ ion-slides {
 }
 /* line 79, ../../../vendor/ionic/scss/_spinner.scss */
 .spinner-spiral.spinner-positive .stop2 {
-  stop-color: #387ef5;
+  stop-color: #00aaa0;
 }
 /* line 82, ../../../vendor/ionic/scss/_spinner.scss */
 .spinner-spiral.spinner-calm .stop2 {
@@ -11019,8 +11019,8 @@ input[type="checkbox"][readonly] {
 }
 /* line 144, ../../../vendor/ionic/scss/_mixins.scss */
 .checkbox input:checked:before, .checkbox input:checked + .checkbox-icon:before {
-  background: #387ef5;
-  border-color: #387ef5;
+  background: #00aaa0;
+  border-color: #00aaa0;
 }
 
 /* line 138, ../../../vendor/ionic/scss/_mixins.scss */
@@ -11045,12 +11045,12 @@ input[type="checkbox"][readonly] {
 
 /* line 138, ../../../vendor/ionic/scss/_mixins.scss */
 .checkbox-positive input:before, .checkbox-positive .checkbox-icon:before {
-  border-color: #387ef5;
+  border-color: #00aaa0;
 }
 /* line 144, ../../../vendor/ionic/scss/_mixins.scss */
 .checkbox-positive input:checked:before, .checkbox-positive input:checked + .checkbox-icon:before {
-  background: #387ef5;
-  border-color: #387ef5;
+  background: #00aaa0;
+  border-color: #00aaa0;
 }
 
 /* line 138, ../../../vendor/ionic/scss/_mixins.scss */
@@ -11303,8 +11303,8 @@ input:checked + .checkbox-icon:after {
 }
 /* line 157, ../../../vendor/ionic/scss/_mixins.scss */
 .toggle.toggle-positive input:checked + .track {
-  border-color: #387ef5;
-  background-color: #387ef5;
+  border-color: #00aaa0;
+  background-color: #00aaa0;
 }
 /* line 157, ../../../vendor/ionic/scss/_mixins.scss */
 .toggle.toggle-calm input:checked + .track {
@@ -11480,11 +11480,11 @@ input:checked + .checkbox-icon:after {
 }
 /* line 164, ../../../vendor/ionic/scss/_mixins.scss */
 .toggle-small .toggle-positive input:checked + .track {
-  background-color: rgba(56, 126, 245, 0.5);
+  background-color: rgba(0, 170, 160, 0.5);
 }
 /* line 167, ../../../vendor/ionic/scss/_mixins.scss */
 .toggle-small .toggle-positive input:checked + .track .handle {
-  background-color: #387ef5;
+  background-color: #00aaa0;
 }
 /* line 164, ../../../vendor/ionic/scss/_mixins.scss */
 .toggle-small .toggle-calm input:checked + .track {
@@ -11706,11 +11706,11 @@ input:checked + .checkbox-icon:after {
 }
 /* line 125, ../../../vendor/ionic/scss/_mixins.scss */
 .range.range-positive input::-webkit-slider-thumb:before {
-  background: #387ef5;
+  background: #00aaa0;
 }
 /* line 128, ../../../vendor/ionic/scss/_mixins.scss */
 .range.range-positive input::-ms-fill-lower {
-  background: #387ef5;
+  background: #00aaa0;
 }
 /* line 125, ../../../vendor/ionic/scss/_mixins.scss */
 .range.range-calm input::-webkit-slider-thumb:before {
@@ -11884,7 +11884,7 @@ input:checked + .checkbox-icon:after {
 }
 /* line 73, ../../../vendor/ionic/scss/_select.scss */
 .item-select.item-positive select {
-  background: #387ef5;
+  background: #00aaa0;
   color: #fff;
 }
 /* line 77, ../../../vendor/ionic/scss/_select.scss */
@@ -12120,7 +12120,7 @@ progress {
 /* line 86, ../../../vendor/ionic/scss/_button.scss */
 .button.button-positive {
   border-color: transparent;
-  background-color: #387ef5;
+  background-color: #00aaa0;
   color: #fff;
 }
 /* line 11, ../../../vendor/ionic/scss/_mixins.scss */
@@ -12131,14 +12131,14 @@ progress {
 /* line 15, ../../../vendor/ionic/scss/_mixins.scss */
 .button.button-positive.active, .button.button-positive.activated {
   border-color: #a2a2a2;
-  background-color: #0c60ee;
+  background-color: #007770;
 }
 /* line 26, ../../../vendor/ionic/scss/_mixins.scss */
 .button.button-positive.button-clear {
   border-color: transparent;
   background: none;
   box-shadow: none;
-  color: #387ef5;
+  color: #00aaa0;
 }
 /* line 36, ../../../vendor/ionic/scss/_mixins.scss */
 .button.button-positive.button-icon {
@@ -12147,13 +12147,13 @@ progress {
 }
 /* line 43, ../../../vendor/ionic/scss/_mixins.scss */
 .button.button-positive.button-outline {
-  border-color: #387ef5;
+  border-color: #00aaa0;
   background: transparent;
-  color: #387ef5;
+  color: #00aaa0;
 }
 /* line 50, ../../../vendor/ionic/scss/_mixins.scss */
 .button.button-positive.button-outline.active, .button.button-positive.button-outline.activated {
-  background-color: #387ef5;
+  background-color: #00aaa0;
   box-shadow: none;
   color: #fff;
 }
@@ -12599,7 +12599,7 @@ a.button .icon:before, a.button.icon:before, a.button.icon-left:before, a.button
 }
 /* line 31, ../../../vendor/ionic/scss/_button-bar.scss */
 .button-bar.bar-positive > .button {
-  border-color: #0c60ee;
+  border-color: #007770;
 }
 /* line 34, ../../../vendor/ionic/scss/_button-bar.scss */
 .button-bar.bar-calm > .button {
@@ -13281,17 +13281,17 @@ a.button .icon:before, a.button.icon:before, a.button.icon-left:before, a.button
 
 /* line 200, ../../../vendor/ionic/scss/_util.scss */
 .positive, a.positive {
-  color: #387ef5;
+  color: #00aaa0;
 }
 
 /* line 203, ../../../vendor/ionic/scss/_util.scss */
 .positive-bg {
-  background-color: #387ef5;
+  background-color: #00aaa0;
 }
 
 /* line 206, ../../../vendor/ionic/scss/_util.scss */
 .positive-border {
-  border-color: #0c60ee;
+  border-color: #007770;
 }
 
 /* line 210, ../../../vendor/ionic/scss/_util.scss */

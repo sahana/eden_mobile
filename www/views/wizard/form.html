@@ -1,14 +1,14 @@
 <!-- TODO Title should come from the controller -->
 <ion-view view-title="Survey Response">
-  <section eden-topbar="exp"></section>
+  <em-wizard-header></em-wizard-header>
   <ion-content class="has-header has-subheader has-footer">
     <em-form-section></em-form-section>
     <!-- TODO create a em-section-break (or em-section-end) directive -->
     <div ng-if='!formStatus.final'>
-        <a ui-sref='wizard.form({section: formStatus.activeSection})'>Next</a>
+        <a class="button button-energized" ui-sref='wizard.form({section: formStatus.activeSection})'>Next</a>
     </div>
     <div ng-if='formStatus.final'>
-        <a ui-sref='index'>Back</a>
+        <a class="button button-energized" ui-sref='surveys'>Save</a>
     </div>
   </ion-content>
 </ion-view>

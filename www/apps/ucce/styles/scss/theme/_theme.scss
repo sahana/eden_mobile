@@ -1,5 +1,12 @@
+.bar-header {
+    border-top: 1px solid whitesmoke;
+    .button.icon,
+    .title {
+         color: whitesmoke;
+    }
+}
 .survey-card-top {
-    background-color: #00aaa0;
+    background-color: $positive;
 }
 .survey-card-content {
     h2 {
