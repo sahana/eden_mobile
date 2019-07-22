@@ -42,20 +42,30 @@
                 .state('surveys', {
                     url: '/surveys',
                     controller: 'EMSurveyList',
-                    templateUrl: 'views/data/surveys.html'
+                    templateUrl: 'views/survey/survey_list.html'
                 })
                 .state('responses', {
                     url: '/{resourceName}/responses',
                     controller: 'EMResponseList',
-                    templateUrl: 'views/data/responses.html'
-                })
-                .state('wizard', {
-                    // Can use 0 as record ID to create a new record
-                    url: '/{resourceName}/{recordID:int}/wizard',
-                    controller: 'EMFormWizard',
-                    templateUrl: 'views/data/wizard.html'
+                    templateUrl: 'views/survey/response_list.html'
                 })
 
+                // Form-Wizard
+                .state('wizard', {
+                    // Can use 0 as record ID to create a new record
+                    cache: false,
+                    url: '/{resourceName}/{recordID:int}/wizard',
+                    controller: 'EMFormWizard',
+                    template: '<ion-nav-view></ion-nav-view>'
+                })
+                .state('wizard.form', {
+                    cache: false,
+                    params: {
+                        section: null
+                    },
+                    controller: 'EMFormSection',
+                    templateUrl: 'views/wizard/form.html'
+                })
                 // Standard CRUD states
                 .state('data', {
                     'abstract': true,

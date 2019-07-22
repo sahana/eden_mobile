@@ -22,11 +22,11 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
 (function(EdenMobile) {
 
     "use strict";
 
+    // ========================================================================
     /**
      * Directive <em-survey-list>
      *
@@ -114,6 +114,7 @@
         }
     ]);
 
+    // ========================================================================
     /**
      * Directive <em-survey-card>
      *
@@ -123,13 +124,14 @@
         function() {
 
             return {
-                templateUrl: 'views/data/survey_card.html',
+                templateUrl: 'views/survey/survey_card.html',
                 link: function($scope, elem, attr) {
 
                     // Retrieve the survey data for the resource from scope
                     var resourceName = attr.resource,
                         survey = $scope.resources[resourceName];
 
+                    $scope.resourceName = resourceName;
                     $scope.surveyTitle = survey.resource.getLabel(true);
                     $scope.completeResponses = survey.completeResponses;
                     $scope.unsyncedResponses = survey.unsyncedResponses;

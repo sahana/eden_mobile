@@ -1,5 +1,5 @@
 /**
- * Sahana Eden Mobile - Form Wizard
+ * Sahana Eden Mobile - Form Section Controller
  *
  * Copyright (c) 2019-2019 Sahana Software Foundation
  *
@@ -23,15 +23,40 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-EdenMobile.controller("EMFormWizard", [
-    '$scope',
-    function($scope) {
-
-        // Receives $stateParams.resourceName and .recordID
-        // $stateParams.recordID == 0 => create a new record
+// ============================================================================
+/**
+ * Form Section Controller
+ *
+ * @class EMFormSection
+ * @memberof EdenMobile
+ */
+EdenMobile.controller("EMFormSection", [
+    '$scope', '$stateParams',
+    function($scope, $stateParams) {
 
         "use strict";
 
+        var section = $stateParams.section,
+            formStatus = $scope.formStatus,
+            activeSection;
+
+        // Determine the active section and update form status
+        if (section === null) {
+            activeSection = formStatus.activeSection;
+        } else {
+            activeSection = section + 1;
+        }
+        if (activeSection + 1 >= $scope.formConfig.length) {
+            formStatus.final = true;
+        }
+        formStatus.activeSection = activeSection;
+
+        // This is the info about the current section:
+        $scope.sectionConfig = $scope.formConfig[formStatus.activeSection];
+
+        // TODO have prev/next and abort information for section
+        // TODO catch navigateAway and allow to stay on form or discard
+        //      incomplete record
     }
 ]);
 
