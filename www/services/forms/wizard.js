@@ -36,6 +36,7 @@ EdenMobile.factory('emFormWizard', [
 
         "use strict";
 
+        // --------------------------------------------------------------------
         /**
          * Process a resource form configuration, split it into wizard
          * form sections
@@ -112,12 +113,59 @@ EdenMobile.factory('emFormWizard', [
         };
 
         // --------------------------------------------------------------------
+        /**
+         * Get a form widget for a Field
+         *
+         * @param {Field} field - the Field
+         *
+         * @returns {angular.element} - the widget
+         */
+        var getWidget = function(field) {
+
+            var widgetType;
+
+            // TODO standardize widgets
+            switch(field.type) {
+                case 'boolean':
+                    widgetType = '<em-wizard-boolean-widget>';
+                    break;
+                case 'date':
+                    widgetType = '<em-wizard-date-widget>';
+                    break;
+                case 'double':
+                case 'integer':
+                    widgetType = '<em-wizard-number-widget>';
+                    break;
+//                 case 'upload':
+//                     widgetType = '<em-photo-widget>';
+//                     break;
+//                 case 'password':
+//                     widgetType = '<em-text-widget type="password">';
+//                     break;
+                case 'string':
+                    widgetType = '<em-wizard-string-widget>';
+                    break;
+                case 'text':
+                    widgetType = '<em-wizard-text-widget>';
+                    break;
+                default:
+                    widgetType = '<em-wizard-generic-widget type="' + field.type + '">';
+                    break;
+            }
+
+            var widget = angular.element(widgetType);
+
+            widget.attr('field', field.name);
+
+            return widget;
+        };
+
+        // --------------------------------------------------------------------
         // API
         //
         return {
-
-            getSections: getSections
-
+            getSections: getSections,
+            getWidget: getWidget
         };
     }
 ]);

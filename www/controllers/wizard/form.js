@@ -112,6 +112,7 @@ EdenMobile.controller("EMFormWizardController", [
 
             // Set top bar title
             $scope.title = resource.getLabel(true);
+            $scope.resource = resource;
 
             // Get the form configuration
             var formConfig = emFormWizard.getSections(resource);

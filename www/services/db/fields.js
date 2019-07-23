@@ -510,6 +510,17 @@ EdenMobile.factory('Field', [
 
         // --------------------------------------------------------------------
         /**
+         * Get a label for this field
+         *
+         * @returns {string} - the label
+         */
+        Field.prototype.getLabel = function() {
+
+            return this._description.label || emUtils.capitalize(this.name);
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Resolve a reference into table name and key name
          *
          * @returns {object} - an object holding the table name ('table')

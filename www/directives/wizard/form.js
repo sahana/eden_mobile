@@ -22,13 +22,18 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
 (function(EdenMobile) {
 
     "use strict";
 
     // ========================================================================
     /**
-     * Directive for em-form-section
+     * Directive for <em-form-section>:
+     *   - a section of a form
+     *
+     * TODO rename into em-wizard-section
+     * TODO use grid-style, not list
      */
     EdenMobile.directive('emFormSection', [
         '$compile',
@@ -43,11 +48,13 @@
                 var form = angular.element('<form>')
                                   .attr('name', 'data')
                                   .attr('novalidate', 'novalidate'),
+                    // TODO no container required, use grid rows
                     formRows = angular.element('<div class="list">');
 
                 sectionConfig.forEach(function(formElement, index) {
                     if (formElement.type == 'input') {
                         // Append a formRow directive
+                        // TODO pass field name (resource in scope)
                         var formRow = angular.element('<em-form-row>')
                                              .attr('index', index);
                         formRows.append(formRow);
@@ -71,7 +78,8 @@
 
     // ========================================================================
     /**
-     * Directive for em-wizard-header: the top bar in the wizard view
+     * Directive for <em-wizard-header>:
+     *   - the top bar in the wizard view
      */
     EdenMobile.directive('emWizardHeader', function() {
         return {
@@ -81,7 +89,10 @@
     });
 
     // ========================================================================
-    // TODO docstring
+    /**
+     * Directive for <em-wizard-submit>:
+     *   - the next/submit button row at the end of a form section
+     */
     EdenMobile.directive('emWizardSubmit', function() {
         return {
             templateUrl: 'views/wizard/submit.html'
@@ -90,45 +101,41 @@
 
     // ========================================================================
     /**
-     * Directive for em-form-row
+     * Directive for <em-form-row>:
+     *   - a form row with label and input widget etc.
      *
-     * TODO design+implement this
+     * TODO rename into em-wizard-row
      */
     EdenMobile.directive('emFormRow', [
-        '$compile',
-        function($compile) {
+        '$compile', 'emFormStyle', 'emFormWizard',
+        function($compile, emFormStyle, emFormWizard) {
 
             var renderFormRow = function($scope, elem, attr) {
 
+                // TODO don't pass index, but fieldName
                 var sectionConfig = $scope.sectionConfig,
                     index = attr.index - 0,
-                    formElement = sectionConfig[index];
+                    formElement = sectionConfig[index],
+                    fieldName = formElement.field;
 
-                var fieldName = formElement.field;
+                // TODO catch undefined resource and nonexistent field
+                var resource = $scope.resource,
+                    field = resource.fields[fieldName],
+                    label = field.getLabel();
 
-                var label = angular.element('<span>')
-                                   .html(fieldName),
-                    // TODO no such directive yet
-                    input = angular.element('<em-form-widget>')
-                                   .attr('field', fieldName),
-                    formRow = angular.element('<label>')
-                                     .addClass('item')
-                                     .append(label)
-                                     .append(input);
+                // Generate the widget and bind it to formData
+                // TODO catch undefined formData and/or make scope prefix configurable
+                var widget = emFormWizard.getWidget(field);
+                widget.attr('ng-model', 'formData.' + fieldName);
+
+                // Use emFormStyle to render the form row
+                // TODO: - comment (=description)
+                //       - image
+                //       - display logic (probably better to handle in controller)
+                var formRow = emFormStyle.formRow(label, widget);
 
                 var compiled = $compile(formRow)($scope);
                 elem.replaceWith(compiled);
-
-
-                // This is supposed to render a form row
-                // - we need to know each element of the form row:
-                //   * label (=question)
-                //   * comment (=description)
-                //   * image
-                //   * display logic
-                //   * field name
-                //   * widget type
-
             };
 
             return {

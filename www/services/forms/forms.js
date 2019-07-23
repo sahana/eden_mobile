@@ -457,6 +457,7 @@ EdenMobile.factory('emForms', [
                     // Normal field
                     widget = addField(fieldName, true);
                     if (widget) {
+                        // TODO use emFormStyle to produce widget
                         formRows.append(widget);
                     }
                 }

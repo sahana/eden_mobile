@@ -538,7 +538,7 @@ var not = function(expr) {
  */
 var allOf = function() {
 
-    // @todo: accept+resolve arrays of expressions
+    // TODO: accept+resolve arrays of expressions
 
     if (!arguments.length) {
         throw new Error('allOf: missing arguments');
@@ -560,7 +560,7 @@ var allOf = function() {
  */
 var anyOf = function() {
 
-    // @todo: accept+resolve arrays of expressions
+    // TODO: accept+resolve arrays of expressions
 
     if (!arguments.length) {
         throw new Error('anyOf: missing arguments');

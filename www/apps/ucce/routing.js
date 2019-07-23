@@ -27,6 +27,15 @@
 
     "use strict";
 
+    // TODO this should be in a separate config file
+    EdenMobile.config(['emFormStyleProvider',
+        function(emFormStyleProvider) {
+
+            emFormStyleProvider.formStyle('wizard');
+
+        }
+    ]);
+
     EdenMobile.config(['$stateProvider', '$urlRouterProvider',
         function($stateProvider, $urlRouterProvider) {
 
@@ -164,6 +173,8 @@
         }
     ]);
 
+    // TODO these directives shouldn't be in a config file => move into directives-file
+    // TODO these directives shouldn't use "eden" prefix, but "em"
     EdenMobile.directive('edenTopbar', function() {
         return {
             templateUrl: 'apps/ucce/views/topbar.html'
