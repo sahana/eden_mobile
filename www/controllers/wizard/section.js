@@ -37,24 +37,29 @@ EdenMobile.controller("EMFormSectionController", [
         "use strict";
 
         // Determine the active section and update form status
-        var section = $stateParams.section,
-            formStatus = $scope.formStatus,
-            activeSection;
-        if (section === null) {
-            activeSection = formStatus.activeSection;
-        } else {
-            activeSection = section + 1;
+        var activeSection = ($stateParams.section - 0) || 0,
+            formConfig = $scope.formConfig,
+            formStatus = $scope.formStatus;
+
+        if (activeSection < 0) {
+            activeSection = 0;
         }
 
         // Get the section config from (parent) scope
-        var sectionConfig = $scope.formConfig[activeSection];
-        if (!sectionConfig) {
-            // TODO handle missing section config?
-        }
+        var sectionConfig = formConfig[activeSection] || [];
 
         // Update form status
-        formStatus.final = sectionConfig.final;
         formStatus.activeSection = activeSection;
+        formStatus.prev = activeSection !== 0;
+
+        // TODO find any following section with at least one active widget
+        var next = activeSection + 1;
+        if (formConfig[next]) {
+            formStatus.next = next;
+        } else {
+            // Disable next-button, activate save-button
+            formStatus.next = false;
+        }
 
         // Store fields in scope for em-form-section directive
         $scope.sectionConfig = sectionConfig.fields;

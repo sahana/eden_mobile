@@ -93,19 +93,31 @@ EdenMobile.factory('emDialogs', [
          *
          * @param {string} title - title describing the action to confirm
          * @param {string} question - the question to ask
+         * @param {object} options - additional options (optional):
+         *   @property {string} options.cancelText - the text for the cancel button
+         *   @property {string} options.cancelType - the CSS class for the cancel button
+         *   @property {string} options.okText - the text for the OK button
+         *   @property {string} options.okType - the CSS class for the OK button
          * @param {function} actionCallback - callback function to execute
          *                                    if the user confirms the action
          * @param {function} cancelCallback - callback function to execute
          *                                    if the user cancels the action
          */
-        var confirmAction = function(title, question, actionCallback, cancelCallback) {
+        var confirmAction = function(title, question, options, actionCallback, cancelCallback) {
 
-            var confirmPopup = $ionicPopup.confirm({
+            // Variable argument list (options can be omitted)
+            if (typeof options == 'function') {
+                cancelCallback = actionCallback;
+                actionCallback = options;
+                options = {};
+            }
+
+            var confirmOptions = angular.extend({}, {
                 title: title,
                 template: question
-            });
+            }, options);
 
-            confirmPopup.then(function(response) {
+            $ionicPopup.confirm(confirmOptions).then(function(response) {
                 if (response) {
                     // User confirmed action
                     if (actionCallback) {

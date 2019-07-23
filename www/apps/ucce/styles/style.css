@@ -9,33 +9,39 @@
 }
 
 /* line 8, scss/theme/_theme.scss */
+.popup-head,
 .survey-card-top {
   background-color: #00aaa0;
 }
 
 /* line 12, scss/theme/_theme.scss */
+.popup-title {
+  color: whitesmoke;
+}
+
+/* line 16, scss/theme/_theme.scss */
 .survey-card-content h2 {
   padding: 0.5rem;
   text-align: center;
 }
-/* line 16, scss/theme/_theme.scss */
+/* line 20, scss/theme/_theme.scss */
 .survey-card-content table {
   width: 90%;
   text-align: left;
   margin: 1rem;
 }
 
-/* line 22, scss/theme/_theme.scss */
+/* line 26, scss/theme/_theme.scss */
 .col.survey-unlink {
   text-align: right;
 }
 
-/* line 25, scss/theme/_theme.scss */
+/* line 29, scss/theme/_theme.scss */
 .button[disabled] {
   background-color: #ccc;
 }
 
-/* line 28, scss/theme/_theme.scss */
+/* line 32, scss/theme/_theme.scss */
 .item-centered {
   text-align: center;
 }

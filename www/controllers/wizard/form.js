@@ -31,8 +31,8 @@
  * @memberof EdenMobile
  */
 EdenMobile.controller("EMFormWizardController", [
-    '$q', '$scope', '$state', '$stateParams', 'emFormWizard', 'emResources',
-    function($q, $scope, $state, $stateParams, emFormWizard, emResources) {
+    '$q', '$scope', '$state', '$stateParams', 'emDialogs', 'emFormWizard', 'emResources',
+    function($q, $scope, $state, $stateParams, emDialogs, emFormWizard, emResources) {
 
         "use strict";
 
@@ -87,6 +87,25 @@ EdenMobile.controller("EMFormWizardController", [
         };
 
         // --------------------------------------------------------------------
+        /**
+         * Cancel the data entry, and return to the survey list
+         */
+        var cancelWizard = function() {
+
+            emDialogs.confirmAction(
+                'End Survey',
+                'All data in this response will be lost once you exit, are you sure you want to continue?',
+                {okText: 'End Survey', okType: 'button-energized'},
+                function() { // Confirmed
+
+                    // TODO Discard record if it has an ID and is marked incomplete
+
+                    // Go back to survey list
+                    $state.go('surveys');
+                });
+        };
+
+        // --------------------------------------------------------------------
         // Main process
         //
         emResources.open(resourceName).then(function(resource) {
@@ -94,16 +113,23 @@ EdenMobile.controller("EMFormWizardController", [
             // Set top bar title
             $scope.title = resource.getLabel(true);
 
-            // Get the form configuration and store it in scope
-            $scope.formConfig = emFormWizard.getSections(resource);
+            // Get the form configuration
+            var formConfig = emFormWizard.getSections(resource);
 
-            // Object to store the current form status
+            // Store form configuration and status in scope
+            $scope.formConfig = formConfig;
             $scope.formStatus = {
                 activeSection: 0,
-                final: false
+                prev: false,
+                next: formConfig.length > 1
             };
 
             // TODO provide a scope method to interim-save the record
+
+            // Provide a scope method to cancel the data entry
+            $scope.cancel = cancelWizard;
+
+            // TODO provide a scope method to submit the response
 
             // Populate the form data, then open the form
             retrieveRecord(resource, recordID).then(function(formData) {
@@ -114,9 +140,7 @@ EdenMobile.controller("EMFormWizardController", [
                 $scope.formData = formData;
 
                 // Open the form
-                // TODO pass section as parameter
-                // TODO $state.go only when resource/record info ready
-                $state.go('wizard.form', {reload: true});
+                $state.go('wizard.form', {section: 0});
             });
         });
     }

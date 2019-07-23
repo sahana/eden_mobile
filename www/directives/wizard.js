@@ -73,21 +73,20 @@
     /**
      * Directive for em-wizard-header: the top bar in the wizard view
      */
-    EdenMobile.directive('emWizardHeader', [
+    EdenMobile.directive('emWizardHeader', function() {
+        return {
+            //link: renderHeader,
+            templateUrl: 'views/wizard/header.html'
+        };
+    });
 
-        '$compile',
-        function($compile) {
-
-            //var renderHeader = function($scope, elem, attr) {
-            //
-            //};
-
-            return {
-                //link: renderHeader,
-                templateUrl: 'views/wizard/header.html'
-            };
-        }
-    ]);
+    // ========================================================================
+    // TODO docstring
+    EdenMobile.directive('emWizardSubmit', function() {
+        return {
+            templateUrl: 'views/wizard/submit.html'
+        };
+    });
 
     // ========================================================================
     /**

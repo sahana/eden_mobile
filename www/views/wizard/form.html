@@ -2,13 +2,11 @@
 <ion-view view-title="Survey Response">
   <em-wizard-header></em-wizard-header>
   <ion-content class="has-header has-subheader has-footer">
-    <em-form-section></em-form-section>
-    <!-- TODO create a em-section-break (or em-section-end) directive -->
-    <div ng-if='!formStatus.final'>
-        <a class="button button-energized" ui-sref='wizard.form({section: formStatus.activeSection})'>Next</a>
+    <div class="row">
+      <div class="col">
+        <em-form-section></em-form-section>
+      </div>
     </div>
-    <div ng-if='formStatus.final'>
-        <a class="button button-energized" ui-sref='surveys'>Save</a>
-    </div>
+    <em-wizard-submit></em-wizard-submit>
   </ion-content>
 </ion-view>
