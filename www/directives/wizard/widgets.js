@@ -59,15 +59,18 @@
     }
 
     // ========================================================================
-    // TODO docstring
-    // TODO this should not render any input element (for now)
+    /**
+     * Generic Widget
+     */
     EdenMobile.directive('emWizardGenericWidget', [
         '$compile',
         function($compile) {
 
             var renderWidget = function($scope, elem, attr) {
 
-                // Create the input
+                // TODO this should not render any input element (for now)
+
+                // Create the widget
                 var widget = angular.element('<input>')
                                     .attr('type', attr.type || 'text');
 
@@ -76,6 +79,133 @@
                     'ngModel',
                     'disabled',
                     'placeholder'
+                ]);
+
+                // Compile the widget against the scope, then
+                // render it in place of the directive
+                var compiled = $compile(widget)($scope);
+                elem.replaceWith(compiled);
+            };
+
+            return {
+                link: renderWidget
+            };
+        }
+    ]);
+
+    // ========================================================================
+    /**
+     * Date widget
+     */
+    EdenMobile.directive('emWizardDateWidget', [
+        '$compile',
+        function($compile) {
+
+            var renderWidget = function($scope, elem, attr) {
+
+                // Create the widget
+                var widget = angular.element('<input type="date">');
+
+                // Input attributes
+                copyAttr(attr, widget, [
+                    'ngModel',
+                    'disabled'
+                ]);
+
+                // Compile the widget against the scope, then
+                // render it in place of the directive
+                var compiled = $compile(widget)($scope);
+                elem.replaceWith(compiled);
+            };
+
+            return {
+                link: renderWidget
+            };
+        }
+    ]);
+
+    // ========================================================================
+    /**
+     * Number widget
+     */
+    EdenMobile.directive('emWizardNumberWidget', [
+        '$compile',
+        function($compile) {
+
+            var renderWidget = function($scope, elem, attr) {
+
+                // Create the widget
+                var widget = angular.element('<input type="number">');
+
+                // Input attributes
+                copyAttr(attr, widget, [
+                    'ngModel',
+                    'disabled',
+                    'placeholder'
+                ]);
+
+                // Compile the widget against the scope, then
+                // render it in place of the directive
+                var compiled = $compile(widget)($scope);
+                elem.replaceWith(compiled);
+            };
+
+            return {
+                link: renderWidget
+            };
+        }
+    ]);
+
+    // ========================================================================
+    /**
+     * String widget
+     */
+    EdenMobile.directive('emWizardStringWidget', [
+        '$compile',
+        function($compile) {
+
+            var renderWidget = function($scope, elem, attr) {
+
+                // Create the widget
+                var widget = angular.element('<input>')
+                                    .attr('type', attr.type || 'text');
+
+                // Input attributes
+                copyAttr(attr, widget, [
+                    'ngModel',
+                    'disabled',
+                    'placeholder'
+                ]);
+
+                // Compile the widget against the scope, then
+                // render it in place of the directive
+                var compiled = $compile(widget)($scope);
+                elem.replaceWith(compiled);
+            };
+
+            return {
+                link: renderWidget
+            };
+        }
+    ]);
+
+    // ========================================================================
+    /**
+     * Text widget
+     */
+    EdenMobile.directive('emWizardTextWidget', [
+        '$compile',
+        function($compile) {
+
+            var renderWidget = function($scope, elem, attr) {
+
+                // Create the widget
+                var widget = angular.element('<textarea rows="5", cols="40">');
+
+                // Input attributes
+                copyAttr(attr, widget, [
+                    'ngModel',
+                    'disabled'
                 ]);
 
                 // Compile the widget against the scope, then

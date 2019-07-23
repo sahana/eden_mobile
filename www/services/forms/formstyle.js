@@ -54,8 +54,7 @@
 
         var labelContainer = angular.element('<span>').html(label),
             widgetContainer = widget,
-            formRow = angular.element('<label>')
-                             .addClass('item')
+            formRow = angular.element('<label class="card item-input item-stacked-label">')
                              .append(labelContainer)
                              .append(widgetContainer);
 

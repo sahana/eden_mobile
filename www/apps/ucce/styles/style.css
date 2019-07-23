@@ -45,3 +45,8 @@
 .item-centered {
   text-align: center;
 }
+
+/* line 36, scss/theme/_theme.scss */
+input[type="text"] {
+  border: 1px solid #E0E0E0;
+}

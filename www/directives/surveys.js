@@ -124,6 +124,7 @@
         function() {
 
             return {
+                scope: true, // each card shall have its own child scope
                 templateUrl: 'views/survey/survey_card.html',
                 link: function($scope, elem, attr) {
 
