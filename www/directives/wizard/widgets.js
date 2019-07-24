@@ -1,5 +1,5 @@
 /**
- * Sahana Eden Mobile - Form Wizard Widget Directives
+ * Sahana Eden Mobile - Wizard Widget Directives
  *
  * Copyright (c) 2019-2019 Sahana Software Foundation
  *
@@ -135,7 +135,7 @@
 
     // ========================================================================
     /**
-     * Date widget
+     * Date widget <em-wizard-date-widget>
      */
     EdenMobile.directive('emWizardDateWidget', [
         '$compile',
@@ -166,7 +166,7 @@
 
     // ========================================================================
     /**
-     * Number widget
+     * Number widget <em-wizard-number-widget>
      */
     EdenMobile.directive('emWizardNumberWidget', [
         '$compile',
@@ -198,7 +198,7 @@
 
     // ========================================================================
     /**
-     * String widget
+     * String widget <em-wizard-string-widget>
      */
     EdenMobile.directive('emWizardStringWidget', [
         '$compile',
@@ -231,7 +231,7 @@
 
     // ========================================================================
     /**
-     * Text widget
+     * Text widget <em-wizard-text-widget>
      */
     EdenMobile.directive('emWizardTextWidget', [
         '$compile',
