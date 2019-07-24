@@ -123,10 +123,10 @@
                     field = resource.fields[fieldName],
                     label = field.getLabel();
 
-                // Generate the widget and bind it to formData
-                // TODO catch undefined formData and/or make scope prefix configurable
+                // Generate the widget and bind it to form
+                // TODO catch undefined form and/or make scope prefix configurable
                 var widget = emFormWizard.getWidget(field);
-                widget.attr('ng-model', 'formData.' + fieldName);
+                widget.attr('ng-model', 'form.' + fieldName);
 
                 // Use emFormStyle to render the form row
                 // TODO: - comment (=description)

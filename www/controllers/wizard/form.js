@@ -31,8 +31,8 @@
  * @memberof EdenMobile
  */
 EdenMobile.controller("EMFormWizardController", [
-    '$q', '$scope', '$state', '$stateParams', 'emDialogs', 'emFormWizard', 'emResources',
-    function($q, $scope, $state, $stateParams, emDialogs, emFormWizard, emResources) {
+    '$q', '$scope', '$state', '$stateParams', 'emDialogs', 'emFiles', 'emFormWizard', 'emResources',
+    function($q, $scope, $state, $stateParams, emDialogs, emFiles, emFormWizard, emResources) {
 
         "use strict";
 
@@ -50,13 +50,13 @@ EdenMobile.controller("EMFormWizardController", [
          */
         var retrieveRecord = function(resource, recordID) {
 
-            var formData = {},
+            var data = {},
                 table = resource.table,
                 fields = resource.fields;
 
             if (recordID) {
 
-                // Extract the record, then populate formData from it
+                // Extract the record, populate the data from it
                 return resource.where(table.$('id').is(recordID))
                                .select(Object.keys(fields), {limitby: 1})
                                .then(function(rows) {
@@ -73,17 +73,95 @@ EdenMobile.controller("EMFormWizardController", [
                         }
                         value = record[fieldName];
                         if (value !== undefined) {
-                            formData[fieldName] = value;
+                            data[fieldName] = value;
                         }
                     }
-                    return formData;
+                    return data;
                 });
 
             } else {
 
-                // Populate formData from defaults
-                return $q.resolve(resource.addDefaults(formData, true, false));
+                // Populate data from defaults
+                return $q.resolve(resource.addDefaults(data, true, false));
             }
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Show a confirmation message after submit and return to caller
+         */
+        var confirmSubmit = function() {
+
+            // Where to go
+            // TODO make configurable
+            var returnTo = 'surveys',
+                returnParams = {};
+
+            // The confirmation message
+            var message;
+            if (recordID == 0) {
+                message = 'Response submitted';
+            } else {
+                message = 'Response updated';
+            }
+
+            // Mark as saved
+            $scope.saved = true;
+
+            // Show confirmation dialog, then return to survey list
+            emDialogs.confirmation(message, function() {
+                $state.go(returnTo, returnParams, {location: 'replace'});
+            });
+        };
+
+        // --------------------------------------------------------------------
+        // TODO implement this
+        var interimSave = function(form) {
+
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Submit the current form
+         *
+         * @param {Resource} resource - the Resource
+         * @param {object} form - the form data (from $scope)
+         */
+        var submitForm = function(resource, form) {
+
+            // Broadcast form submission
+            // - this will prompt widgets to finalize their input values
+            $scope.$broadcast('FormSubmission');
+
+            // Proceed when all form values are ready for submission
+            // - some form.* could be promises
+            $q.all(form).then(function(values) {
+
+                console.log(values);
+
+                // Check if empty (@todo: form onvalidation)
+                var empty = true;
+                for (var fn in values) { // we should use fieldName instead of fn
+                    if (values[fn] !== undefined && values[fn] !== null) {
+                        empty = false;
+                        break;
+                    }
+                }
+
+                // Save and return to caller (if form is empty, do nothing)
+                if (!empty) {
+                    resource.subSet().insert(values).then(
+                        function() {
+                            confirmSubmit();
+                        },
+                        function(error) {
+                            emDialogs.error('Could not create record', error, function() {
+                                // TODO make configurable
+                                $state.go('surveys');
+                            });
+                        });
+                }
+            });
         };
 
         // --------------------------------------------------------------------
@@ -101,48 +179,83 @@ EdenMobile.controller("EMFormWizardController", [
                     // TODO Discard record if it has an ID and is marked incomplete
 
                     // Go back to survey list
+                    // TODO make configurable
                     $state.go('surveys');
                 });
         };
 
         // --------------------------------------------------------------------
-        // Main process
+        // Initialize the wizard
         //
-        emResources.open(resourceName).then(function(resource) {
+        var initForm = function() {
 
-            // Set top bar title
-            $scope.title = resource.getLabel(true);
-            $scope.resource = resource;
+            // Start with empty master (populated asynchronously)
+            $scope.master = {};
+            $scope.saved = false;
 
-            // Get the form configuration
-            var formConfig = emFormWizard.getSections(resource);
-
-            // Store form configuration and status in scope
-            $scope.formConfig = formConfig;
-            $scope.formStatus = {
-                activeSection: 0,
-                prev: false,
-                next: formConfig.length > 1
+            // Reset the form (@todo: expose reset in UI?)
+            $scope.reset = function() {
+                $scope.form = angular.copy($scope.master);
+                $scope.pendingFiles = [];
+                $scope.orphanedFiles = [];
             };
+            $scope.reset();
 
-            // TODO provide a scope method to interim-save the record
+            emResources.open(resourceName).then(function(resource) {
 
-            // Provide a scope method to cancel the data entry
-            $scope.cancel = cancelWizard;
+                // Set top bar title
+                $scope.title = resource.getLabel(true);
+                $scope.resource = resource;
 
-            // TODO provide a scope method to submit the response
+                // Get the form configuration
+                var formConfig = emFormWizard.getSections(resource);
 
-            // Populate the form data, then open the form
-            retrieveRecord(resource, recordID).then(function(formData) {
-                $scope.recordStatus = {
-                    recordID: recordID,
-                    incomplete: !recordID,
+                // Store form configuration and status in scope
+                $scope.formConfig = formConfig;
+                $scope.formStatus = {
+                    activeSection: 0,
+                    prev: false,
+                    next: formConfig.length > 1
                 };
-                $scope.formData = formData;
 
-                // Open the form
-                $state.go('wizard.form', {section: 0});
+                // Provide scope methods for submit, interimSave and cancel
+                $scope.submit = function(form) {
+                    submitForm(resource, form);
+                };
+                $scope.interimSave = interimSave;
+                $scope.cancel = cancelWizard;
+
+                // Populate, then open the form
+                retrieveRecord(resource, recordID).then(function(data) {
+                    $scope.recordStatus = {
+                        recordID: recordID,
+                        incomplete: !recordID,
+                    };
+                    $scope.master = data;
+                    $scope.form = angular.copy($scope.master);
+
+                    // Open the form
+                    $state.go('wizard.form', {section: 0});
+                });
             });
+        };
+
+        // --------------------------------------------------------------------
+        // Main Process
+        //
+
+        // Init on view-enter
+        $scope.$on('$ionicView.enter', initForm);
+
+        // Clean up on destroy
+        $scope.$on('$destroy', function() {
+            if ($scope.saved) {
+                // Record saved => remove orphaned files
+                emFiles.removeAll($scope.orphanedFiles);
+            } else {
+                // Record not saved => remove pending files
+                emFiles.removeAll($scope.pendingFiles);
+            }
         });
     }
 ]);
