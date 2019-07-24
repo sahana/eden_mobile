@@ -60,7 +60,7 @@
 
     // ========================================================================
     /**
-     * Generic Widget
+     * Generic Widget <em-wizard-generic-widget>
      */
     EdenMobile.directive('emWizardGenericWidget', [
         '$compile',
@@ -79,6 +79,46 @@
                     'ngModel',
                     'disabled',
                     'placeholder'
+                ]);
+
+                // Compile the widget against the scope, then
+                // render it in place of the directive
+                var compiled = $compile(widget)($scope);
+                elem.replaceWith(compiled);
+            };
+
+            return {
+                link: renderWidget
+            };
+        }
+    ]);
+
+    // ========================================================================
+    /**
+     * Boolean Widget <em-wizard-boolean-widget>
+     */
+    EdenMobile.directive('emWizardBooleanWidget', [
+        '$compile',
+        function($compile) {
+
+            var renderWidget = function($scope, elem, attr) {
+
+                // Build the widget
+                var widget;
+                if (attr.widget == 'checkbox') {
+                    // Checkbox
+                    widget = angular.element('<ion-checkbox>')
+                                    .html(attr.label || '');
+                } else {
+                    // Default: Toggle
+                    widget = angular.element('<ion-toggle toggle-class="toggle-positive">')
+                                    .html(attr.label || '');
+                }
+
+                // Widget attributes
+                copyAttr(attr, widget, [
+                    'ngModel',
+                    'disabled'
                 ]);
 
                 // Compile the widget against the scope, then
@@ -200,7 +240,7 @@
             var renderWidget = function($scope, elem, attr) {
 
                 // Create the widget
-                var widget = angular.element('<textarea rows="5", cols="40">');
+                var widget = angular.element('<textarea rows="5", cols="60">');
 
                 // Input attributes
                 copyAttr(attr, widget, [

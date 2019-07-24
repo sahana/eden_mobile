@@ -46,15 +46,14 @@
 
     // ------------------------------------------------------------------------
     // Survey Wizard Form Style
-    // TODO - use grid-style, not list
     //
     function WizardFormStyle() {}
 
     WizardFormStyle.prototype.formRow = function(label, widget) {
 
-        var labelContainer = angular.element('<span>').html(label),
+        var labelContainer = angular.element('<div class="wizard-label">').html(label),
             widgetContainer = widget,
-            formRow = angular.element('<label class="card item-input item-stacked-label">')
+            formRow = angular.element('<label class="card item-stacked-label">')
                              .append(labelContainer)
                              .append(widgetContainer);
 
