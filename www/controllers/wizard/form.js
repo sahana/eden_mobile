@@ -245,7 +245,11 @@ EdenMobile.controller("EMFormWizardController", [
         //
 
         // Init on view-enter
-        $scope.$on('$ionicView.enter', initForm);
+        $scope.$on('$ionicView.enter', function(event, data) {
+            if (data.stateName == 'wizard') {
+                initForm();
+            }
+        });
 
         // Clean up on destroy
         $scope.$on('$destroy', function() {
