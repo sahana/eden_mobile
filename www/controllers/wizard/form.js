@@ -37,7 +37,8 @@ EdenMobile.controller("EMFormWizardController", [
         "use strict";
 
         var resourceName = $stateParams.resourceName,
-            recordID = $stateParams.recordID;
+            recordID = $stateParams.recordID,
+            returnTo = $stateParams.returnTo || 'surveys';
 
         // --------------------------------------------------------------------
         /**
@@ -92,10 +93,8 @@ EdenMobile.controller("EMFormWizardController", [
          */
         var confirmSubmit = function() {
 
-            // Where to go
-            // TODO make configurable
-            var returnTo = 'surveys',
-                returnParams = {};
+            // Parameters for the returnTo state (currently none required)
+            var returnParams = {};
 
             // The confirmation message
             var message;
@@ -137,12 +136,12 @@ EdenMobile.controller("EMFormWizardController", [
             // - some form.* could be promises
             $q.all(form).then(function(values) {
 
-                console.log(values);
+                //console.log(values);
 
                 // Check if empty (@todo: form onvalidation)
                 var empty = true;
-                for (var fn in values) { // we should use fieldName instead of fn
-                    if (values[fn] !== undefined && values[fn] !== null) {
+                for (var fieldName in values) {
+                    if (values[fieldName] !== undefined && values[fieldName] !== null) {
                         empty = false;
                         break;
                     }
@@ -150,14 +149,29 @@ EdenMobile.controller("EMFormWizardController", [
 
                 // Save and return to caller (if form is empty, do nothing)
                 if (!empty) {
-                    resource.subSet().insert(values).then(
+
+                    var recordStatus = $scope.recordStatus,
+                        recordID = recordStatus.recordID,
+                        saved,
+                        fail;
+
+                    values.em_incomplete = false;
+                    if (recordID) {
+                        var table = resource.table;
+                        saved = resource.where(table.$('id').is(recordID)).update(values);
+                        fail = 'Could not update record';
+                    } else {
+                        saved = resource.subSet().insert(values);
+                        fail = 'Could not create record';
+                    }
+
+                    saved.then(
                         function() {
                             confirmSubmit();
                         },
                         function(error) {
-                            emDialogs.error('Could not create record', error, function() {
-                                // TODO make configurable
-                                $state.go('surveys');
+                            emDialogs.error(fail, error, function() {
+                                $state.go(returnTo);
                             });
                         });
                 }
@@ -178,9 +192,8 @@ EdenMobile.controller("EMFormWizardController", [
 
                     // TODO Discard record if it has an ID and is marked incomplete
 
-                    // Go back to survey list
-                    // TODO make configurable
-                    $state.go('surveys');
+                    // Go back to caller state
+                    $state.go(returnTo);
                 });
         };
 
@@ -246,6 +259,8 @@ EdenMobile.controller("EMFormWizardController", [
 
         // Init on view-enter
         $scope.$on('$ionicView.enter', function(event, data) {
+            // View is entered both for 'wizard' and 'wizard.form' states
+            // => initialize only when entering main 'wizard'
             if (data.stateName == 'wizard') {
                 initForm();
             }
