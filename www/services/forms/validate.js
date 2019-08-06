@@ -38,6 +38,22 @@
     var rules = {
 
         // --------------------------------------------------------------------
+        isNotEmpty: function(options) {
+
+            var errorMsg = options.error;
+            if (!errorMsg) {
+                errorMsg = 'Enter a value';
+            }
+
+            return {
+                directives: {'ng-required': 'true'},
+                errors: ['required'],
+                message: errorMsg
+            };
+
+        },
+
+        // --------------------------------------------------------------------
         /**
          * isIntInRange
          *
@@ -152,13 +168,18 @@
                     requires = fieldDescription.requires || (settings && settings.requires);
 
                 if (!requires) {
+                    requires = {};
                     switch(field.type) {
                         case 'json':
-                            requires = {'isJson': null};
+                            requires.isJson = null;
                             break;
                         default:
                             break;
                     }
+                }
+
+                if (fieldDescription.required) {
+                    requires.isNotEmpty = null;
                 }
 
                 var directives = [],

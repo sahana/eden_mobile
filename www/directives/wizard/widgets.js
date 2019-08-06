@@ -63,31 +63,9 @@
      * Generic Widget <em-wizard-generic-widget>
      */
     EdenMobile.directive('emWizardGenericWidget', [
-        '$compile',
-        function($compile) {
-
-            var renderWidget = function($scope, elem, attr) {
-
-                // TODO this should not render any input element (for now)
-
-                // Create the widget
-                var widget = angular.element('<input>')
-                                    .attr('type', attr.type || 'text');
-
-                // Input attributes
-                copyAttr(attr, widget, [
-                    'ngModel',
-                    'disabled',
-                    'placeholder'
-                ]);
-
-                // Add widget to DOM and compile it against scope
-                elem.replaceWith(widget);
-                $compile(widget)($scope);
-            };
-
+        function() {
             return {
-                link: renderWidget
+                template: ''
             };
         }
     ]);
@@ -102,7 +80,7 @@
 
             var renderWidget = function($scope, elem, attr) {
 
-                // Build the widget
+                // Create the widget
                 var widget;
                 if (attr.widget == 'checkbox') {
                     // Checkbox
@@ -114,7 +92,13 @@
                                     .html(attr.label || '');
                 }
 
-                // Widget attributes
+                // Set the name
+                var fieldName = attr.field;
+                if (fieldName) {
+                    widget.attr('name', fieldName);
+                }
+
+                // Widget attributes and directives
                 copyAttr(attr, widget, [
                     'ngModel',
                     'disabled'
@@ -144,7 +128,14 @@
                 // Create the widget
                 var widget = angular.element('<input type="date">');
 
-                // Input attributes
+                // Set the name
+                var fieldName = attr.field;
+                if (fieldName) {
+                    widget.attr('name', fieldName);
+                }
+
+                // Widget attributes and directives
+                // TODO apply validation directives
                 copyAttr(attr, widget, [
                     'ngModel',
                     'disabled'
@@ -174,7 +165,14 @@
                 // Create the widget
                 var widget = angular.element('<input type="number">');
 
-                // Input attributes
+                // Set the name
+                var fieldName = attr.field;
+                if (fieldName) {
+                    widget.attr('name', fieldName);
+                }
+
+                // Widget attributes and directives
+                // TODO apply validation directives
                 copyAttr(attr, widget, [
                     'ngModel',
                     'disabled',
@@ -206,11 +204,19 @@
                 var widget = angular.element('<input>')
                                     .attr('type', attr.type || 'text');
 
-                // Input attributes
+                // Set the name
+                var fieldName = attr.field;
+                if (fieldName) {
+                    widget.attr('name', fieldName);
+                }
+
+                // Widget attributes and directives
+                // TODO apply validation directives
                 copyAttr(attr, widget, [
                     'ngModel',
                     'disabled',
-                    'placeholder'
+                    'placeholder',
+                    'ngRequired'
                 ]);
 
                 // Add widget to DOM and compile it against scope
@@ -237,7 +243,14 @@
                 // Create the widget
                 var widget = angular.element('<textarea rows="5" cols="60">');
 
-                // Input attributes
+                // Set the name
+                var fieldName = attr.field;
+                if (fieldName) {
+                    widget.attr('name', fieldName);
+                }
+
+                // Widget attributes and directives
+                // TODO apply validation directives
                 copyAttr(attr, widget, [
                     'ngModel',
                     'disabled'
@@ -275,11 +288,11 @@
                     widget.attr('name', fieldName);
                 }
 
-                // Copy attributes
+                // Widget attributes and directives
                 copyAttr(attr, widget, [
                     'ngModel',
                     'disabled',
-                    'isJson'      // copy applicable validators
+                    'isJson'    // copy applicable validators
                 ]);
 
                 // Add widget to DOM and compile it against scope

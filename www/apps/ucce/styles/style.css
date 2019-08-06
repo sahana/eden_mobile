@@ -47,25 +47,26 @@
 }
 
 /* line 37, scss/theme/_theme.scss */
-form .json-input.ng-invalid {
-  border: 1px solid red;
-}
-/* line 40, scss/theme/_theme.scss */
 form .item-toggle {
   height: 40px;
   border: 0;
 }
-/* line 44, scss/theme/_theme.scss */
+/* line 41, scss/theme/_theme.scss */
 form label.toggle {
   right: unset;
   left: 8px;
 }
-/* line 49, scss/theme/_theme.scss */
+/* line 46, scss/theme/_theme.scss */
 form .item-stacked-label input,
 form .item-stacked-label textarea {
   border: 1px solid #E0E0E0;
   padding: 4px;
   width: auto;
+}
+/* line 51, scss/theme/_theme.scss */
+form .item-stacked-label input.ng-invalid,
+form .item-stacked-label textarea.ng-invalid {
+  border: 1px solid red;
 }
 /* line 55, scss/theme/_theme.scss */
 form .item-stacked-label input[type="date"] {

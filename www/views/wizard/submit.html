@@ -1,8 +1,8 @@
 <div class="row">
   <div class="col">
     <div class="wizard-submit-buttons">
-      <a class="button button-energized" ng-disabled='wizard.$invalid || wizard.$pristine' ng-if='formStatus.next' ui-sref='wizard.form({section: formStatus.next})'>Next</a>
-      <a class="button button-energized" ng-disabled='wizard.$invalid || wizard.$pristine' ng-if='!formStatus.next' ng-click='submit(form)'>Save</a>
+      <a class="button button-energized" ng-if='formStatus.next' ng-click='next(wizard)'>Next</a>
+      <a class="button button-energized" ng-if='!formStatus.next' ng-click='submit(wizard)'>Save</a>
     </div>
   </div>
 </div>

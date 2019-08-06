@@ -34,9 +34,6 @@
 }
 
 form {
-    .json-input.ng-invalid {
-        border: 1px solid red;
-    }
     .item-toggle {
         height: 40px;
         border: 0;
@@ -51,6 +48,9 @@ form {
             border: 1px solid #E0E0E0;
             padding: 4px;
             width: auto;
+            &.ng-invalid {
+                border: 1px solid red;
+            }
         }
         input[type="date"] {
             min-width: 8rem;

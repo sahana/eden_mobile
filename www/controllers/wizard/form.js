@@ -114,12 +114,6 @@ EdenMobile.controller("EMFormWizardController", [
         };
 
         // --------------------------------------------------------------------
-        // TODO implement this
-        var interimSave = function(form) {
-
-        };
-
-        // --------------------------------------------------------------------
         /**
          * Submit the current form
          *
@@ -205,6 +199,7 @@ EdenMobile.controller("EMFormWizardController", [
             // Start with empty master (populated asynchronously)
             $scope.master = {};
             $scope.saved = false;
+            $scope.submitInProgress = false;
 
             // Reset the form (@todo: expose reset in UI?)
             $scope.reset = function() {
@@ -221,21 +216,47 @@ EdenMobile.controller("EMFormWizardController", [
                 $scope.resource = resource;
 
                 // Get the form configuration
-                var formConfig = emFormWizard.getSections(resource);
+                var formConfig = emFormWizard.getSections(resource),
+                    next = false;
+                if (formConfig.length > 1) {
+                    next = 1;
+                }
 
                 // Store form configuration and status in scope
                 $scope.formConfig = formConfig;
                 $scope.formStatus = {
                     activeSection: 0,
-                    prev: false,
-                    next: formConfig.length > 1
+                    prev: -1,
+                    next: next
                 };
 
-                // Provide scope methods for submit, interimSave and cancel
-                $scope.submit = function(form) {
-                    submitForm(resource, form);
+                // Scope method to submit the entire form
+                $scope.submit = function(ngForm) {
+                    if ($scope.saved || $scope.submitInProgress) {
+                        return;
+                    }
+                    ngForm.$setSubmitted(); // force validation
+                    if (ngForm.$invalid) {
+                        return;
+                    }
+                    $scope.submitInProgress = true;
+                    submitForm(resource, $scope.form);
                 };
-                $scope.interimSave = interimSave;
+
+                // Scope method to move to the next section
+                $scope.next = function(ngForm) {
+                    ngForm.$setSubmitted(); // force validation
+                    if (ngForm.$invalid) {
+                        return;
+                    }
+                    var next = $scope.formStatus.next;
+                    if (!next) {
+                        return;
+                    }
+                    $state.go('wizard.form', {section: next});
+                };
+
+                // Scope method to cancel the response
                 $scope.cancel = cancelWizard;
 
                 // Populate, then open the form
