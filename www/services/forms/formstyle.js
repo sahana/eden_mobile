@@ -58,14 +58,20 @@
                              .append(widgetContainer);
 
         if (errors) {
-            // TODO clean this up
-            var fieldName = widget.attr('field');
-            var errorContainer = angular.element('<div>')
-                                        .attr('ng-show', formName + '.$submitted || ' + formName + '.' + fieldName + '.$touched');
+
+            var fieldName = widget.attr('field'),
+                showOn = [
+                    formName + '.$submitted',
+                    formName + '.' + fieldName + '.$touched'
+                ],
+                errorContainer = angular.element('<div class="errors">')
+                                        .attr('ng-show', showOn.join(' || '));
+
+            // Append the error messages
             errors.forEach(function(error) {
                 var errorMsg = angular.element('<span class="error">')
                                       .text(error.msg)
-                                      .attr('ng-show', error.show);
+                                      .attr('ng-show', error.showOn);
                 errorContainer.append(errorMsg);
             });
             formRow.append(errorContainer);

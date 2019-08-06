@@ -120,7 +120,7 @@
                         var showOn = validation.errors.map(function(cond) {
                             return formName + '.' + fieldName + '.$error.' + cond;
                         }).join(' || ');
-                        errors.push({show: showOn, msg: validation.message});
+                        errors.push({showOn: showOn, msg: validation.message});
                     });
                 }
 
@@ -128,7 +128,10 @@
                 // TODO: - comment (=description)
                 //       - image
                 //       - display logic (probably better to handle in controller)
-                var formRow = emFormStyle.formRow(formName, field.getLabel(), widget, errors);
+                var formRow = emFormStyle.formRow(formName,
+                                                  field.getLabel(),
+                                                  widget,
+                                                  errors);
 
                 // Add form row to DOM and compile it
                 elem.replaceWith(formRow);
