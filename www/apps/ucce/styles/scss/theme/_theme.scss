@@ -34,6 +34,9 @@
 }
 
 form {
+    .json-input.ng-invalid {
+        border: 1px solid red;
+    }
     .item-toggle {
         height: 40px;
         border: 0;

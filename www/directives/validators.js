@@ -37,18 +37,20 @@
 
                 // Parser (view=>model)
                 ngModel.$parsers.push(function(value) {
+                    if (!value) {
+                        // Return null to bypass validation
+                        return null;
+                    }
                     try {
                         return JSON.parse(value);
                     } catch(e) {
-                        // returning undefined will lead to ng-invalid-parse,
-                        // so this already verifies that the input is valid
-                        // JSON
+                        // Return undefined to produce ng-invalid-parse
                     }
                 });
 
                 // Formatter (model=>view)
                 ngModel.$formatters.push(function(value) {
-                    if (value !== undefined) {
+                    if (value !== undefined && value !== null) {
                         return JSON.stringify(value);
                     } else {
                         return '';
@@ -58,14 +60,11 @@
                 // Validation
                 ngModel.$validators.json = function(modelValue, viewValue) {
                     if (ngModel.$isEmpty(modelValue)) {
-                        // consider empty models to be valid
+                        // Consider empty models to be valid
                         return true;
                     }
 
-                    // This will only be called when the parser has succeeded,
-                    // so we already know it's valid JSON; however, we could use
-                    // this to ensure a certain type of JSON object (e.g. reject
-                    // atoms)
+                    // Try parsing the view
                     var parsed;
                     if (viewValue) {
                         try {

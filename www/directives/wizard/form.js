@@ -36,7 +36,7 @@
         '$compile',
         function($compile) {
 
-            var renderSection = function($scope, elem) {
+            var renderSection = function($scope, elem, attr) {
 
                 // Get the section config
                 var sectionConfig = $scope.sectionConfig;
@@ -45,8 +45,9 @@
                 }
 
                 // Create the form
-                var form = angular.element('<form>')
-                                  .attr('name', 'wizard')
+                var formName = attr.formName || 'wizard',
+                    form = angular.element('<form>')
+                                  .attr('name', formName)
                                   .attr('novalidate', 'novalidate');
 
                 // Generate the form rows for this section
@@ -54,6 +55,7 @@
                 sectionConfig.forEach(function(formElement) {
                     if (formElement.type == 'input') {
                         var formRow = angular.element('<em-form-row>')
+                                             .attr('formname', formName)
                                              .attr('field', formElement.field);
                         formRows.append(formRow);
                     }
@@ -76,8 +78,8 @@
      *   - a form row with label and input widget etc.
      */
     EdenMobile.directive('emFormRow', [
-        '$compile', 'emFormStyle', 'emFormWizard',
-        function($compile, emFormStyle, emFormWizard) {
+        '$compile', 'emFormStyle', 'emFormWizard', 'emValidate',
+        function($compile, emFormStyle, emFormWizard, emValidate) {
 
             var renderFormRow = function($scope, elem, attr) {
 
@@ -95,9 +97,29 @@
                 }
 
                 // Generate the widget and bind it to form
-                var prefix = attr.prefix || 'form',
+                var formName = attr.formname || 'wizard',
+                    prefix = attr.prefix || 'form',
                     widget = emFormWizard.getWidget(field)
                                          .attr('ng-model', prefix + '.' + fieldName);
+
+                // Add validator directives
+                // - widgets must apply those to the actual inputs
+                var validate = emValidate.getDirectives(field),
+                    errors = [];
+                if (validate) {
+                    validate.forEach(function(validation) {
+
+                        var directives = validation.directives,
+                            directive;
+                        for (directive in directives) {
+                            widget.attr(directive, directives[directive]);
+                        }
+
+                        // TODO collect errors and pass to form style to create
+                        //      conditional error message elements => needs
+                        //      prefixing of error conditions with formName
+                    });
+                }
 
                 // Use emFormStyle to render the form row
                 // TODO: - comment (=description)

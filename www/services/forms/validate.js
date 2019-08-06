@@ -91,7 +91,7 @@
             }
 
             return {
-                directives: {'isJson': ''},
+                directives: {'is-json': ''},
                 error: error
             };
         }
@@ -121,7 +121,7 @@
 
                 var rule = rules[name];
                 if (rule) {
-                    if (options === undefined) {
+                    if (!options) {
                         options = {};
                     }
                     return rule(options);
@@ -135,17 +135,32 @@
             // TODO implement
             var getDirectives = function(field) {
 
-                // Read field.requires
-                // fall back to field.settings.requires
-                // fall back to default validator for the field type
+                var fieldDescription = field._description,
+                    settings = fieldDescription.settings,
+                    requires = fieldDescription.requires || (settings && settings.requires);
 
-                // => rules = {ruleName: {ruleOptions}}
+                if (!requires) {
+                    switch(field.type) {
+                        case 'json':
+                            requires = {'isJson': null};
+                            break;
+                        default:
+                            break;
+                    }
+                }
 
-                // validate = []
-                // for ruleName in rules:
-                //     directives = encode(ruleName, ruleOptions)
-                //     validate.concat(directives) if any
-                // return validate
+                var directives = [],
+                    ruleName,
+                    rule;
+                if (requires) {
+                    for (ruleName in requires) {
+                        rule = encode(ruleName, requires[ruleName]);
+                        if (rule) {
+                            directives.push(rule);
+                        }
+                    }
+                }
+                return directives;
             };
 
             // --------------------------------------------------------------------

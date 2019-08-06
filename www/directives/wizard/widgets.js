@@ -273,7 +273,7 @@
             var link = function($scope, elem, attr) {
 
                 // Create the widget
-                var widget = angular.element('<textarea rows="5" cols="60" is-json="">');
+                var widget = angular.element('<textarea class="json-input" rows="5" cols="60">');
 
                 // Set the name
                 var fieldName = attr.field;
@@ -284,10 +284,9 @@
                 // Copy attributes
                 copyAttr(attr, widget, [
                     'ngModel',
-                    'disabled'
+                    'disabled',
+                    'isJson'      // copy applicable validators
                 ]);
-
-                // TODO copy validator directives
 
                 // Compile the widget against the scope, then
                 // render it in place of the directive
