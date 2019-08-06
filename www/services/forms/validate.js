@@ -59,19 +59,23 @@
                 max = directives.max = '' + max;
             }
 
-            var error = options.error;
-            if (!error) {
+            var errorMsg = options.error;
+            if (!errorMsg) {
                 if (min && max) {
-                    error = 'Enter a number between ' + min + ' and ' + max;
+                    errorMsg = 'Enter a number between ' + min + ' and ' + max;
                 } else if (min) {
-                    error = 'Enter a number greater than ' + min;
+                    errorMsg = 'Enter a number greater than ' + min;
                 } else if (max) {
-                    error = 'Enter a number less than ' + max;
+                    errorMsg = 'Enter a number less than ' + max;
                 }
             }
 
             if (min || max) {
-                return {directives: directives, error: error};
+                return {
+                    directives: directives,
+                    errors: ['min', 'max'],
+                    message: errorMsg,
+                };
             } else {
                 return null;
             }
@@ -85,14 +89,15 @@
          */
         isJson: function(options) {
 
-            var error = options.error;
-            if (!error) {
-                error = 'Enter a valid JSON expression';
+            var errorMsg = options.error;
+            if (!errorMsg) {
+                errorMsg = 'Enter a valid JSON expression';
             }
 
             return {
                 directives: {'is-json': ''},
-                error: error
+                errors: ['json', 'parse'],
+                message: errorMsg
             };
         }
     };
@@ -131,8 +136,15 @@
             };
 
             // --------------------------------------------------------------------
-            // TODO docstring
-            // TODO implement
+            /**
+             * Get validation directives for a field
+             *
+             * @param {Field} field - the field
+             *
+             * @returns: an array of validation directives:
+             *           [{directives: {'attr': 'value'}, error: 'message'}, ...]
+             *
+             */
             var getDirectives = function(field) {
 
                 var fieldDescription = field._description,

@@ -81,10 +81,9 @@
                     'placeholder'
                 ]);
 
-                // Compile the widget against the scope, then
-                // render it in place of the directive
-                var compiled = $compile(widget)($scope);
-                elem.replaceWith(compiled);
+                // Add widget to DOM and compile it against scope
+                elem.replaceWith(widget);
+                $compile(widget)($scope);
             };
 
             return {
@@ -121,10 +120,9 @@
                     'disabled'
                 ]);
 
-                // Compile the widget against the scope, then
-                // render it in place of the directive
-                var compiled = $compile(widget)($scope);
-                elem.replaceWith(compiled);
+                // Add widget to DOM and compile it against scope
+                elem.replaceWith(widget);
+                $compile(widget)($scope);
             };
 
             return {
@@ -152,10 +150,9 @@
                     'disabled'
                 ]);
 
-                // Compile the widget against the scope, then
-                // render it in place of the directive
-                var compiled = $compile(widget)($scope);
-                elem.replaceWith(compiled);
+                // Add widget to DOM and compile it against scope
+                elem.replaceWith(widget);
+                $compile(widget)($scope);
             };
 
             return {
@@ -184,10 +181,9 @@
                     'placeholder'
                 ]);
 
-                // Compile the widget against the scope, then
-                // render it in place of the directive
-                var compiled = $compile(widget)($scope);
-                elem.replaceWith(compiled);
+                // Add widget to DOM and compile it against scope
+                elem.replaceWith(widget);
+                $compile(widget)($scope);
             };
 
             return {
@@ -217,10 +213,9 @@
                     'placeholder'
                 ]);
 
-                // Compile the widget against the scope, then
-                // render it in place of the directive
-                var compiled = $compile(widget)($scope);
-                elem.replaceWith(compiled);
+                // Add widget to DOM and compile it against scope
+                elem.replaceWith(widget);
+                $compile(widget)($scope);
             };
 
             return {
@@ -248,10 +243,9 @@
                     'disabled'
                 ]);
 
-                // Compile the widget against the scope, then
-                // render it in place of the directive
-                var compiled = $compile(widget)($scope);
-                elem.replaceWith(compiled);
+                // Add widget to DOM and compile it against scope
+                elem.replaceWith(widget);
+                $compile(widget)($scope);
             };
 
             return {
@@ -288,10 +282,9 @@
                     'isJson'      // copy applicable validators
                 ]);
 
-                // Compile the widget against the scope, then
-                // render it in place of the directive
-                var compiled = $compile(widget)($scope);
-                elem.replaceWith(compiled);
+                // Add widget to DOM and compile it against scope
+                elem.replaceWith(widget);
+                $compile(widget)($scope);
             };
 
             return {

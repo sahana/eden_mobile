@@ -63,7 +63,9 @@
                 form.append(formRows);
 
                 // Compile the form, and put it into the DOM
-                elem.replaceWith($compile(form)($scope));
+                // Add form to DOM and compile it
+                elem.replaceWith(form);
+                $compile(form)($scope);
             };
 
             return {
@@ -115,9 +117,10 @@
                             widget.attr(directive, directives[directive]);
                         }
 
-                        // TODO collect errors and pass to form style to create
-                        //      conditional error message elements => needs
-                        //      prefixing of error conditions with formName
+                        var showOn = validation.errors.map(function(cond) {
+                            return formName + '.' + fieldName + '.$error.' + cond;
+                        }).join(' || ');
+                        errors.push({show: showOn, msg: validation.message});
                     });
                 }
 
@@ -125,10 +128,11 @@
                 // TODO: - comment (=description)
                 //       - image
                 //       - display logic (probably better to handle in controller)
-                var formRow = emFormStyle.formRow(field.getLabel(), widget);
+                var formRow = emFormStyle.formRow(formName, field.getLabel(), widget, errors);
 
-                // Compile the formRow, and put into the DOM
-                elem.replaceWith($compile(formRow)($scope));
+                // Add form row to DOM and compile it
+                elem.replaceWith(formRow);
+                $compile(formRow)($scope);
             };
 
             return {

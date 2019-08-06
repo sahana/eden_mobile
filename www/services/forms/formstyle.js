@@ -49,13 +49,27 @@
     //
     function WizardFormStyle() {}
 
-    WizardFormStyle.prototype.formRow = function(label, widget) {
+    WizardFormStyle.prototype.formRow = function(formName, label, widget, errors) {
 
         var labelContainer = angular.element('<div class="wizard-label">').html(label),
             widgetContainer = widget,
             formRow = angular.element('<label class="card item-stacked-label">')
                              .append(labelContainer)
                              .append(widgetContainer);
+
+        if (errors) {
+            // TODO clean this up
+            var fieldName = widget.attr('field');
+            var errorContainer = angular.element('<div>')
+                                        .attr('ng-show', formName + '.$submitted || ' + formName + '.' + fieldName + '.$touched');
+            errors.forEach(function(error) {
+                var errorMsg = angular.element('<span class="error">')
+                                      .text(error.msg)
+                                      .attr('ng-show', error.show);
+                errorContainer.append(errorMsg);
+            });
+            formRow.append(errorContainer);
+        }
 
         return formRow;
     };
