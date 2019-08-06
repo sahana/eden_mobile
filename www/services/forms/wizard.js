@@ -148,6 +148,9 @@ EdenMobile.factory('emFormWizard', [
                 case 'text':
                     widgetType = '<em-wizard-text-widget>';
                     break;
+                case 'json':
+                    widgetType = '<em-wizard-json-widget>';
+                    break;
                 default:
                     widgetType = '<em-wizard-generic-widget type="' + field.type + '">';
                     break;

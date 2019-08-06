@@ -240,7 +240,7 @@
             var renderWidget = function($scope, elem, attr) {
 
                 // Create the widget
-                var widget = angular.element('<textarea rows="5", cols="60">');
+                var widget = angular.element('<textarea rows="5" cols="60">');
 
                 // Input attributes
                 copyAttr(attr, widget, [
@@ -256,6 +256,47 @@
 
             return {
                 link: renderWidget
+            };
+        }
+    ]);
+
+    // ========================================================================
+    /**
+     * Simple generic JSON input widget <em-wizard-json-widget>
+     * - default widget for 'json' fields
+     * - uses the isJson directive for parsing/formatting and validation
+     */
+    EdenMobile.directive('emWizardJsonWidget', [
+        '$compile',
+        function($compile) {
+
+            var link = function($scope, elem, attr) {
+
+                // Create the widget
+                var widget = angular.element('<textarea rows="5" cols="60" is-json="">');
+
+                // Set the name
+                var fieldName = attr.field;
+                if (fieldName) {
+                    widget.attr('name', fieldName);
+                }
+
+                // Copy attributes
+                copyAttr(attr, widget, [
+                    'ngModel',
+                    'disabled'
+                ]);
+
+                // TODO copy validator directives
+
+                // Compile the widget against the scope, then
+                // render it in place of the directive
+                var compiled = $compile(widget)($scope);
+                elem.replaceWith(compiled);
+            };
+
+            return {
+                link: link
             };
         }
     ]);

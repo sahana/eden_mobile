@@ -23,9 +23,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// TODO add to ucce.html
-// TODO separators
-
 (function(EdenMobile) {
 
     "use strict";
@@ -62,16 +59,18 @@
                 max = directives.max = '' + max;
             }
 
-            var error;
-            if (min && max) {
-                error = 'Enter a number between ' + min + ' and ' + max;
-            } else if (min) {
-                error = 'Enter a number greater than ' + min;
-            } else if (max) {
-                error = 'Enter a number less than ' + max;
+            var error = options.error;
+            if (!error) {
+                if (min && max) {
+                    error = 'Enter a number between ' + min + ' and ' + max;
+                } else if (min) {
+                    error = 'Enter a number greater than ' + min;
+                } else if (max) {
+                    error = 'Enter a number less than ' + max;
+                }
             }
 
-            if (error) {
+            if (min || max) {
                 return {directives: directives, error: error};
             } else {
                 return null;
@@ -79,15 +78,29 @@
         },
 
         // --------------------------------------------------------------------
-        // TODO docstring
-        // TODO implement
-        isJson: function() {
+        /**
+         * isJson
+         *
+         * @returns {object} - an object {directives: {'attr': 'value'}, error: 'message'}
+         */
+        isJson: function(options) {
 
+            var error = options.error;
+            if (!error) {
+                error = 'Enter a valid JSON expression';
+            }
+
+            return {
+                directives: {'isJson': ''},
+                error: error
+            };
         }
     };
 
     // ========================================================================
-    // TODO docstring
+    /**
+     * Service to produce validation directives for form inputs
+     */
     EdenMobile.factory('emValidate', [
 
         function() {
@@ -108,6 +121,9 @@
 
                 var rule = rules[name];
                 if (rule) {
+                    if (options === undefined) {
+                        options = {};
+                    }
                     return rule(options);
                 } else {
                     return null;
