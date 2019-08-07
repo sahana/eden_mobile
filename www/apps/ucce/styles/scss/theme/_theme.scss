@@ -65,3 +65,16 @@ form {
 .wizard-submit-buttons {
     padding: 0px 10px;
 }
+
+.data-collector-instructions {
+    background-color: #E0E0E0;
+    .say {
+        font-weight: bold;
+        font-size: 0.9rem;
+        padding-top: 0.3rem;
+    }
+    .do {
+        font-weight: normal;
+        font-size: 0.9rem;
+    }
+}

@@ -83,3 +83,19 @@ form .wizard-label {
 .wizard-submit-buttons {
   padding: 0px 10px;
 }
+
+/* line 69, scss/theme/_theme.scss */
+.data-collector-instructions {
+  background-color: #E0E0E0;
+}
+/* line 71, scss/theme/_theme.scss */
+.data-collector-instructions .say {
+  font-weight: bold;
+  font-size: 0.9rem;
+  padding-top: 0.3rem;
+}
+/* line 76, scss/theme/_theme.scss */
+.data-collector-instructions .do {
+  font-weight: normal;
+  font-size: 0.9rem;
+}

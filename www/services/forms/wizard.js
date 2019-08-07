@@ -75,6 +75,10 @@ EdenMobile.factory('emFormWizard', [
                     if (formElement.constructor === Object) {
                         // Non-input form element
                         switch(formElement.type) {
+                            case 'input':
+                            case 'instructions':
+                                section.fields.push(formElement);
+                                break;
                             case 'section-break':
                                 if (!section.empty) {
                                     sections.push(section);

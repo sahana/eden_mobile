@@ -53,12 +53,29 @@
                 // Generate the form rows for this section
                 var formRows = angular.element('<div class="list">');
                 sectionConfig.forEach(function(formElement) {
-                    if (formElement.type == 'input') {
-                        var formRow = angular.element('<em-form-row>')
+                    var formRow;
+                    switch(formElement.type) {
+                        case 'input':
+                            formRow = angular.element('<em-form-row>')
                                              .attr('formname', formName)
                                              .attr('field', formElement.field);
-                        formRows.append(formRow);
+                            break;
+                        case 'instructions':
+                            formRow = angular.element('<em-instructions>');
+                            var instruction;
+                            if (formElement.do) {
+                                instruction = angular.element('<do>').text(formElement.do);
+                                formRow.append(instruction);
+                            }
+                            if (formElement.say) {
+                                instruction = angular.element('<say>').text(formElement.say);
+                                formRow.append(instruction);
+                            }
+                            break;
+                        default:
+                            break;
                     }
+                    formRows.append(formRow);
                 });
                 form.append(formRows);
 
@@ -140,6 +157,47 @@
 
             return {
                 link: renderFormRow
+            };
+        }
+    ]);
+
+    // ========================================================================
+    /**
+     * Directive for <em-instructions>
+     *   - data collector instructions
+     */
+    EdenMobile.directive('emInstructions', [
+        '$compile',
+        function($compile) {
+
+            var link = function($scope, elem /*, attr */) {
+
+                var card = angular.element('<div class="card padding data-collector-instructions">'),
+                    header = angular.element('<h4>Instructions</h4>'),
+                    instruction,
+                    content;
+
+                card.append(header);
+
+                instruction = elem.find('do').text();
+                if (instruction) {
+                    content = angular.element('<p class="do">').text(instruction);
+                    card.append(content);
+                }
+
+                instruction = elem.find('say').text();
+                if (instruction) {
+                    content = angular.element('<p class="say">').text('"' + instruction + '"');
+                    card.append(content);
+                }
+
+                // Add card to DOM and compile it
+                elem.replaceWith(card);
+                $compile(card)($scope);
+            };
+
+            return {
+                link: link
             };
         }
     ]);
