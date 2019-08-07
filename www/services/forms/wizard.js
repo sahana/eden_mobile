@@ -126,43 +126,80 @@ EdenMobile.factory('emFormWizard', [
          */
         var getWidget = function(field) {
 
-            var widgetType;
+            var fieldDescription = field._description,
+                fieldSettings = fieldDescription.settings,
+                widgetConfig = fieldDescription.widget || fieldSettings && fieldSettings.widget;
 
-            // TODO standardize widgets
-            switch(field.type) {
+            var fieldType = field.type,
+                widgetType;
+            if (widgetConfig) {
+                widgetType = widgetConfig.type;
+            } else {
+                if (field.hasOptions()) {
+                    widgetType = 'options';
+                } else {
+                    widgetType = fieldType;
+                }
+            }
+
+            var element,
+                acceptedArgs; // acceptedArgs = ['argName', ...], set per widget
+            switch(widgetType) {
                 case 'boolean':
-                    widgetType = '<em-wizard-boolean-widget>';
+                    element = '<em-wizard-boolean-widget>';
                     break;
                 case 'date':
-                    widgetType = '<em-wizard-date-widget>';
+                    element = '<em-wizard-date-widget>';
                     break;
                 case 'double':
                 case 'integer':
-                    widgetType = '<em-wizard-number-widget>';
+                    element = '<em-wizard-number-widget>';
+                    acceptedArgs = ['placeholder'];
                     break;
-//                 case 'upload':
-//                     widgetType = '<em-photo-widget>';
-//                     break;
-//                 case 'password':
-//                     widgetType = '<em-text-widget type="password">';
-//                     break;
                 case 'string':
-                    widgetType = '<em-wizard-string-widget>';
+                    element = '<em-wizard-string-widget>';
+                    acceptedArgs = ['placeholder'];
                     break;
                 case 'text':
-                    widgetType = '<em-wizard-text-widget>';
+                    element = '<em-wizard-text-widget>';
+                    acceptedArgs = ['placeholder'];
                     break;
+//                 case 'password':
+//                     element = '<em-wizard-password-widget>';
+//                     break;
+//                 case 'upload':
+//                     element = '<em-photo-widget>';
+//                     break;
+//                 case 'options':
+//                     element = '<em-wizard-options-widget>';
+//                     break;
+//                 case 'likert':
+//                     element = '<em-wizard-likert-widget>';
+//                     break;
+//                 case 'image-map':
+//                     element = '<em-wizard-image-map>';
+//                     break;
                 case 'json':
-                    widgetType = '<em-wizard-json-widget>';
+                    element = '<em-wizard-json-widget>';
                     break;
                 default:
-                    widgetType = '<em-wizard-generic-widget type="' + field.type + '">';
+                    element = '<em-wizard-generic-widget type="' + field.type + '">';
                     break;
             }
 
-            var widget = angular.element(widgetType);
+            var widget = angular.element(element);
 
             widget.attr('field', field.name);
+
+            // Set accepted arguments from widgetConfig
+            if (widgetConfig && acceptedArgs) {
+                acceptedArgs.forEach(function(argName) {
+                    var value = widgetConfig[argName];
+                    if (value !== undefined && value !== null) {
+                        widget.attr(argName, '' + value);
+                    }
+                });
+            }
 
             return widget;
         };

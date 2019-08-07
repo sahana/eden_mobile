@@ -138,7 +138,8 @@
                 // TODO apply validation directives
                 copyAttr(attr, widget, [
                     'ngModel',
-                    'disabled'
+                    'disabled',
+                    'ngRequired'
                 ]);
 
                 // Add widget to DOM and compile it against scope
@@ -176,7 +177,8 @@
                 copyAttr(attr, widget, [
                     'ngModel',
                     'disabled',
-                    'placeholder'
+                    'placeholder',
+                    'ngRequired'
                 ]);
 
                 // Add widget to DOM and compile it against scope
@@ -253,7 +255,9 @@
                 // TODO apply validation directives
                 copyAttr(attr, widget, [
                     'ngModel',
-                    'disabled'
+                    'disabled',
+                    'placeholder',
+                    'ngRequired'
                 ]);
 
                 // Add widget to DOM and compile it against scope
@@ -292,6 +296,7 @@
                 copyAttr(attr, widget, [
                     'ngModel',
                     'disabled',
+                    'ngRequired',
                     'isJson'    // copy applicable validators
                 ]);
 
