@@ -79,16 +79,62 @@
             var errorMsg = options.error;
             if (!errorMsg) {
                 if (min && max) {
-                    errorMsg = 'Enter an integer number between ' + min + ' and ' + max;
+                    errorMsg = 'Enter an integer between ' + min + ' and ' + max;
                     errors = errors.concat(['min', 'max']);
                 } else if (min) {
-                    errorMsg = 'Enter an integer number greater than ' + min;
+                    errorMsg = 'Enter an integer >= ' + min;
                     errors.push('min');
                 } else if (max) {
-                    errorMsg = 'Enter an integer number less than ' + max;
+                    errorMsg = 'Enter an integer <= ' + max;
                     errors.push('max');
                 } else {
-                    errorMsg = 'Enter an integer number';
+                    errorMsg = 'Enter an integer';
+                }
+            }
+
+            return {
+                directives: directives,
+                errors: errors,
+                message: errorMsg,
+            };
+        },
+
+        // --------------------------------------------------------------------
+        /**
+         * isFloatInRange
+         *
+         * @param {object} options - the options for the rule
+         *  @keyword {integer} options.min - the minimum value
+         *  @keyword {integer} options.max - the maximum value
+         *
+         * @returns {object} - an object {directives: {'attr': 'value'}, error: 'message'}
+         */
+        isFloatInRange: function(options) {
+
+            var directives = {},
+                errors = ['number'],
+                min = options.min,
+                max = options.max;
+            if (min !== undefined && !isNaN(min - 0)) {
+                min = directives.min = '' + min;
+            }
+            if (max !== undefined && !isNaN(max - 0)) {
+                max = directives.max = '' + max;
+            }
+
+            var errorMsg = options.error;
+            if (!errorMsg) {
+                if (min && max) {
+                    errorMsg = 'Enter a number between ' + min + ' and ' + max;
+                    errors = errors.concat(['min', 'max']);
+                } else if (min) {
+                    errorMsg = 'Enter a number >= ' + min;
+                    errors.push('min');
+                } else if (max) {
+                    errorMsg = 'Enter a number <= ' + max;
+                    errors.push('max');
+                } else {
+                    errorMsg = 'Enter a number';
                 }
             }
 
@@ -173,6 +219,9 @@
                     // Fall back to default validators for the field type
                     requires = {};
                     switch(field.type) {
+                        case 'double':
+                            requires.isFloatInRange = {};
+                            break;
                         case 'integer':
                             requires.isIntInRange = {};
                             break;
