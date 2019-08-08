@@ -44,7 +44,8 @@ form {
     }
     .item-stacked-label {
         input,
-        textarea {
+        textarea,
+        select {
             border: 1px solid #E0E0E0;
             padding: 4px;
             width: auto;
@@ -54,6 +55,9 @@ form {
         }
         input[type="date"] {
             min-width: 8rem;
+        }
+        select[multiple] {
+            padding: 0.5rem;
         }
         label.item-radio.ng-invalid {
             .radio-content {

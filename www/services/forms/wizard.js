@@ -136,7 +136,15 @@ EdenMobile.factory('emFormWizard', [
                 widgetType = widgetConfig.type;
             } else {
                 if (field.hasOptions()) {
-                    widgetType = 'options';
+                    switch(fieldType) {
+                        case 'list:integer':
+                        case 'list:string':
+                            widgetType = 'multiselect';
+                            break;
+                        default:
+                            widgetType = 'options';
+                            break;
+                    }
                 } else {
                     widgetType = fieldType;
                 }
@@ -172,6 +180,9 @@ EdenMobile.factory('emFormWizard', [
 //                     break;
                 case 'options':
                     element = '<em-wizard-options-widget>';
+                    break;
+                case 'multiselect':
+                    element = '<em-wizard-multi-select>';
                     break;
 //                 case 'likert':
 //                     element = '<em-wizard-likert-widget>';

@@ -58,56 +58,62 @@ form label.toggle {
 }
 /* line 46, scss/theme/_theme.scss */
 form .item-stacked-label input,
-form .item-stacked-label textarea {
+form .item-stacked-label textarea,
+form .item-stacked-label select {
   border: 1px solid #E0E0E0;
   padding: 4px;
   width: auto;
 }
-/* line 51, scss/theme/_theme.scss */
+/* line 52, scss/theme/_theme.scss */
 form .item-stacked-label input.ng-invalid,
-form .item-stacked-label textarea.ng-invalid {
+form .item-stacked-label textarea.ng-invalid,
+form .item-stacked-label select.ng-invalid {
   border: 1px solid red;
 }
-/* line 55, scss/theme/_theme.scss */
+/* line 56, scss/theme/_theme.scss */
 form .item-stacked-label input[type="date"] {
   min-width: 8rem;
 }
 /* line 59, scss/theme/_theme.scss */
+form .item-stacked-label select[multiple] {
+  padding: 0.5rem;
+}
+/* line 63, scss/theme/_theme.scss */
 form .item-stacked-label label.item-radio.ng-invalid .radio-content {
   border-left: 1px solid red;
   border-right: 1px solid red;
 }
-/* line 63, scss/theme/_theme.scss */
+/* line 67, scss/theme/_theme.scss */
 form .item-stacked-label label.item-radio.ng-invalid:first-child .radio-content {
   border-top: 1px solid red;
 }
-/* line 66, scss/theme/_theme.scss */
+/* line 70, scss/theme/_theme.scss */
 form .item-stacked-label label.item-radio.ng-invalid:last-child .radio-content {
   border-bottom: 1px solid red;
 }
-/* line 71, scss/theme/_theme.scss */
+/* line 75, scss/theme/_theme.scss */
 form .wizard-label {
   margin-top: 0.5rem;
   margin-bottom: 0.3rem;
   font-weight: bold;
 }
 
-/* line 77, scss/theme/_theme.scss */
+/* line 81, scss/theme/_theme.scss */
 .wizard-submit-buttons {
   padding: 0px 10px;
 }
 
-/* line 81, scss/theme/_theme.scss */
+/* line 85, scss/theme/_theme.scss */
 .data-collector-instructions {
   background-color: #E0E0E0;
 }
-/* line 83, scss/theme/_theme.scss */
+/* line 87, scss/theme/_theme.scss */
 .data-collector-instructions .say {
   font-weight: bold;
   font-size: 0.9rem;
   padding-top: 0.3rem;
 }
-/* line 88, scss/theme/_theme.scss */
+/* line 92, scss/theme/_theme.scss */
 .data-collector-instructions .do {
   font-weight: normal;
   font-size: 0.9rem;

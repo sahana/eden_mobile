@@ -373,7 +373,7 @@
                 copyAttr(attr, widget, [
                     'ngModel',
                     'disabled',
-                    'required'
+                    'ngRequired'
                 ]);
 
                 return widget;
@@ -414,6 +414,94 @@
             };
 
             // Return the DDO
+            return {
+                link: link
+            };
+        }
+    ]);
+
+    // ========================================================================
+    /**
+     * Multi-select widget <em-wizard-multi-select>
+     */
+    EdenMobile.directive('emWizardMultiSelect', [
+        '$compile',
+        function($compile) {
+
+            // TODO docstring
+            var noOptionsHint = function() {
+                return angular.element('<span class="noopts">')
+                              .text('No options available');
+            };
+
+            // TODO docstring
+            var standardSelect = function(fieldName, options, attr) {
+
+                var widget = angular.element('<select>'),
+                    valueRequired = attr.ngRequired;
+
+                options.forEach(function(option) {
+                    var value = option[0],
+                        repr = option[1];
+                    if (!value && value !== 0) {
+                        // Empty-option
+                        if (valueRequired) {
+                            return;
+                        } else if (!repr){
+                            repr = '-';
+                        }
+                    } else if (!repr) {
+                        repr = '' + option[0];
+                    }
+
+                    var item = angular.element('<option>')
+                                      .attr('value', value)
+                                      .html(repr);
+                    widget.append(item);
+                });
+
+                widget.attr('name', fieldName);
+
+                copyAttr(attr, widget, [
+                    'ngModel',
+                    'disabled',
+                    'ngRequired'
+                ]);
+
+                return widget;
+            };
+
+            // TODO docstring
+            var link = function($scope, elem, attr) {
+
+                var resource = $scope.resource,
+                    fieldName = attr.field;
+
+                resource.getOptions(fieldName).then(
+                    function(options) {
+                        // Construct the widget
+                        var widget;
+                        if (!options.length) {
+                            widget = noOptionsHint();
+                        } else {
+                            widget = standardSelect(fieldName, options, attr);
+                            widget.attr('multiple', 'true');
+                        }
+
+                        // Add widget to DOM and compile it against scope
+                        elem.replaceWith(widget);
+                        $compile(widget)($scope);
+                    },
+                    function() {
+                        // This field has no options
+                        var widget = noOptionsHint();
+
+                        // Add widget to DOM and compile it against scope
+                        elem.replaceWith(widget);
+                        $compile(widget)($scope);
+                    });
+            };
+
             return {
                 link: link
             };

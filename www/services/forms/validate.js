@@ -238,8 +238,12 @@
                 // - shows an error message if the field is left empty
                 if (fieldDescription.required && requires.isNotEmpty === undefined) {
                     if (field.hasOptions()) {
-                        // Typically using a selector
-                        requires.isNotEmpty = {error: 'Select a value'};
+                        // Typically using a selector, so adapt language of error message
+                        if (field.type.slice(0, 5) == 'list:') {
+                            requires.isNotEmpty = {error: 'Select at least one option'};
+                        } else {
+                            requires.isNotEmpty = {error: 'Select a value'};
+                        }
                     } else {
                         requires.isNotEmpty = null;
                     }
