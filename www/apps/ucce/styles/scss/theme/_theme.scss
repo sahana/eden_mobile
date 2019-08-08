@@ -55,6 +55,18 @@ form {
         input[type="date"] {
             min-width: 8rem;
         }
+        label.item-radio.ng-invalid {
+            .radio-content {
+                border-left: 1px solid red;
+                border-right: 1px solid red;
+            }
+            &:first-child .radio-content {
+                border-top: 1px solid red;
+            }
+            &:last-child .radio-content {
+                border-bottom: 1px solid red;
+            }
+        }
     }
     .wizard-label {
         margin-top: 0.5rem;

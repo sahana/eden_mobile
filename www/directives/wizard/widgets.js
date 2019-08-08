@@ -275,6 +275,153 @@
 
     // ========================================================================
     /**
+     * Single-select options-widget <em-wizard-options-widget>
+     */
+    EdenMobile.directive('emWizardOptionsWidget', [
+        '$compile',
+        function($compile) {
+
+            /**
+             * No-options-available hint
+             *
+             * @returns {angular.element} - the element to use as widget
+             */
+            var noOptionsHint = function() {
+                return angular.element('<span class="noopts">')
+                              .text('No options available');
+            };
+
+            /**
+             * List of radio items (ion-radio)
+             *
+             * @param {string} fieldName - the field name
+             * @param {Array} options - the selectable options [[value, repr], ...]
+             * @param {object} attr - the DOM attributes of the widget directive
+             *
+             * @returns {angular.element} - the element to use as widget
+             */
+            var radioItems = function(fieldName, options, attr) {
+
+                var widget = angular.element('<ion-list class="radio-options">'),
+                    valueRequired = attr.ngRequired;
+
+                options.forEach(function(option) {
+                    var value = option[0],
+                        repr = option[1];
+                    if (!value && value !== 0) {
+                        // Empty-option
+                        if (valueRequired) {
+                            return;
+                        } else if (!repr){
+                            repr = '-';
+                        }
+                    } else if (!repr) {
+                        repr = '' + option[0];
+                    }
+
+                    var item = angular.element('<ion-radio>')
+                                      .attr('name', fieldName)
+                                      .attr('value', value)
+                                      .html(repr);
+                    copyAttr(attr, item, [
+                        'ngModel',
+                        'disabled',
+                        'ngRequired'
+                    ]);
+                    widget.append(item);
+                });
+
+                return widget;
+            };
+
+            /**
+             * Standard platform-specific SELECT
+             *
+             * @param {string} fieldName - the field name
+             * @param {Array} options - the selectable options [[value, repr], ...]
+             * @param {object} attr - the DOM attributes of the widget directive
+             *
+             * @returns {angular.element} - the element to use as widget
+             */
+            var standardSelect = function(fieldName, options, attr) {
+
+                var widget = angular.element('<select>'),
+                    valueRequired = attr.ngRequired;
+
+                options.forEach(function(option) {
+                    var value = option[0],
+                        repr = option[1];
+                    if (!value && value !== 0) {
+                        // Empty-option
+                        if (valueRequired) {
+                            return;
+                        } else if (!repr){
+                            repr = '-';
+                        }
+                    } else if (!repr) {
+                        repr = '' + option[0];
+                    }
+
+                    var item = angular.element('<option>')
+                                      .attr('value', value)
+                                      .html(repr);
+                    widget.append(item);
+                });
+
+                widget.attr('name', fieldName);
+
+                copyAttr(attr, widget, [
+                    'ngModel',
+                    'disabled',
+                    'required'
+                ]);
+
+                return widget;
+            };
+
+            /**
+             * Link a DOM element to this directive
+             */
+            var link = function($scope, elem, attr) {
+
+                var resource = $scope.resource,
+                    fieldName = attr.field;
+
+                resource.getOptions(fieldName).then(
+                    function(options) {
+                        // Construct the widget
+                        var widget;
+                        if (!options.length) {
+                            widget = noOptionsHint();
+                        } else if (options.length <= 20) {
+                            widget = radioItems(fieldName, options, attr);
+                        } else {
+                            widget = standardSelect(fieldName, options, attr);
+                        }
+
+                        // Add widget to DOM and compile it against scope
+                        elem.replaceWith(widget);
+                        $compile(widget)($scope);
+                    },
+                    function() {
+                        // This field has no options
+                        var widget = noOptionsHint();
+
+                        // Add widget to DOM and compile it against scope
+                        elem.replaceWith(widget);
+                        $compile(widget)($scope);
+                    });
+            };
+
+            // Return the DDO
+            return {
+                link: link
+            };
+        }
+    ]);
+
+    // ========================================================================
+    /**
      * Simple generic JSON input widget <em-wizard-json-widget>
      * - default widget for 'json' fields
      * - uses the isJson directive for parsing/formatting and validation

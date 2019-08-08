@@ -170,9 +170,9 @@ EdenMobile.factory('emFormWizard', [
 //                 case 'upload':
 //                     element = '<em-photo-widget>';
 //                     break;
-//                 case 'options':
-//                     element = '<em-wizard-options-widget>';
-//                     break;
+                case 'options':
+                    element = '<em-wizard-options-widget>';
+                    break;
 //                 case 'likert':
 //                     element = '<em-wizard-likert-widget>';
 //                     break;

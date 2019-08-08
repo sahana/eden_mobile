@@ -73,28 +73,41 @@ form .item-stacked-label input[type="date"] {
   min-width: 8rem;
 }
 /* line 59, scss/theme/_theme.scss */
+form .item-stacked-label label.item-radio.ng-invalid .radio-content {
+  border-left: 1px solid red;
+  border-right: 1px solid red;
+}
+/* line 63, scss/theme/_theme.scss */
+form .item-stacked-label label.item-radio.ng-invalid:first-child .radio-content {
+  border-top: 1px solid red;
+}
+/* line 66, scss/theme/_theme.scss */
+form .item-stacked-label label.item-radio.ng-invalid:last-child .radio-content {
+  border-bottom: 1px solid red;
+}
+/* line 71, scss/theme/_theme.scss */
 form .wizard-label {
   margin-top: 0.5rem;
   margin-bottom: 0.3rem;
   font-weight: bold;
 }
 
-/* line 65, scss/theme/_theme.scss */
+/* line 77, scss/theme/_theme.scss */
 .wizard-submit-buttons {
   padding: 0px 10px;
 }
 
-/* line 69, scss/theme/_theme.scss */
+/* line 81, scss/theme/_theme.scss */
 .data-collector-instructions {
   background-color: #E0E0E0;
 }
-/* line 71, scss/theme/_theme.scss */
+/* line 83, scss/theme/_theme.scss */
 .data-collector-instructions .say {
   font-weight: bold;
   font-size: 0.9rem;
   padding-top: 0.3rem;
 }
-/* line 76, scss/theme/_theme.scss */
+/* line 88, scss/theme/_theme.scss */
 .data-collector-instructions .do {
   font-weight: normal;
   font-size: 0.9rem;

@@ -233,11 +233,16 @@
                     }
                 }
 
-                // Add isNotEmpty to any field marked as required:
+                // Add isNotEmpty to any field marked as required (unless already present):
                 // - marks the field as invalid as long as it is not filled
                 // - shows an error message if the field is left empty
-                if (fieldDescription.required) {
-                    requires.isNotEmpty = null;
+                if (fieldDescription.required && requires.isNotEmpty === undefined) {
+                    if (field.hasOptions()) {
+                        // Typically using a selector
+                        requires.isNotEmpty = {error: 'Select a value'};
+                    } else {
+                        requires.isNotEmpty = null;
+                    }
                 }
 
                 var directives = [],
