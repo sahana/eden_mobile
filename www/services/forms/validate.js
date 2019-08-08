@@ -65,7 +65,8 @@
          */
         isIntInRange: function(options) {
 
-            var directives = {},
+            var directives = {'ng-pattern': '/^[-+]?[0-9]*$/'},
+                errors = ['number', 'pattern'],
                 min = options.min,
                 max = options.max;
             if (min !== undefined && !isNaN(min - 0)) {
@@ -78,23 +79,24 @@
             var errorMsg = options.error;
             if (!errorMsg) {
                 if (min && max) {
-                    errorMsg = 'Enter a number between ' + min + ' and ' + max;
+                    errorMsg = 'Enter an integer number between ' + min + ' and ' + max;
+                    errors = errors.concat(['min', 'max']);
                 } else if (min) {
-                    errorMsg = 'Enter a number greater than ' + min;
+                    errorMsg = 'Enter an integer number greater than ' + min;
+                    errors.push('min');
                 } else if (max) {
-                    errorMsg = 'Enter a number less than ' + max;
+                    errorMsg = 'Enter an integer number less than ' + max;
+                    errors.push('max');
+                } else {
+                    errorMsg = 'Enter an integer number';
                 }
             }
 
-            if (min || max) {
-                return {
-                    directives: directives,
-                    errors: ['min', 'max'],
-                    message: errorMsg,
-                };
-            } else {
-                return null;
-            }
+            return {
+                directives: directives,
+                errors: errors,
+                message: errorMsg,
+            };
         },
 
         // --------------------------------------------------------------------
@@ -168,8 +170,12 @@
                     requires = fieldDescription.requires || (settings && settings.requires);
 
                 if (!requires) {
+                    // Fall back to default validators for the field type
                     requires = {};
                     switch(field.type) {
+                        case 'integer':
+                            requires.isIntInRange = {};
+                            break;
                         case 'json':
                             requires.isJson = null;
                             break;
@@ -178,6 +184,9 @@
                     }
                 }
 
+                // Add isNotEmpty to any field marked as required:
+                // - marks the field as invalid as long as it is not filled
+                // - shows an error message if the field is left empty
                 if (fieldDescription.required) {
                     requires.isNotEmpty = null;
                 }

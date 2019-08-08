@@ -173,12 +173,14 @@
                 }
 
                 // Widget attributes and directives
-                // TODO apply validation directives
                 copyAttr(attr, widget, [
                     'ngModel',
                     'disabled',
                     'placeholder',
-                    'ngRequired'
+                    'ngRequired',
+                    'ngPattern',
+                    'min',
+                    'max'
                 ]);
 
                 // Add widget to DOM and compile it against scope
