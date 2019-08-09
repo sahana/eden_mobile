@@ -428,13 +428,13 @@
         '$compile',
         function($compile) {
 
-            // TODO docstring
+            // Hint that no options available
             var noOptionsHint = function() {
                 return angular.element('<span class="noopts">')
                               .text('No options available');
             };
 
-            // TODO docstring
+            // Construct a <select> from the field options
             var standardSelect = function(fieldName, options, attr) {
 
                 var widget = angular.element('<select>'),
@@ -471,7 +471,7 @@
                 return widget;
             };
 
-            // TODO docstring
+            // Link this directive to a DOM element
             var link = function($scope, elem, attr) {
 
                 var resource = $scope.resource,
@@ -486,6 +486,7 @@
                         } else {
                             widget = standardSelect(fieldName, options, attr);
                             widget.attr('multiple', 'true');
+                            widget.attr('em-multi-select-checkbox', '');
                         }
 
                         // Add widget to DOM and compile it against scope
@@ -503,6 +504,105 @@
             };
 
             return {
+                link: link
+            };
+        }
+    ]);
+
+    /**
+     * Directive to render a multi-select as checkboxes list
+     * - <select multiple='true' em-multi-select-checkbox>
+     */
+    EdenMobile.directive('emMultiSelectCheckbox', [
+        '$compile',
+        function($compile) {
+
+            /**
+             * Link this directive to a <select> element
+             */
+            var link = function($scope, elem, attr, ngModel) {
+
+                // Inspect the options, build selectable items array
+                var options = elem.find('option'),
+                    items = [];
+                angular.forEach(options, function(option) {
+                    var $option = angular.element(option);
+                    items.push({
+                        value: $option.val(),
+                        label: $option.text(),
+                        checked: false
+                    });
+                });
+                $scope.items = items;
+
+                // Construct the checkbox list
+                var checkboxList = angular.element('<div class="list multi-select">'),
+                    checkboxes = angular.element('<ion-checkbox>')
+                                        .attr('ng-repeat', 'item in items')
+                                        .attr('ng-model', 'item.checked')
+                                        .attr('ng-change', 'select()')
+                                        .text('{{item.label}}')
+                                        .val('{{item.value}}');
+                checkboxList.append(checkboxes);
+                copyAttr(attr, checkboxList, [
+                    'name',
+                    'ngModel',
+                    'ngRequired'
+                ]);
+
+
+                // Function to update the model when a checkbox status has changed
+                $scope.select = function() {
+                    var selected = $scope.items.filter(function(item) {
+                        return item.checked;
+                    }).map(function(item) {
+                        return item.value;
+                    });
+                    ngModel.$setViewValue(selected);
+                    ngModel.$setDirty();
+                    ngModel.$setTouched();
+                    checkboxList[0].focus();
+                };
+
+                // Function to update the checkbox status when the model has changed
+                var render = function(value) {
+                    if (value && value.constructor === Array) {
+                        $scope.items.forEach(function(item) {
+                            if (value.indexOf(item.value) != -1) {
+                                item.checked = true;
+                            } else {
+                                item.checked = false;
+                            }
+                        });
+                    } else {
+                        $scope.items.forEach(function(item) {
+                            item.checked = false;
+                        });
+                    }
+                };
+
+                // Watch the model for changes
+                // - $watch needed because $render is only called when the
+                //   entire list replaced, but not when its elements change
+                ngModel.$render = function() {
+                    render(ngModel.$viewValue);
+                };
+                $scope.$watch(attr.ngModel, function(newValue) {
+                    render(newValue);
+                });
+
+                // Add the checkboxList to the DOM, and compile it
+                elem.replaceWith(checkboxList);
+                $compile(checkboxList)($scope);
+
+                // Set initial value
+                render(elem.val());
+            };
+
+            return {
+                restrict: 'A',
+                scope: true,
+                require: 'ngModel',
                 link: link
             };
         }
