@@ -215,7 +215,6 @@
                 }
 
                 // Widget attributes and directives
-                // TODO apply validation directives
                 copyAttr(attr, widget, [
                     'ngModel',
                     'disabled',
@@ -254,7 +253,6 @@
                 }
 
                 // Widget attributes and directives
-                // TODO apply validation directives
                 copyAttr(attr, widget, [
                     'ngModel',
                     'disabled',
@@ -423,6 +421,9 @@
     // ========================================================================
     /**
      * Multi-select widget <em-wizard-multi-select>
+     * - renders a regular <select> with multiple-attribute
+     * - uses the em-multi-select-checkbox directive to convert it into
+     *   a checkbox list
      */
     EdenMobile.directive('emWizardMultiSelect', [
         '$compile',
@@ -509,6 +510,7 @@
         }
     ]);
 
+    // ------------------------------------------------------------------------
     /**
      * Directive to render a multi-select as checkboxes list
      * - <select multiple='true' em-multi-select-checkbox>
