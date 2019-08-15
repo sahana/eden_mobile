@@ -176,33 +176,214 @@
         return srv.protocol + '//' + srv.host + req.pathname;
     };
 
+    // ------------------------------------------------------------------------
+    /**
+     * Generate an accessKey for MasterKeyAuth
+     *
+     * @param {string} appKey: the app key (from config)
+     * @param {string} masterKey: the master key (from emAuth)
+     * @param {string} token: the authorization token (from server)
+     *
+     * @returns {string} - the access key = a PBDKF2-SHA512 hash of the
+     *                     combined app key and master key, salted with
+     *                     the authorization token
+     */
+    var generateAccessKey = function(appKey, masterKey, token) {
+
+        var accessKey = masterKey;
+        if (appKey) {
+            accessKey += ':' + appKey;
+        }
+
+        var keyHash = CryptoJS.PBKDF2(accessKey, token, {
+            keySize: 16,
+            iterations: 1000,
+            hasher: CryptoJS.algo.SHA512
+        });
+        return CryptoJS.enc.Hex.stringify(keyHash);
+    };
+
     // ========================================================================
     /**
      * HTTP 401 Recovery Service
      *
      * Strategy:
-     *   1 if no previous authentication attempt has been made (no Auth header
-     *     in the response config) and Sahana server credentials are configured,
-     *     we add an Auth header to the request config
+     *
+     *   1 if no previous authentication attempt has been made (=no Authorization
+     *     header in the request config) and credentials are available, then add
+     *     an Authorization header and resend the request
+     *
      *   2 if a previous authentication attempt has failed (=second round 401),
-     *     then we prompt the user to re-enter the server credentials
-     *   3 if no server credentials are available, and the user cancels
-     *     the prompt, then recovery fails
+     *     then:
+     *     - BasicAuth: prompt the user to re-enter the server credentials
+     *     - MasterKeyAuth: fail
+     *
+     *   3 if no server credentials are available, then
+     *     - BasicAuth: prompt the user to enter server credentials
+     *     - MasterKeyAuth: fail
      *
      * @returns {promise} - a promise that resolves into the updated config,
      *                      or is rejected with an error message
      */
     EdenMobile.factory('emServer401Recoverer', [
-        '$q', '$injector', 'emConfig',
-        function($q, $injector, emConfig) {
+        '$q', '$injector', 'emAuth', 'emConfig',
+        function($q, $injector, emAuth, emConfig) {
 
-            var recovery = function(config) {
+            // ----------------------------------------------------------------
+            /**
+             * HTTPBasicAuth Request Authorization
+             *
+             * @param {Response} response - the response (from $http)
+             * @param {Settings} settings - the settings API
+             * @param {function} onSuccess - success callback, to resend the request
+             * @param {function} onError - error callback, to abort the request
+             */
+            var basicAuth = function(response, settings, onSuccess, onError) {
+
+                var config = response.config,
+                    requestHeaders = config.headers || {},
+                    authHeader = requestHeaders.Authorization;
+
+                // Helper to add the authorization header to the request
+                var login = function(username, password) {
+                    requestHeaders.Authorization = 'Basic ' + btoa(username + ':' + password);
+                    config.headers = requestHeaders;
+                    onSuccess(config);
+                };
+
+                var serverURL = settings.get('server.url'),
+                    username = settings.get('server.username'),
+                    password = settings.get('server.password'),
+                    credentials = {
+                        username: username,
+                        password: password
+                    },
+                    emDialogs = $injector.get('emDialogs');
+
+                if (authHeader) {
+                    // The original request did already contain an authorization
+                    // header, which failed. So we indicate invalid credentials
+                    // and prompt the user for correct ones
+
+                    // Parse username/password from header
+                    if (authHeader.slice(0, 6).toLowerCase() == "basic ") {
+                        var basic = window.atob(authHeader.slice(6)).split(':');
+                        credentials.username = basic[0];
+                        credentials.password = basic[1];
+                    }
+                    emDialogs.authPrompt(
+                        serverURL,
+                        'Invalid username/password',
+                        credentials,
+                        login,
+                        function() {
+                            onError('Request canceled');
+                        });
+                    return;
+                }
+
+                if (username && password) {
+                    // Use credentials from settings
+                    login(username, password);
+
+                } else {
+                    // No credentials configured => prompt the user to enter them
+                    emDialogs.authPrompt(
+                        serverURL,
+                        'Authentication Required',
+                        credentials,
+                        login,
+                        function() {
+                            onError('Request canceled');
+                        });
+                }
+            };
+
+            // ----------------------------------------------------------------
+            /**
+             * Master Key Request Authorization
+             *
+             * @param {Response} response - the response (from $http)
+             * @param {Settings} settings - the settings API
+             * @param {function} onSuccess - success callback, to resend the request
+             * @param {function} onError - error callback, to abort the request
+             */
+            var masterKeyAuth = function(response, settings, onSuccess, onError) {
+
+                var config = response.config,
+                    requestHeaders = config.headers || {},
+                    authHeader = requestHeaders.Authorization;
+
+                // Helper to add the Authorization header to the request
+                var login = function(tokenID, accessKey) {
+
+                    // We cannot handle follow-up tokens, so don't ask for one:
+                    delete requestHeaders.RequestMasterKeyAuth;
+
+                    // Add Authorization header, then re-run the request
+                    requestHeaders.Authorization = 'MasterKey ' + window.btoa(tokenID + ':' + accessKey);
+                    config.headers = requestHeaders;
+                    onSuccess(config);
+                };
+
+                if (authHeader) {
+                    // The request already contained an Authorization header,
+                    // so nothing more can be done here:
+                    onError('Invalid Master Key');
+                    return;
+                }
+
+                var masterKey = emAuth.getMasterKey();
+                if (!masterKey) {
+                    onError('No Master Key');
+                    return;
+                }
+                var tokenStr = response.headers('MasterKeyAuthToken');
+                if (!tokenStr) {
+                    if (requestHeaders.RequestMasterKeyAuth != 'true') {
+                        // Request an authorization token
+                        requestHeaders.RequestMasterKeyAuth = 'true';
+                        config.headers = requestHeaders;
+                        onSuccess(config);
+                        return;
+                    } else {
+                        // Server had already been asked to provide a token
+                        // but didn't, so nothing more can be done here:
+                        onError('Server does not support MasterKeyAuth');
+                        return;
+                    }
+                }
+
+                // Decode the token
+                var tokenData = window.atob(tokenStr).split(':'),
+                    tokenID = tokenData[0],
+                    token = tokenData[1];
+
+                // Get the app key and generate an access key
+                var appKey = settings.get('server.appKey'),
+                    accessKey = generateAccessKey(appKey, masterKey, token);
+
+                // Now re-run the request with Authorization header
+                login(tokenID, accessKey);
+            };
+
+            // ----------------------------------------------------------------
+            /**
+             * Recovery method for 401 challenges
+             *
+             * @param {Response} response - the response object (from $http)
+             *
+             * @returns {promise} - a promise that resolves into a new
+             *                      request configuration to resend the
+             *                      request
+             */
+            var recovery = function(response) {
 
                 var deferred = $q.defer();
 
                 emConfig.apply(function(settings) {
 
-                    var requestURL = config.url,
+                    var requestURL = response.config.url,
                         serverURL = settings.get('server.url');
                     if (!serverURL) {
                         deferred.reject('No Sahana server configured');
@@ -210,66 +391,29 @@
                     }
 
                     if (sameHost(requestURL, serverURL)) {
+                        // Sahana server => try to add authorization header
 
-                        // Add auth header and resend the request
-                        var authHeader,
-                            requestHeaders = config.headers;
-                        if (requestHeaders) {
-                            authHeader = requestHeaders.Authorization;
+                        if (emAuth.useMasterKey()) {
+                            masterKeyAuth(response, settings,
+                                function(config) {
+                                    deferred.resolve(config);
+                                },
+                                function(error) {
+                                    deferred.reject(error);
+                                });
                         } else {
-                            requestHeaders = {};
-                        }
-
-                        var login = function(username, password) {
-                            authHeader = 'Basic ' + btoa(username + ':' + password);
-                            requestHeaders.Authorization = authHeader;
-                            config.headers = requestHeaders;
-                            deferred.resolve(config);
-                        };
-
-                        var username = settings.get('server.username'),
-                            password = settings.get('server.password'),
-                            credentials = {
-                                username: username,
-                                password: password
-                            },
-                            emDialogs = $injector.get('emDialogs');
-                        if (!authHeader) {
-                            if (username && password) {
-                                login(username, password);
-                            } else {
-                                emDialogs.authPrompt(
-                                    serverURL,
-                                    'Authentication Required',
-                                    credentials,
-                                    login,
-                                    function() {
-                                        deferred.reject('Request cancelled');
-                                    }
-                                );
-                                return;
-                            }
-                        } else {
-                            // @todo: using config values here again is slightly confusing,
-                            //        better retrieve the previously entered credentials
-                            //        from existing authHeader
-                            emDialogs.authPrompt(
-                                serverURL,
-                                'Invalid username/password',
-                                credentials,
-                                login,
-                                function() {
-                                    deferred.reject('Invalid username/password');
-                                }
-                            );
+                            basicAuth(response, settings,
+                                function(config) {
+                                    deferred.resolve(config);
+                                },
+                                function(error) {
+                                    deferred.reject(error);
+                                });
                         }
                     } else {
-                        // Nothing we can do
+                        // Foreign server => nothing we can do
                         deferred.reject('Request to different server');
-                        return;
                     }
-
-
                 });
                 return deferred.promise;
             };
@@ -295,7 +439,7 @@
                             deferred = $q.defer();
 
                         // Try recovery
-                        emServer401Recoverer(response.config).then(
+                        emServer401Recoverer(response).then(
                             deferred.resolve,
                             deferred.reject
                         );
@@ -349,8 +493,8 @@
      * );
      */
     EdenMobile.factory('emServer', [
-        '$http', '$q', 'emConfig', 'emFiles', 'emDialogs',
-        function ($http, $q, emConfig, emFiles, emDialogs) {
+        '$http', '$q', 'emAuth', 'emConfig', 'emFiles', 'emDialogs',
+        function ($http, $q, emAuth, emConfig, emFiles, emDialogs) {
 
             /**
              * Wrapper for $http that resolves a SahanaURL against the
@@ -372,25 +516,33 @@
                     var deferred = $q.defer();
                     emConfig.apply(function(settings) {
 
+                        // Get server base URL
                         var serverURL = settings.get('server.url');
                         if (!serverURL) {
                             deferred.reject('No Sahana server configured');
                             return;
                         }
 
+                        // Extend with request URL
                         var url = requestURL.extend(serverURL);
                         if (url === null) {
                             deferred.reject('Invalid Server URL');
                             return;
                         }
 
-                        // Send the request via $http
+                        // Configure the request
                         var config = {
+                            url: url,
                             // Accept and send the session cookie:
-                            withCredentials: true,
-                            url: url
+                            // (not available on Android)
+                            withCredentials: true
                         };
+                        if (emAuth.useMasterKey()) {
+                            config.headers = {'RequestMasterKeyAuth': 'true'};
+                        }
                         config = angular.extend(requestConfig, config);
+
+                        // Send the request via $http
                         $http(config).then(
                             deferred.resolve,
                             deferred.reject

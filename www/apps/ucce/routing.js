@@ -27,15 +27,6 @@
 
     "use strict";
 
-    // TODO this should be in a separate config file
-    EdenMobile.config(['emFormStyleProvider',
-        function(emFormStyleProvider) {
-
-            emFormStyleProvider.formStyle('wizard');
-
-        }
-    ]);
-
     EdenMobile.config(['$stateProvider', '$urlRouterProvider',
         function($stateProvider, $urlRouterProvider) {
 
