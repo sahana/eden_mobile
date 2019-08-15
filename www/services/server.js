@@ -184,7 +184,7 @@
      * @param {string} masterKey: the master key (from emAuth)
      * @param {string} token: the authorization token (from server)
      *
-     * @returns {string} - the access key = a PBDKF2-SHA512 hash of the
+     * @returns {string} - the access key = a PBKDF2-SHA512 hash of the
      *                     combined app key and master key, salted with
      *                     the authorization token
      */
