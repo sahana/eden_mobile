@@ -46,6 +46,9 @@
         '$injector', '$q', '$rootScope', 'emDB',
         function($injector, $q, $rootScope, emDB) {
 
+            var hexlify = CryptoJS.enc.Hex.stringify,
+                unhexlify = CryptoJS.enc.Hex.parse;
+
             // ----------------------------------------------------------------
             /**
              * Store the current session data in the database
@@ -65,7 +68,10 @@
                     if (!masterKey) {
                         return $q.reject('no master key to encrypt session');
                     } else {
-                        sessionData = CryptoJS.AES.encrypt(sessionData, masterKey).toString();
+                        var cipher = CryptoJS.AES.encrypt(sessionData, masterKey).toString(),
+                            hex = hexlify(CryptoJS.enc.Base64.parse(cipher)),
+                            hmac = hexlify(CryptoJS.HmacSHA512(hex, masterKey));
+                        sessionData = hex + '$' + hmac;
                     }
                 }
 
@@ -115,21 +121,58 @@
                             return;
                         }
 
+                        var sessionData;
+
                         if (masterKeyAuth || encryptSession) {
+
+                            // Validate encrypted session data
+                            var encrypted = records[0].$('session_data');
+                            if (!encrypted) {
+                                deferred.reject('invalid session data');
+                                return;
+                            }
+                            encrypted = encrypted.split('$');
+                            if (encrypted.length != 2) {
+                                deferred.reject('invalid session data');
+                                return;
+                            }
+
+                            // Validate key
                             if (key === undefined) {
                                 deferred.reject('key required');
                             }
-                            var encrypted = records[0].$('session_data'),
-                                decrypted = CryptoJS.AES.decrypt(encrypted, key);
-                            if (!decrypted.toString()) {
+                            var hmac = hexlify(CryptoJS.HmacSHA512(encrypted[0], key));
+                            if (encrypted[1] != hmac) {
                                 deferred.reject('invalid master key');
-                            } else {
-                                decrypted = CryptoJS.enc.Utf8.stringify(decrypted);
-                                currentSession = JSON.parse(decrypted);
-                                masterKey = key;
+                                return;
                             }
+
+                            // Decrypt session data
+                            var hex = encrypted[0],
+                                cipher = CryptoJS.enc.Base64.stringify(unhexlify(hex)),
+                                decrypted = CryptoJS.AES.decrypt(cipher, key);
+
+                            sessionData = CryptoJS.enc.Utf8.stringify(decrypted);
+                            if (sessionData) {
+                                currentSession = JSON.parse(sessionData);
+                            } else {
+                                currentSession = {};
+                            }
+
+                            // Set masterKey
+                            masterKey = key;
+
                         } else {
-                            currentSession = JSON.parse(records[0].$('session_data'));
+
+                            // Parse the stored session data
+                            sessionData = records[0].$('session_data');
+                            if (sessionData) {
+                                currentSession = JSON.parse(sessionData);
+                            } else {
+                                currentSession = {};
+                            }
+
+                            // Set masterKey
                             if (key !== undefined) {
                                 masterKey = key;
                             }
@@ -234,8 +277,12 @@
                     },
                     function(error) {
                         masterKey = currentMasterKey;
-                        emServer.httpError(error);
-                        deferred.reject('invalid master key');
+                        if (typeof error == 'string') {
+                            deferred.reject(error);
+                        } else {
+                            emServer.httpError(error);
+                            deferred.reject();
+                        }
                     });
 
                 return deferred.promise;
@@ -249,16 +296,69 @@
 
                 scope.formData = {};
                 scope.submitInProgress = false;
+                scope.showUnlink = false;
+
+                var suspendedSession = $q.defer();
+                emDB.table('em_session').then(function(table) {
+                    table.count(function(numRecords) {
+                        suspendedSession.resolve(!!numRecords);
+                        scope.showUnlink = !!numRecords;
+                    });
+                });
+                scope.suspendedSession = suspendedSession.promise;
 
                 scope.submit = function() {
                     if (scope.submitInProgress) {
                         return;
                     }
                     scope.submitInProgress = true;
-                    var masterKey = scope.formData.masterKey;
 
-                    scope.modal.remove();
-                    scope.submitInProgress = false;
+                    var emDialogs = $injector.get('emDialogs');
+
+                    var masterKey = scope.formData.masterKey;
+                    scope.suspendedSession.then(function(isSuspended) {
+                        if (isSuspended) {
+                            // Try to restore suspended session
+                            restoreSession(masterKey).then(
+                                function() {
+                                    // Success
+                                    scope.submitInProgress = false;
+                                    scope.modal.remove();
+                                },
+                                function(error) {
+                                    // Error restoring session
+                                    scope.submitInProgress = false;
+                                    if (error) {
+                                        emDialogs.error('Unauthorized', error);
+                                    }
+                                });
+                        } else {
+                            // Validate master key with server + create new session
+                            validateMasterKey(masterKey).then(
+                                function(sessionData) {
+                                    createSession(sessionData, masterKey).then(
+                                        function() {
+                                            // Success
+                                            scope.submitInProgress = false;
+                                            scope.modal.remove();
+                                        },
+                                        function(error) {
+                                            // Error creating session
+                                            scope.submitInProgress = false;
+                                            if (error) {
+                                                emDialogs.error('Unauthorized', error);
+                                            }
+                                        });
+                                },
+                                function(error) {
+                                    // Error validating master key
+                                    scope.submitInProgress = false;
+                                    if (error) {
+                                        emDialogs.error('Unauthorized', error);
+                                    }
+                                });
+                        }
+                    });
                 };
 
                 var $ionicModal = $injector.get('$ionicModal');

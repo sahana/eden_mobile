@@ -131,29 +131,35 @@ form .wizard-label {
   bottom: 0 !important;
   left: 0 !important;
   width: 100% !important;
+  height: 100% !important;
 }
-/* line 110, scss/theme/_theme.scss */
+/* line 112, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form {
-  position: relative;
-  top: 30%;
+  margin-top: 10%;
   width: 100%;
 }
-/* line 114, scss/theme/_theme.scss */
+/* line 115, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form label.item-input {
   text-align: center;
   border: 0;
 }
-/* line 117, scss/theme/_theme.scss */
+/* line 118, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form label.item-input .input-label {
   margin-bottom: 1rem;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
 }
-/* line 122, scss/theme/_theme.scss */
+/* line 123, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form input {
   margin: 0 auto;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
+  width: 14rem;
 }
-/* line 126, scss/theme/_theme.scss */
+/* line 128, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form .button {
-  min-width: 12rem;
+  min-width: 14rem;
+}
+/* line 131, scss/theme/_theme.scss */
+.session-prompt.modal form.session-prompt-form .unlink-link {
+  text-align: center;
+  margin-top: 10%;
 }

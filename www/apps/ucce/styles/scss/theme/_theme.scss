@@ -107,24 +107,30 @@ form {
     bottom: 0!important;
     left: 0!important;
     width: 100%!important;
+    height: 100%!important;
+
     form.session-prompt-form {
-        position: relative;
-        top: 30%;
+        margin-top: 10%;
         width: 100%;
         label.item-input {
             text-align: center;
             border: 0;
             .input-label {
                 margin-bottom: 1rem;
-                font-size: 1.5rem;
+                font-size: 1.8rem;
             }
         }
         input {
             margin: 0 auto;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
+            width: 14rem;
         }
         .button {
-            min-width: 12rem;
+            min-width: 14rem;
+        }
+        .unlink-link {
+            text-align: center;
+            margin-top: 10%;
         }
     }
 }
