@@ -43,8 +43,8 @@
     // Service Constructor
     //
     var emAuth = [
-        '$injector', '$q', '$rootScope', 'emDB',
-        function($injector, $q, $rootScope, emDB) {
+        '$injector', '$q', '$rootScope', 'emDB', 'emReset',
+        function($injector, $q, $rootScope, emDB, emReset) {
 
             var hexlify = CryptoJS.enc.Hex.stringify,
                 unhexlify = CryptoJS.enc.Hex.parse;
@@ -289,10 +289,67 @@
             };
 
             // ----------------------------------------------------------------
-            // TODO docstring
+            /**
+             * Exit the current session (suspended or not); deletes the session
+             * both from memory and DB, deletes all user data and resets the app
+             *
+             * @returns {promise} - a promise that will be resolved when the
+             *                      process is complete; then-able for e.g.
+             *                      cleaning up any open dialogs that triggered
+             *                      this function
+             */
+            var exitSession = function() {
+
+                var deferred = $q.defer(),
+                    emDialogs = $injector.get('emDialogs');
+
+                emDialogs.confirmAction(
+                    "Unlink",
+                    "There are surveys waiting to be uploaded. Data will be deleted.",
+                    {
+                        okType: 'button-light',
+                        okText: 'Unlink',
+                        cancelType: 'button-assertive'
+                    },
+                    function() {
+                        var $ionicLoading = $injector.get('$ionicLoading');
+                        $ionicLoading.show({
+                            template: 'Unlinking...'
+                        }).then(function() {
+                            deleteSession().then(function() {
+                                emReset.reset().then(function() {
+                                    var $state = $injector.get('$state');
+                                    $ionicLoading.hide();
+                                    deferred.resolve();
+                                    $state.go('surveys', {}, {reload: true});
+                                });
+                            });
+                        });
+                    },
+                    function() {
+                        // Canceled
+                        deferred.reject();
+                    });
+
+                return deferred.promise;
+            };
+
+            // ----------------------------------------------------------------
+            /**
+             * Prompt the user to input a master key to reconnect to a
+             * suspended session, or to start a new one
+             *
+             * @returns {promise} - a promise that is resolved with the session
+             *                      data once the prompt was successful
+             *
+             * NB this is a modal dialog preventing any interaction with the
+             *    app until it has either successfully established a session,
+             *    or exited the current (suspended) session
+             */
             var sessionPrompt = function() {
 
-                var scope = $rootScope.$new();
+                var deferred = $q.defer(),
+                    scope = $rootScope.$new();
 
                 scope.formData = {};
                 scope.submitInProgress = false;
@@ -320,10 +377,11 @@
                         if (isSuspended) {
                             // Try to restore suspended session
                             restoreSession(masterKey).then(
-                                function() {
+                                function(sessionData) {
                                     // Success
-                                    scope.submitInProgress = false;
                                     scope.modal.remove();
+                                    scope.submitInProgress = false;
+                                    deferred.resolve(sessionData);
                                 },
                                 function(error) {
                                     // Error restoring session
@@ -339,38 +397,67 @@
                                     createSession(sessionData, masterKey).then(
                                         function() {
                                             // Success
-                                            scope.submitInProgress = false;
                                             scope.modal.remove();
+                                            scope.submitInProgress = false;
+                                            deferred.resolve(sessionData);
                                         },
                                         function(error) {
                                             // Error creating session
+                                            emDialogs.error('Error', error);
                                             scope.submitInProgress = false;
-                                            if (error) {
-                                                emDialogs.error('Unauthorized', error);
-                                            }
                                         });
                                 },
                                 function(error) {
                                     // Error validating master key
-                                    scope.submitInProgress = false;
                                     if (error) {
                                         emDialogs.error('Unauthorized', error);
                                     }
+                                    scope.submitInProgress = false;
                                 });
                         }
                     });
+
                 };
 
                 var $ionicModal = $injector.get('$ionicModal');
                 $ionicModal.fromTemplateUrl('views/auth/session_prompt.html', {
                     scope: scope,
-                    animation: 'slide-in-up', // TODO default - but should find a better one
+                    animation: 'none',
                     backdropClickToClose: false,
                     hardwareBackButtonClose: false
                 }).then(function(modal) {
                     scope.modal = modal;
                     modal.show();
+                    scope.unlink = function() {
+                        exitSession().then(function() {
+                            scope.modal.remove();
+                        });
+                    };
                 });
+
+                return deferred.promise;
+            };
+
+            // ----------------------------------------------------------------
+            /**
+             * Get the current session
+             *
+             * @param {boolean} noPrompt - do not prompt for master key input
+             *                             if there is no current session, but
+             *                             simply reject
+             *
+             * @returns {promise} - a promise that is resolved into the current
+             *                      session data
+             */
+            var getSession = function(noPrompt) {
+
+                if (currentSession) {
+                    return $q.resolve(currentSession);
+                } else if (!noPrompt) {
+                    return sessionPrompt();
+                } else {
+                    return $q.reject();
+                }
             };
 
             // ----------------------------------------------------------------
@@ -391,9 +478,9 @@
                 createSession: createSession,
                 suspendSession: suspendSession,
                 deleteSession: deleteSession,
+                getSession: getSession,
 
-                // TESTING
-                sessionPrompt: sessionPrompt
+                exitSession: exitSession
             };
         }
     ];

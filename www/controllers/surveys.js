@@ -38,15 +38,9 @@ EdenMobile.controller("EMSurveyList", [
 
         console.log('EMSurveyList init controller');
 
-        // TODO do this on view enter when needed
-        emAuth.sessionPrompt();
-
         // Initialize scope objects
         $scope.resources = {};
         $scope.surveys = [];
-
-        // TODO Use title of currently linked project
-        $scope.title = 'Project Title';
 
         /**
          * Get survey data for a resource
@@ -80,9 +74,11 @@ EdenMobile.controller("EMSurveyList", [
         /**
          * Update the survey list
          */
-        var updateSurveyList = function() {
+        var updateSurveyList = function(session) {
 
             console.log('EMSurveyList.updateSurveyList');
+
+            $scope.title = session.projectTitle || 'Unknown project';
 
             var resources = {},
                 surveys = [];
@@ -115,8 +111,14 @@ EdenMobile.controller("EMSurveyList", [
             });
         };
 
+        $scope.unlink = emAuth.exitSession;
+
         // Update the resource list every time when entering the view
-        $scope.$on('$ionicView.enter', updateSurveyList);
+        $scope.$on('$ionicView.enter', function() {
+           emAuth.getSession().then(function(session) {
+               updateSurveyList(session);
+           });
+        });
     }
 ]);
 
