@@ -100,3 +100,31 @@ form {
         font-size: 0.9rem;
     }
 }
+
+.session-prompt.modal {
+    top: 0!important;
+    right: 0!important;
+    bottom: 0!important;
+    left: 0!important;
+    width: 100%!important;
+    form.session-prompt-form {
+        position: relative;
+        top: 30%;
+        width: 100%;
+        label.item-input {
+            text-align: center;
+            border: 0;
+            .input-label {
+                margin-bottom: 1rem;
+                font-size: 1.5rem;
+            }
+        }
+        input {
+            margin: 0 auto;
+            margin-bottom: 1rem;
+        }
+        .button {
+            min-width: 12rem;
+        }
+    }
+}

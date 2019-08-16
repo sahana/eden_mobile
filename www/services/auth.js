@@ -43,8 +43,8 @@
     // Service Constructor
     //
     var emAuth = [
-        '$injector', '$q', 'emDB',
-        function($injector, $q, emDB ) {
+        '$injector', '$q', '$rootScope', 'emDB',
+        function($injector, $q, $rootScope, emDB) {
 
             // ----------------------------------------------------------------
             /**
@@ -242,6 +242,38 @@
             };
 
             // ----------------------------------------------------------------
+            // TODO docstring
+            var sessionPrompt = function() {
+
+                var scope = $rootScope.$new();
+
+                scope.formData = {};
+                scope.submitInProgress = false;
+
+                scope.submit = function() {
+                    if (scope.submitInProgress) {
+                        return;
+                    }
+                    scope.submitInProgress = true;
+                    var masterKey = scope.formData.masterKey;
+
+                    scope.modal.remove();
+                    scope.submitInProgress = false;
+                };
+
+                var $ionicModal = $injector.get('$ionicModal');
+                $ionicModal.fromTemplateUrl('views/auth/session_prompt.html', {
+                    scope: scope,
+                    animation: 'slide-in-up', // TODO default - but should find a better one
+                    backdropClickToClose: false,
+                    hardwareBackButtonClose: false
+                }).then(function(modal) {
+                    scope.modal = modal;
+                    modal.show();
+                });
+            };
+
+            // ----------------------------------------------------------------
             // Service API
             //
             return {
@@ -258,7 +290,10 @@
 
                 createSession: createSession,
                 suspendSession: suspendSession,
-                deleteSession: deleteSession
+                deleteSession: deleteSession,
+
+                // TESTING
+                sessionPrompt: sessionPrompt
             };
         }
     ];

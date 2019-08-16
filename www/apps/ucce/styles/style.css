@@ -123,3 +123,37 @@ form .wizard-label {
   font-weight: normal;
   font-size: 0.9rem;
 }
+
+/* line 104, scss/theme/_theme.scss */
+.session-prompt.modal {
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+}
+/* line 110, scss/theme/_theme.scss */
+.session-prompt.modal form.session-prompt-form {
+  position: relative;
+  top: 30%;
+  width: 100%;
+}
+/* line 114, scss/theme/_theme.scss */
+.session-prompt.modal form.session-prompt-form label.item-input {
+  text-align: center;
+  border: 0;
+}
+/* line 117, scss/theme/_theme.scss */
+.session-prompt.modal form.session-prompt-form label.item-input .input-label {
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+/* line 122, scss/theme/_theme.scss */
+.session-prompt.modal form.session-prompt-form input {
+  margin: 0 auto;
+  margin-bottom: 1rem;
+}
+/* line 126, scss/theme/_theme.scss */
+.session-prompt.modal form.session-prompt-form .button {
+  min-width: 12rem;
+}

@@ -38,6 +38,9 @@ EdenMobile.controller("EMSurveyList", [
 
         console.log('EMSurveyList init controller');
 
+        // TODO do this on view enter when needed
+        emAuth.sessionPrompt();
+
         // Initialize scope objects
         $scope.resources = {};
         $scope.surveys = [];
