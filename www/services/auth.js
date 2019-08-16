@@ -30,19 +30,173 @@
     // ========================================================================
     // Config
     //
-    var masterKeyAuth = false;
+    var masterKeyAuth = false,
+        encryptSession = false;
 
     // ========================================================================
     // Status
     //
-    var masterKey = '189-924-758'; // dummy for testing TODO
+    var masterKey = '189-924-758', // dummy for TESTING TODO
+        currentSession;
 
     // ========================================================================
     // Service Constructor
     //
     var emAuth = [
-        //'$q',
-        function( /* $q */ ) {
+        '$q', 'emDB',
+        function($q, emDB ) {
+
+            // ----------------------------------------------------------------
+            /**
+             * Store the current session data in the database
+             *
+             * @returns {promise} - a promise that is resolved when the
+             *                      session data are stored
+             */
+            var storeSession = function() {
+
+                if (!currentSession) {
+                    return $q.reject('no current session');
+                }
+
+                // Encode the session data, encrypt if required
+                var sessionData = JSON.stringify(currentSession);
+                if (encryptSession || masterKeyAuth) {
+                    if (!masterKey) {
+                        return $q.reject('no master key to encrypt session');
+                    } else {
+                        sessionData = CryptoJS.AES.encrypt(sessionData, masterKey).toString();
+                    }
+                }
+
+                // Write session data to the DB
+                var deferred = $q.defer(),
+                    onSuccess = function() {
+                        deferred.resolve();
+                    },
+                    onError = function(error) {
+                        deferred.reject(error);
+                    };
+
+                emDB.table('em_session').then(function(table) {
+                    table.select(['id'], {limitby: 1}, function(records) {
+                        if (records.length) {
+                            table.where(table.$('id').is(records[0].$('id')))
+                                 .update({session_data: sessionData}, onSuccess, onError);
+                        } else {
+                            table.insert({session_data: sessionData}, onSuccess, onError);
+                        }
+                    });
+                });
+
+                return deferred.promise;
+            };
+
+            // ----------------------------------------------------------------
+            /**
+             * Restore a session from the database
+             *
+             * @param {string} key - the master key if the session is
+             *                       encrypted; will be established as
+             *                       current masterKey when successful
+             *
+             * @returns {promise} - a promise that resolves into the current
+             *                      session data when the session is restored
+             */
+            var restoreSession = function(key) {
+
+                var deferred = $q.defer();
+
+                emDB.table('em_session').then(function(table) {
+                    table.select(['id', 'session_data'], {limitby: 1}, function(records) {
+
+                        if (!records.length) {
+                            deferred.reject('no stored session');
+                            return;
+                        }
+
+                        if (masterKeyAuth || encryptSession) {
+                            if (key === undefined) {
+                                deferred.reject('key required');
+                            }
+                            var encrypted = records[0].$('session_data'),
+                                decrypted = CryptoJS.AES.decrypt(encrypted, key);
+                            if (!decrypted.toString()) {
+                                deferred.reject('invalid master key');
+                            } else {
+                                decrypted = CryptoJS.enc.Utf8.stringify(decrypted);
+                                currentSession = JSON.parse(decrypted);
+                                masterKey = key;
+                            }
+                        } else {
+                            currentSession = JSON.parse(records[0].$('session_data'));
+                            if (key !== undefined) {
+                                masterKey = key;
+                            }
+                        }
+                        deferred.resolve(currentSession);
+                    });
+                });
+
+                return deferred.promise;
+            };
+
+            // ----------------------------------------------------------------
+            /**
+             * Establish a new session
+             *
+             * @param {object} sessionData - the session data
+             * @param {string} key - the session master key
+             *
+             * @returns {promise} - a promise that is resolved when the
+             *                      session is established
+             */
+            var createSession = function(sessionData, key) {
+
+                masterKey = key;
+                currentSession = sessionData;
+                return storeSession();
+            };
+
+            // ----------------------------------------------------------------
+            /**
+             * Suspend the current session:
+             * - removes the session context and master key from memory
+             */
+            var suspendSession = function() {
+
+                currentSession = null;
+                if (masterKeyAuth || encryptSession) {
+                    masterKey = null;
+                }
+            };
+
+            // ----------------------------------------------------------------
+            /**
+             * Delete the current session:
+             * - remove the session context and master key from memory
+             * - delete any stored session from the database
+             *
+             * @returns {promise} - a promise that is resolved when the
+             *                      deletion was successful
+             */
+            var deleteSession = function() {
+
+                var deferred = $q.defer();
+
+                suspendSession();
+                emDB.table('em_session').then(function(table) {
+                    table.where().delete(
+                        function() {
+                            deferred.resolve();
+                        },
+                        function(error) {
+                            deferred.reject(error);
+                        });
+                });
+
+                return deferred.promise;
+            };
 
             // ----------------------------------------------------------------
             // Service API
@@ -56,7 +210,6 @@
                 getMasterKey: function() {
                     return masterKey;
                 }
-
             };
         }
     ];
@@ -69,6 +222,10 @@
         // Config setters
         this.masterKeyAuth = function(setting) {
             masterKeyAuth = !!setting;
+        };
+
+        this.encryptSession = function(setting) {
+            encryptSession = !!setting;
         };
 
         // Service Constructor
