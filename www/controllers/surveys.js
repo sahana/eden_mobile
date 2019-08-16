@@ -31,8 +31,8 @@
  * @memberof EdenMobile
  */
 EdenMobile.controller("EMSurveyList", [
-    '$scope', '$q', 'emResources',
-    function($scope, $q, emResources) {
+    '$scope', '$q', 'emAuth', 'emResources',
+    function($scope, $q, emAuth, emResources) {
 
         "use strict";
 

@@ -36,15 +36,15 @@
     // ========================================================================
     // Status
     //
-    var masterKey = '189-924-758', // dummy for TESTING TODO
+    var masterKey,
         currentSession;
 
     // ========================================================================
     // Service Constructor
     //
     var emAuth = [
-        '$q', 'emDB',
-        function($q, emDB ) {
+        '$injector', '$q', 'emDB',
+        function($injector, $q, emDB ) {
 
             // ----------------------------------------------------------------
             /**
@@ -199,6 +199,49 @@
             };
 
             // ----------------------------------------------------------------
+            /**
+             * Validate a master key and return its context data
+             *
+             * @param {string} key - the master key; if omitted, the current
+             *                       session's master key will be used if
+             *                       there is an active session
+             *
+             * @returns {promise} - a promise that resolves into the context
+             *                      data the server returned for the key
+             */
+            var validateMasterKey = function(key) {
+
+                if (!key) {
+                    key = masterKey;
+                }
+
+                var emServer = $injector.get('emServer'),
+                    deferred = $q.defer(),
+                    currentMasterKey = masterKey;
+
+                masterKey = key;
+                emServer.get(
+                    emServer.URL({c: 'default', f: 'masterkey', extension: 'json'}),
+                    'json',
+                    function(data) {
+                        if (data.masterkey_uuid) {
+                            masterKey = currentMasterKey;
+                            deferred.resolve(data);
+                        } else {
+                            masterKey = currentMasterKey;
+                            deferred.reject('invalid master key context');
+                        }
+                    },
+                    function(error) {
+                        masterKey = currentMasterKey;
+                        emServer.httpError(error);
+                        deferred.reject('invalid master key');
+                    });
+
+                return deferred.promise;
+            };
+
+            // ----------------------------------------------------------------
             // Service API
             //
             return {
@@ -209,7 +252,13 @@
 
                 getMasterKey: function() {
                     return masterKey;
-                }
+                },
+
+                validateMasterKey: validateMasterKey,
+
+                createSession: createSession,
+                suspendSession: suspendSession,
+                deleteSession: deleteSession
             };
         }
     ];

@@ -612,6 +612,9 @@
                                 // permission for the requested resource/operation
                                 message = 'Server request not permitted';
                                 break;
+                            case 401:
+                                message = 'Server request not authorized';
+                                break;
                             default:
                                 // Other reason for failure
                                 message = 'Server request failed';
