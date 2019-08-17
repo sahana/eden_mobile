@@ -118,7 +118,7 @@ EdenMobile.controller("EMSurveyList", [
          */
         var refreshSurveyList = function(quiet) {
            emAuth.getSession(true).then(function(session) {
-               emSync.fetchNewForms(quiet).then(function() {
+               emSync.fetchNewForms(quiet, session.masterkey_uuid).then(function() {
                    updateSurveyList(session);
                });
            });

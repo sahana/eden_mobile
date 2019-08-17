@@ -97,12 +97,27 @@ EdenMobile.factory('emSync', [
          * from server if no list is loaded and select automatically
          *
          * @param {Array} formList - the current list of available/selected forms
+         * @param {object} options - processing options:
+         *   @property {boolean} quiet - do not report HTTP errors to the user
+         *   @property {string} masterKeyUUID - the master key UUID to filter
+         *                                      the form list
          *
          * @returns {promise} - a promise that resolves into the form list
          */
-        var getFormList = function(formList, quiet) {
+        var getFormList = function(formList, options) {
 
-            var deferred = $q.defer();
+            var deferred = $q.defer(),
+                quiet,
+                formListOptions;
+
+            if (options) {
+                quiet = options.quiet;
+                if (options.masterKeyUUID) {
+                    formListOptions = {
+                        masterKeyUUID: options.masterKeyUUID
+                    };
+                }
+            }
 
             if (formList && formList.length) {
                 // Use this list
@@ -122,8 +137,8 @@ EdenMobile.factory('emSync', [
                             emServer.httpError(response);
                         }
                         deferred.reject(response);
-                    }
-                );
+                    },
+                    formListOptions);
             }
             return deferred.promise;
         };
@@ -202,12 +217,8 @@ EdenMobile.factory('emSync', [
         // Forms update
         // TODO docstring
         //
-        var fetchNewForms = function(quiet) {
+        var fetchNewForms = function(quiet, masterKeyUUID) {
 
-            if (quiet === undefined) {
-                // Default to false, i.e. report HTTP errors to user
-                quiet = false;
-            }
             if ($rootScope.syncInProgress) {
                 return $q.reject('Sync already in progress');
             }
@@ -215,7 +226,10 @@ EdenMobile.factory('emSync', [
 
             emSyncLog.obsolete();
 
-            return getFormList(false, quiet).then(function(formList) {
+            return getFormList(false, {
+                quiet: quiet,
+                masterKeyUUID: masterKeyUUID
+            }).then(function(formList) {
 
                 // Check if there are any new items
                 var newForms = formList.filter(function(entry) {

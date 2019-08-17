@@ -947,12 +947,18 @@
                  *
                  * TODO move function definition out of the dict
                  */
-                formList: function(successCallback, errorCallback) {
+                formList: function(successCallback, errorCallback, options) {
+
+                    var vars = {};
+                    if (options && options.masterKeyUUID) {
+                        vars.mkuid = options.masterKeyUUID;
+                    }
 
                     var url = new SahanaURL({
                         c: 'mobile',
                         f: 'forms',
-                        extension: 'json'
+                        extension: 'json',
+                        vars: vars
                     });
                     get(url, 'json', successCallback, errorCallback);
                 },
