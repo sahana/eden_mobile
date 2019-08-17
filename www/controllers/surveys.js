@@ -31,8 +31,8 @@
  * @memberof EdenMobile
  */
 EdenMobile.controller("EMSurveyList", [
-    '$scope', '$q', 'emAuth', 'emResources', 'emSync',
-    function($scope, $q, emAuth, emResources, emSync) {
+    '$scope', '$q', 'emAuth', 'emDialogs', 'emResources', 'emSync',
+    function($scope, $q, emAuth, emDialogs, emResources, emSync) {
 
         "use strict";
 
@@ -79,6 +79,7 @@ EdenMobile.controller("EMSurveyList", [
             console.log('EMSurveyList.updateSurveyList');
 
             $scope.title = session.projectTitle || 'Current Surveys';
+            $scope.pendingUploads = false;
 
             var resources = {},
                 surveys = [];
@@ -88,6 +89,9 @@ EdenMobile.controller("EMSurveyList", [
                 // Get survey data
                 var deferred = [];
                 resourceList.forEach(function(item) {
+                    if (item.numRows) {
+                        $scope.pendingUploads = true;
+                    }
                     if (item.resource.main) {
                         deferred.push(addSurveyData(item));
                     }
@@ -136,6 +140,15 @@ EdenMobile.controller("EMSurveyList", [
         $scope.$on('emDeviceOnline', function() {
            refreshSurveyList(true);
         });
+
+        $scope.upload = function() {
+            emAuth.getSession().then(function(session) {
+                emSync.uploadAllData().then(function() {
+                    emDialogs.confirmation('Data uploaded');
+                    updateSurveyList(session);
+                });
+            });
+        };
 
         // Unlink-function
         $scope.unlink = emAuth.exitSession;

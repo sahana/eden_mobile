@@ -6,7 +6,7 @@
         <div class="row">
           <div class="col">
             <!-- TODO Replace by directive -->
-            <a class="button button-energized" disabled="disabled" ui-sref="sync">Upload all Responses</a>
+            <a class="button button-energized" ng-disabled="syncInProgress || !pendingUploads" ng-click="upload()">Upload all Responses</a>
             <a class="button button-energized" ng-disabled="syncInProgress" ng-click="update()">Download Surveys</a>
             <ion-spinner icon="bubbles" class="spinner-positive" ng-if="syncInProgress"></ion-spinner>
           </div>

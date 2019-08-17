@@ -272,7 +272,59 @@ EdenMobile.factory('emSync', [
         };
 
         // ====================================================================
-        // TODO Function to upload all pending data
+        // TODO docstring
+        //
+        var uploadAllData = function() {
+
+            if ($rootScope.syncInProgress) {
+                return $q.reject('Sync already in progress');
+            }
+            $rootScope.syncInProgress = true;
+
+            emSyncLog.obsolete();
+
+            return getResourceList([]).then(function(resourceList) {
+
+                // Check if there are any new items
+                var newData = resourceList.filter(function(entry) {
+                    return !!entry.updated;
+                });
+                if (!newData.length) {
+                    // No new data => stop right here
+                    return $q.resolve();
+                }
+
+                var sync = new SyncRun([], resourceList);
+                return sync.start().then(
+                    function() {
+                        // Success
+                        $rootScope.$broadcast('emDataUploaded');
+                    },
+                    function( /* error */ ) {
+                        // Failure
+                    },
+                    function(progress) {
+                        if (progress) {
+                            // Progress Notification
+                            $rootScope.syncStage = progress.stage;
+                            $rootScope.syncActivity = progress.activity;
+                            $rootScope.syncProgress = [
+                                progress.completed,
+                                progress.total
+                            ];
+                        }
+                    });
+
+            }).finally(function() {
+
+                $rootScope.syncStage = null;
+                $rootScope.syncActivity = null;
+                $rootScope.syncProgress = null;
+
+                $rootScope.syncInProgress = false;
+            });
+        };
+
 
         // ====================================================================
         // Synchronization
@@ -338,7 +390,8 @@ EdenMobile.factory('emSync', [
             updateResourceList: updateResourceList,
 
             synchronize: synchronize,
-            fetchNewForms: fetchNewForms
+            fetchNewForms: fetchNewForms,
+            uploadAllData: uploadAllData
 
         };
         return api;
