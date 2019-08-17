@@ -31,23 +31,58 @@
     // Config
     //
     var masterKeyAuth = false,
-        encryptSession = false;
+        encryptSession = false,
+        sessionTimeout = false;
 
     // ========================================================================
     // Status
     //
     var masterKey,
-        currentSession;
+        currentSession,
+        sessionTimer;
 
     // ========================================================================
     // Service Constructor
     //
     var emAuth = [
-        '$injector', '$q', '$rootScope', 'emDB', 'emReset',
-        function($injector, $q, $rootScope, emDB, emReset) {
+        '$injector', '$q', '$timeout', '$rootScope', 'emDB', 'emReset',
+        function($injector, $q, $timeout, $rootScope, emDB, emReset) {
 
             var hexlify = CryptoJS.enc.Hex.stringify,
                 unhexlify = CryptoJS.enc.Hex.parse;
+
+            // ----------------------------------------------------------------
+            /**
+             * Set a session timer that will automatically suspend the session
+             * after a period of inactivity
+             * - controlled by emAuthProvider.sessionTimeout setting
+             * - setting is timeout in minutes; falsy to disable
+             * - can be called directly to reset the timer (e.g. by sync events)
+             */
+            var setSessionTimer = function() {
+
+                if (!sessionTimeout) {
+                    // Not using session timeout
+                    return;
+                }
+                var setTimer = function() {
+                    if (sessionTimer) {
+                        $timeout.cancel(sessionTimer);
+                        sessionTimer = null;
+                    }
+                    sessionTimer = $timeout(function() {
+                        Keyboard.hide();
+                        suspendSession();
+                        sessionPrompt();
+                    }, sessionTimeout * 60000);
+                };
+
+                // Events that reset the timer
+                window.addEventListener('touchstart', setTimer);
+                window.addEventListener('keyup', setTimer);
+
+                setTimer();
+            };
 
             // ----------------------------------------------------------------
             /**
@@ -181,6 +216,7 @@
                         // Inform all controllers about the restored session
                         $rootScope.$broadcast('emSessionConnected');
 
+                        setSessionTimer();
                         deferred.resolve(currentSession);
                     });
                 });
@@ -208,6 +244,7 @@
                     // Inform all controllers about the new session
                     $rootScope.$broadcast('emSessionConnected');
 
+                    setSessionTimer();
                     return session;
                 });
             };
@@ -219,6 +256,9 @@
              */
             var suspendSession = function() {
 
+                if (sessionTimer) {
+                    $timeout.cancel(sessionTimer);
+                }
                 currentSession = null;
                 if (masterKeyAuth || encryptSession) {
                     masterKey = null;
@@ -427,7 +467,6 @@
                                 });
                         }
                     });
-
                 };
 
                 var $ionicModal = $injector.get('$ionicModal');
@@ -473,16 +512,21 @@
             };
 
             // ----------------------------------------------------------------
-            // TODO docstring
-            // TODO notification optional
+            /**
+             * Report online-event to root scope
+             */
             var onOnline = function() {
 
-                var emDialogs = $injector.get('emDialogs');
-                emDialogs.confirmation('Device is now online');
+                // TODO optional user notification
+                //var emDialogs = $injector.get('emDialogs');
+                //emDialogs.confirmation('Device is now online');
 
                 $rootScope.$broadcast('emDeviceOnline');
             };
 
+            // NB event is also fired when the app resumes after it was
+            //    suspended into the background; it may not be ideal to
+            //    run server requests if it was suspended only a few seconds
             document.addEventListener("online", onOnline, false);
 
             // ----------------------------------------------------------------
@@ -498,14 +542,9 @@
                     return masterKey;
                 },
 
-                validateMasterKey: validateMasterKey,
-
-                createSession: createSession,
-                suspendSession: suspendSession,
-                deleteSession: deleteSession,
                 getSession: getSession,
-
-                exitSession: exitSession
+                exitSession: exitSession,
+                setSessionTimer: setSessionTimer
             };
         }
     ];
@@ -522,6 +561,14 @@
 
         this.encryptSession = function(setting) {
             encryptSession = !!setting;
+        };
+
+        this.sessionTimeout = function(setting) {
+            var timeout = !!setting && setting - 0;
+            if (isNaN(timeout)) {
+                timeout = false;
+            }
+            sessionTimeout = timeout;
         };
 
         // Service Constructor

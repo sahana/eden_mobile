@@ -27,6 +27,9 @@
     },
     "cordova-plugin-network-information": {
       "PACKAGE_NAME": "org.sahanafoundation.eden_mobile.ucce"
+    },
+    "cordova-plugin-ionic-keyboard": {
+      "PACKAGE_NAME": "org.sahanafoundation.eden_mobile.ucce"
     }
   },
   "dependent_plugins": {}

@@ -141,6 +141,7 @@ EdenMobile.controller("EMSurveyList", [
            refreshSurveyList(true);
         });
 
+        // Upload-function
         $scope.upload = function() {
             emAuth.getSession().then(function(session) {
                 emSync.uploadAllData().then(function() {

@@ -214,9 +214,20 @@ EdenMobile.factory('emSync', [
         };
 
         // ====================================================================
-        // Forms update
-        // TODO docstring
-        //
+        /**
+         * Partial sync to fetch new forms from the server, without form
+         * selection by user
+         *
+         * @param {boolean} quiet - do not report HTTP errors to the user
+         *                          (but only to the caller)
+         * @param {string} masterKeyUUID - a master key UUID to report to the
+         *                                 server for filtering the form list
+         *                                 * mandatory if server is configured
+         *                                   to filter form list by master key
+         *
+         * @returns {promise} - a promise that is resolved when the download
+         *                      is complete and new forms have been installed
+         */
         var fetchNewForms = function(quiet, masterKeyUUID) {
 
             if ($rootScope.syncInProgress) {
@@ -244,7 +255,7 @@ EdenMobile.factory('emSync', [
                 return sync.start().then(
                     function() {
                         // Success
-                        $rootScope.$broadcast('emNewFormsAvailable');
+                        //$rootScope.$broadcast('emNewFormsAvailable');
                     },
                     function( /* error */ ) {
                         // Failure
@@ -272,8 +283,13 @@ EdenMobile.factory('emSync', [
         };
 
         // ====================================================================
-        // TODO docstring
-        //
+        /**
+         * Partial sync process to upload any pending data, without resource
+         * selection by the user
+         *
+         * @returns {promise} - a promise that is resolved when the upload
+         *                      is complete and was successful
+         */
         var uploadAllData = function() {
 
             if ($rootScope.syncInProgress) {
@@ -298,7 +314,7 @@ EdenMobile.factory('emSync', [
                 return sync.start().then(
                     function() {
                         // Success
-                        $rootScope.$broadcast('emDataUploaded');
+                        //$rootScope.$broadcast('emDataUploaded');
                     },
                     function( /* error */ ) {
                         // Failure
@@ -325,12 +341,12 @@ EdenMobile.factory('emSync', [
             });
         };
 
-
         // ====================================================================
         // Synchronization
         // ====================================================================
         /**
          * Main synchronization function
+         * - full sync process with form/data selection by user
          *
          * @param {object} forms - the selected forms list
          * @param {object} resources - the selected resources list

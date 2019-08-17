@@ -34,5 +34,8 @@ EdenMobile.config([
 
         // Use MasterKey Auth
         emAuthProvider.masterKeyAuth(true);
+
+        // Session times out after 30 minutes of inaktivity
+        emAuthProvider.sessionTimeout(30);
     }
 ]);
