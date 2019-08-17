@@ -31,8 +31,8 @@
  * @memberof EdenMobile
  */
 EdenMobile.controller("EMSurveyList", [
-    '$scope', '$q', 'emAuth', 'emResources',
-    function($scope, $q, emAuth, emResources) {
+    '$scope', '$q', 'emAuth', 'emResources', 'emSync',
+    function($scope, $q, emAuth, emResources, emSync) {
 
         "use strict";
 
@@ -78,7 +78,7 @@ EdenMobile.controller("EMSurveyList", [
 
             console.log('EMSurveyList.updateSurveyList');
 
-            $scope.title = session.projectTitle || 'Unknown project';
+            $scope.title = session.projectTitle || 'Current Surveys';
 
             var resources = {},
                 surveys = [];
@@ -111,9 +111,36 @@ EdenMobile.controller("EMSurveyList", [
             });
         };
 
+        /**
+         * Refresh the survey list from server
+         *
+         * @param {boolean} quiet - fail silently when server unavailable
+         */
+        var refreshSurveyList = function(quiet) {
+           emAuth.getSession(true).then(function(session) {
+               emSync.fetchNewForms(quiet).then(function() {
+                   updateSurveyList(session);
+               });
+           });
+        };
+
+        // Manual trigger to refresh the survey list
+        $scope.update = refreshSurveyList;
+
+        // Automatically refresh survey list when session gets connected
+        $scope.$on('emSessionConnected', function() {
+           refreshSurveyList(true);
+        });
+
+        // Automatically refresh survey list when device comes back online
+        $scope.$on('emDeviceOnline', function() {
+           refreshSurveyList(true);
+        });
+
+        // Unlink-function
         $scope.unlink = emAuth.exitSession;
 
-        // Update the resource list every time when entering the view
+        // Update the survey list every time when entering the view
         $scope.$on('$ionicView.enter', function() {
            emAuth.getSession().then(function(session) {
                updateSurveyList(session);

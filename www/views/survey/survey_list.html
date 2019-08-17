@@ -6,11 +6,13 @@
         <div class="row">
           <div class="col">
             <!-- TODO Replace by directive -->
-            <a class="button button-energized" disabled="disabled" ui-sref="sync">Upload all Surveys</a>
+            <a class="button button-energized" disabled="disabled" ui-sref="sync">Upload all Responses</a>
+            <a class="button button-energized" ng-disabled="syncInProgress" ng-click="update()">Download Surveys</a>
+            <ion-spinner icon="bubbles" class="spinner-positive" ng-if="syncInProgress"></ion-spinner>
           </div>
           <div class="col survey-unlink">
             <!-- TODO Replace by directive -->
-            <a ng-click="unlink()">Unlink</a>
+            <a ng-if="!syncInProgress" ng-click="unlink()">Unlink</a>
           </div>
         </div>
         <div class="row">

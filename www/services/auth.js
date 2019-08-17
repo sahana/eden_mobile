@@ -177,6 +177,10 @@
                                 masterKey = key;
                             }
                         }
+
+                        // Inform all controllers about the restored session
+                        $rootScope.$broadcast('emSessionConnected');
+
                         deferred.resolve(currentSession);
                     });
                 });
@@ -198,7 +202,14 @@
 
                 masterKey = key;
                 currentSession = sessionData;
-                return storeSession();
+
+                return storeSession().then(function(session) {
+
+                    // Inform all controllers about the new session
+                    $rootScope.$broadcast('emSessionConnected');
+
+                    return session;
+                });
             };
 
             // ----------------------------------------------------------------
@@ -451,6 +462,7 @@
              */
             var getSession = function(noPrompt) {
 
+                // TODO allow auto-create session if not using master key
                 if (currentSession) {
                     return $q.resolve(currentSession);
                 } else if (!noPrompt) {
@@ -459,6 +471,19 @@
                     return $q.reject();
                 }
             };
+
+            // ----------------------------------------------------------------
+            // TODO docstring
+            // TODO notification optional
+            var onOnline = function() {
+
+                var emDialogs = $injector.get('emDialogs');
+                emDialogs.confirmation('Device is now online');
+
+                $rootScope.$broadcast('emDeviceOnline');
+            };
+
+            document.addEventListener("online", onOnline, false);
 
             // ----------------------------------------------------------------
             // Service API

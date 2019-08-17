@@ -24,6 +24,9 @@
     },
     "cordova-plugin-statusbar": {
       "PACKAGE_NAME": "org.sahanafoundation.eden_mobile"
+    },
+    "cordova-plugin-network-information": {
+      "PACKAGE_NAME": "org.sahanafoundation.eden_mobile.ucce"
     }
   },
   "dependent_plugins": {}

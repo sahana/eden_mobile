@@ -100,7 +100,7 @@ EdenMobile.factory('emSync', [
          *
          * @returns {promise} - a promise that resolves into the form list
          */
-        var getFormList = function(formList) {
+        var getFormList = function(formList, quiet) {
 
             var deferred = $q.defer();
 
@@ -118,7 +118,9 @@ EdenMobile.factory('emSync', [
                     },
                     function(response) {
                         //updateSyncStatus();
-                        emServer.httpError(response);
+                        if (!quiet) {
+                            emServer.httpError(response);
+                        }
                         deferred.reject(response);
                     }
                 );
@@ -197,6 +199,68 @@ EdenMobile.factory('emSync', [
         };
 
         // ====================================================================
+        // Forms update
+        // TODO docstring
+        //
+        var fetchNewForms = function(quiet) {
+
+            if (quiet === undefined) {
+                // Default to false, i.e. report HTTP errors to user
+                quiet = false;
+            }
+            if ($rootScope.syncInProgress) {
+                return $q.reject('Sync already in progress');
+            }
+            $rootScope.syncInProgress = true;
+
+            emSyncLog.obsolete();
+
+            return getFormList(false, quiet).then(function(formList) {
+
+                // Check if there are any new items
+                var newForms = formList.filter(function(entry) {
+                    return entry.download;
+                });
+                if (!newForms.length) {
+                    // No new forms => stop right here
+                    return $q.resolve();
+                }
+
+                var sync = new SyncRun(formList, []);
+                return sync.start().then(
+                    function() {
+                        // Success
+                        $rootScope.$broadcast('emNewFormsAvailable');
+                    },
+                    function( /* error */ ) {
+                        // Failure
+                    },
+                    function(progress) {
+                        if (progress) {
+                            // Progress Notification
+                            $rootScope.syncStage = progress.stage;
+                            $rootScope.syncActivity = progress.activity;
+                            $rootScope.syncProgress = [
+                                progress.completed,
+                                progress.total
+                            ];
+                        }
+                    });
+
+            }).finally(function() {
+
+                $rootScope.syncStage = null;
+                $rootScope.syncActivity = null;
+                $rootScope.syncProgress = null;
+
+                $rootScope.syncInProgress = false;
+            });
+        };
+
+        // ====================================================================
+        // TODO Function to upload all pending data
+
+        // ====================================================================
         // Synchronization
         // ====================================================================
         /**
@@ -259,7 +323,8 @@ EdenMobile.factory('emSync', [
             updateFormList: updateFormList,
             updateResourceList: updateResourceList,
 
-            synchronize: synchronize
+            synchronize: synchronize,
+            fetchNewForms: fetchNewForms
 
         };
         return api;
