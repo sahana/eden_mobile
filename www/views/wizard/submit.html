@@ -1,8 +1,8 @@
 <div class="row">
   <div class="col">
     <div class="wizard-submit-buttons">
-      <a class="button button-energized" ng-if='formStatus.next' ng-click='next(wizard)'>Next</a>
-      <a class="button button-energized" ng-if='!formStatus.next' ng-click='submit(wizard)'>Save</a>
+      <a class="button button-energized" ng-show='formStatus.next(formStatus.activeSection)' ng-click='next(wizard)'>Next</a>
+      <a class="button button-energized" ng-show='!formStatus.next(formStatus.activeSection)' ng-click='submit(wizard)'>Save</a>
     </div>
   </div>
 </div>

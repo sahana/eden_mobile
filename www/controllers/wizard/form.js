@@ -31,8 +31,8 @@
  * @memberof EdenMobile
  */
 EdenMobile.controller("EMFormWizardController", [
-    '$q', '$scope', '$state', '$stateParams', 'emDialogs', 'emFiles', 'emFormWizard', 'emResources',
-    function($q, $scope, $state, $stateParams, emDialogs, emFiles, emFormWizard, emResources) {
+    '$q', '$scope', '$state', '$stateParams', 'emDialogs', 'emDisplayLogic', 'emFiles', 'emFormWizard', 'emResources',
+    function($q, $scope, $state, $stateParams, emDialogs, emDisplayLogic, emFiles, emFormWizard, emResources) {
 
         "use strict";
 
@@ -216,19 +216,42 @@ EdenMobile.controller("EMFormWizardController", [
                 $scope.resource = resource;
 
                 // Get the form configuration
-                var formConfig = emFormWizard.getSections(resource),
-                    next = false;
-                if (formConfig.length > 1) {
-                    next = 1;
-                }
+                var formConfig = $scope.formConfig = emFormWizard.getSections(resource);
+
+                // Helper to find next section using display logic
+                var nextSection = function(currentSection) {
+                    var next = currentSection + 1;
+                    while(true) {
+                        var formElements = formConfig[next],
+                            formElement,
+                            displayRule,
+                            displayLogic;
+                        if (formElements === undefined) {
+                            // This was the last section
+                            break;
+                        }
+                        for (var i = 0; i < formElements.length; i++) {
+                            formElement = formElements[i];
+                            displayRule = formElement.displayLogic;
+                            if (!displayRule) {
+                                return next;
+                            }
+                            displayLogic = new emDisplayLogic($scope.form, formElement.field, displayRule);
+                            if (displayLogic.show()) {
+                                return next;
+                            }
+                        }
+                        next++;
+                    }
+                    return false;
+                };
 
                 // Store form configuration and status in scope
-                $scope.formConfig = formConfig;
-                $scope.formStatus = {
-                    activeSection: 0,
-                    prev: -1,
-                    next: next
-                };
+                var formStatus = $scope.formStatus = {
+                        activeSection: 0,
+                        prev: -1,
+                        next: nextSection
+                    };
 
                 // Scope method to submit the entire form
                 $scope.submit = function(ngForm) {
@@ -249,7 +272,7 @@ EdenMobile.controller("EMFormWizardController", [
                     if (ngForm.$invalid) {
                         return;
                     }
-                    var next = $scope.formStatus.next;
+                    var next = nextSection(formStatus.activeSection);
                     if (!next) {
                         return;
                     }

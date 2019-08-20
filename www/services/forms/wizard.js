@@ -61,7 +61,8 @@ EdenMobile.factory('emFormWizard', [
             }
 
             var sections = [],
-                section;
+                section,
+                empty;
 
             form.forEach(function(formElement) {
 
@@ -69,7 +70,7 @@ EdenMobile.factory('emFormWizard', [
                     return;
                 } else {
                     if (!section) {
-                        section = {empty: true, final: false, fields: []};
+                        section = [];
                     }
 
                     if (formElement.constructor === Object) {
@@ -77,10 +78,11 @@ EdenMobile.factory('emFormWizard', [
                         switch(formElement.type) {
                             case 'input':
                             case 'instructions':
-                                section.fields.push(formElement);
+                                section.push(formElement);
+                                empty = false;
                                 break;
                             case 'section-break':
-                                if (!section.empty) {
+                                if (section.length) {
                                     sections.push(section);
                                 }
                                 section = null;
@@ -92,11 +94,10 @@ EdenMobile.factory('emFormWizard', [
                     } else {
                         // Input widget
                         if (fields.hasOwnProperty(formElement)) {
-                            section.fields.push({
+                            section.push({
                                 type: 'input',
                                 field: formElement
                             });
-                            section.empty = false;
                         }
                     }
                 }
