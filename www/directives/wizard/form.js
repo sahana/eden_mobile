@@ -33,8 +33,8 @@
      *   - a section of a form
      */
     EdenMobile.directive('emFormSection', [
-        '$compile',
-        function($compile) {
+        '$compile', 'emDisplayLogic',
+        function($compile, emDisplayLogic) {
 
             var renderSection = function($scope, elem, attr) {
 
@@ -51,8 +51,10 @@
                                   .attr('novalidate', 'novalidate');
 
                 // Generate the form rows for this section
-                var formRows = angular.element('<div class="list">');
-                sectionConfig.forEach(function(formElement) {
+                var formRows = angular.element('<div class="list">'),
+                    displayLogic = {};
+                sectionConfig.forEach(function(formElement, index) {
+
                     var formRow;
                     switch(formElement.type) {
                         case 'input':
@@ -75,12 +77,30 @@
                         default:
                             break;
                     }
+
+                    if (!formRow) {
+                        return;
+                    }
+
+                    // Add display logic for this formElement
+                    var displayRule = formElement.displayLogic;
+                    if (displayRule) {
+                        var dlID = 'dl' + index;
+                        displayLogic[dlID] = new emDisplayLogic($scope.form,
+                                                                formElement.field,
+                                                                displayRule);
+                        formRow.attr('display-logic', dlID);
+                    }
+
+                    // Append form row to container
                     formRows.append(formRow);
                 });
                 form.append(formRows);
 
-                // Compile the form, and put it into the DOM
-                // Add form to DOM and compile it
+                // Add display logic to scope
+                $scope.displayLogic = displayLogic;
+
+                // Add form to DOM and compile it against scope
                 elem.replaceWith(form);
                 $compile(form)($scope);
             };
@@ -142,13 +162,17 @@
                 }
 
                 // Use emFormStyle to render the form row
-                // TODO: - comment (=description)
-                //       - image
-                //       - display logic (probably better to handle in controller)
+                // TODO: - image
                 var formRow = emFormStyle.formRow(formName,
                                                   field.getLabel(),
                                                   widget,
                                                   errors);
+
+                // Link to display logic if required
+                var dlID = attr.displayLogic;
+                if (dlID) {
+                    formRow.attr('ng-show', 'displayLogic["' + dlID + '"].show()');
+                }
 
                 // Add form row to DOM and compile it
                 elem.replaceWith(formRow);
@@ -170,7 +194,7 @@
         '$compile',
         function($compile) {
 
-            var link = function($scope, elem /*, attr */) {
+            var link = function($scope, elem, attr) {
 
                 var card = angular.element('<div class="card padding data-collector-instructions">'),
                     header = angular.element('<h4>Instructions</h4>'),
@@ -191,7 +215,13 @@
                     card.append(content);
                 }
 
-                // Add card to DOM and compile it
+                // Link to display logic if required
+                var dlID = attr.displayLogic;
+                if (dlID) {
+                    card.attr('ng-show', 'displayLogic["' + dlID + '"].show()');
+                }
+
+                // Add card to DOM and compile it against scope
                 elem.replaceWith(card);
                 $compile(card)($scope);
             };

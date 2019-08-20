@@ -33,7 +33,6 @@ EdenMobile.factory('emDisplayLogic', [
          * @param {object} form - the form data object (scope model)
          * @param {string} fieldName - name of the field the rule is for
          * @param {*} - the display logic rule
-         * @param {boolean} retain - retain the field data even if not showing
          *
          * Rule format:
          *
@@ -55,11 +54,10 @@ EdenMobile.factory('emDisplayLogic', [
          *      any other value                      - field will show if value is truthy
          *
          */
-        function DisplayLogic(form, fieldName, rule, retain) {
+        function DisplayLogic(form, fieldName, rule) {
 
             this.form = form;
             this.fieldName = fieldName;
-            this.retain = retain;
 
             var conditions;
 
@@ -89,7 +87,7 @@ EdenMobile.factory('emDisplayLogic', [
                 // Create child instances
                 conditions = [];
                 rules.forEach(function(c) {
-                    conditions.push(new DisplayLogic(form, fieldName, c, true).show);
+                    conditions.push(new DisplayLogic(form, fieldName, c).show);
                 });
 
                 // Construct this.how
@@ -265,21 +263,13 @@ EdenMobile.factory('emDisplayLogic', [
          * @returns {function} - show-function
          */
         DisplayLogic.prototype.allOf = function(conditions) {
-            var form = this.form,
-                fieldName = this.fieldName,
-                retain = this.retain;
             return function() {
-                var show = true;
                 for (var i=conditions.length; i--;) {
                     if (!conditions[i]()) {
-                        show = false;
-                        break;
+                        return false;
                     }
                 }
-                if (!show && !retain && form[fieldName] !== undefined) {
-                    form[fieldName] = undefined;
-                }
-                return show;
+                return true;
             };
         };
 
@@ -293,21 +283,13 @@ EdenMobile.factory('emDisplayLogic', [
          * @returns {function} - show-function
          */
         DisplayLogic.prototype.anyOf = function(conditions) {
-            var form = this.form,
-                fieldName = this.fieldName,
-                retain = this.retain;
             return function() {
-                var show = false;
                 for (var i=conditions.length; i--;) {
                     if (conditions[i]()) {
-                        show = true;
-                        break;
+                        return true;
                     }
                 }
-                if (!show && !retain && form[fieldName] !== undefined) {
-                    form[fieldName] = undefined;
-                }
-                return show;
+                return false;
             };
         };
 
@@ -320,15 +302,9 @@ EdenMobile.factory('emDisplayLogic', [
          * @returns {function} - show-function
          */
         DisplayLogic.prototype.ifNotEmpty = function(other) {
-            var form = this.form,
-                fieldName = this.fieldName,
-                retain = this.retain;
+            var form = this.form;
             return function() {
-                var show = !!form[other];
-                if (!show && !retain && form[fieldName] !== undefined) {
-                    form[fieldName] = undefined;
-                }
-                return show;
+                return !!form[other];
             };
         };
 
