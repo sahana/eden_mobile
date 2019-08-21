@@ -99,7 +99,7 @@ EdenMobile.controller("EMFormWizardController", [
             // The confirmation message
             var message;
             if (recordID == 0) {
-                message = 'Response submitted';
+                message = 'Response saved';
             } else {
                 message = 'Response updated';
             }
