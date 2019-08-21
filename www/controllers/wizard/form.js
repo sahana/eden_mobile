@@ -115,6 +115,37 @@ EdenMobile.controller("EMFormWizardController", [
 
         // --------------------------------------------------------------------
         /**
+         * Remove the values of hidden fields
+         *
+         * @param {object} values - the current input values {fieldName: value}
+         * @param {Array} formConfig - the form configuration (sections)
+         *
+         * @returns {object} - the updated input values
+         */
+        var clearHiddenFields = function(values, formConfig) {
+
+            var emptyValues = {};
+
+            formConfig.forEach(function(formElements) {
+                formElements.forEach(function(formElement) {
+                    var displayRule = formElement.displayLogic;
+                    if (formElement.type == 'input' && displayRule) {
+                        var fieldName = formElement.field,
+                            displayLogic = new emDisplayLogic(values,
+                                                              fieldName,
+                                                              displayRule);
+                        if (!displayLogic.show()) {
+                            emptyValues[fieldName] = null;
+                        }
+                    }
+                });
+            });
+
+            return angular.extend({}, values, emptyValues);
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Submit the current form
          *
          * @param {Resource} resource - the Resource
@@ -128,9 +159,10 @@ EdenMobile.controller("EMFormWizardController", [
 
             // Proceed when all form values are ready for submission
             // - some form.* could be promises
-            $q.all(form).then(function(values) {
+            $q.all(form).then(function(formData) {
 
-                //console.log(values);
+                // Remove values for fields hidden by display logic
+                var values = clearHiddenFields(formData, $scope.formConfig);
 
                 // Check if empty (@todo: form onvalidation)
                 var empty = true;

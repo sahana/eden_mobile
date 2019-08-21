@@ -313,8 +313,17 @@ EdenMobile.factory('emSync', [
                 var sync = new SyncRun([], resourceList);
                 return sync.start().then(
                     function() {
-                        // Success
-                        //$rootScope.$broadcast('emDataUploaded');
+                        // Success (of the process, not necessarily of the uploads)
+                        var result = {success: 0, failed: 0, error: null};
+                        sync.jobs.forEach(function(job) {
+                            if (job.$result == 'error') {
+                                result.failed++;
+                                result.error = job.error;
+                            } else {
+                                result.success++;
+                            }
+                        });
+                        return result;
                     },
                     function( /* error */ ) {
                         // Failure
