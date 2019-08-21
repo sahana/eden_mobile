@@ -168,10 +168,21 @@
                                                   widget,
                                                   errors);
 
-                // Link to display logic if required
-                var dlID = attr.displayLogic;
-                if (dlID) {
-                    formRow.attr('ng-show', 'displayLogic["' + dlID + '"].show()');
+                // Display logic and required
+                // - skip display logic if field is marked as required
+                var fieldDescription = field._description;
+                if (!fieldDescription.required) {
+                    // Otherwise, apply display logic if defined
+                    var dlID = attr.displayLogic;
+                    if (dlID) {
+                        var showIf = 'displayLogic["' + dlID + '"].show()';
+                        formRow.attr('ng-show', showIf);
+                        // If field has isNotEmpty
+                        // => apply same logic for ngRequired as for ngShow
+                        if (widget.attr('ng-required')) {
+                            widget.attr('ng-required', showIf);
+                        }
+                    }
                 }
 
                 // Add form row to DOM and compile it
