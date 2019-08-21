@@ -145,10 +145,17 @@ EdenMobile.controller("EMSurveyList", [
         $scope.upload = function() {
             emAuth.getSession().then(function(session) {
                 emSync.uploadAllData().then(function(result) {
-                    if (result.success) {
-                        emDialogs.confirmation('Data uploaded');
+                    var failures = result.failed;
+                    if (failures) {
+                        var msg;
+                        if (!result.success) {
+                            msg = 'Data could not be uploaded';
+                        } else {
+                            msg = failures + ' survey(s) could not be uploaded';
+                        }
+                        emDialogs.error(msg, result.error);
                     } else {
-                        emDialogs.error('Data could not be uploaded', result.error);
+                        emDialogs.confirmation('Data uploaded');
                     }
                     updateSurveyList(session);
                 });

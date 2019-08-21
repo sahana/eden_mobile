@@ -964,6 +964,9 @@ EdenMobile.factory('SyncRun', [
                 dataExport.done().then(function(dataUpload) {
                     if (!!dataUpload) {
                         dataUploads.push(dataUpload);
+                    } else {
+                        // No data to upload => job done
+                        dataExport.job.result('success');
                     }
                 }).finally(function() {
                     if (self.checkProgress()) {
