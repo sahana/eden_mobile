@@ -1,5 +1,5 @@
 <div class="bar bar-header bar-positive">
-    <button class="button button-clear icon ion-android-arrow-back" ng-if="formStatus.prev > -1" ui-sref='wizard.form({section: formStatus.prev})'></button>
+    <button class="button button-clear icon ion-android-arrow-back" ng-if="formStatus.prev(formStatus.activeSection)!==false" ui-sref='wizard.form({section: formStatus.prev(formStatus.activeSection)})'></button>
     <h1 class="title">{{title}}</h1>
     <button class="button button-clear icon ion-android-cancel" ng-click="cancel()"></button>
 </div>

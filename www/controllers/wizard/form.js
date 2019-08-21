@@ -251,8 +251,9 @@ EdenMobile.controller("EMFormWizardController", [
                 var formConfig = $scope.formConfig = emFormWizard.getSections(resource);
 
                 // Helper to find next section using display logic
-                var nextSection = function(currentSection) {
-                    var next = currentSection + 1;
+                var nextSection = function(currentSection, reverse) {
+                    var step = reverse && -1 || 1,
+                        next = currentSection + step;
                     while(true) {
                         var formElements = formConfig[next],
                             formElement,
@@ -273,7 +274,7 @@ EdenMobile.controller("EMFormWizardController", [
                                 return next;
                             }
                         }
-                        next++;
+                        next += step;
                     }
                     return false;
                 };
@@ -281,7 +282,9 @@ EdenMobile.controller("EMFormWizardController", [
                 // Store form configuration and status in scope
                 var formStatus = $scope.formStatus = {
                         activeSection: 0,
-                        prev: -1,
+                        prev: function(currentSection) {
+                            return nextSection(currentSection, true);
+                        },
                         next: nextSection
                     };
 

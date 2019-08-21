@@ -6,11 +6,11 @@
                 <!-- TODO make label configurable -->
                 <span class="input-label">Project Master Key</span>
                 <!-- TODO make placeholder configurable -->
-                <input name="masterkey" type="password" ng-model="formData.masterKey" ng-required="true" placeholder="Enter Master Key" autofocus></input>
+                <input name="masterkey" type="password" ng-model="formData.masterKey" ng-required="true" placeholder="Enter Master Key" ng-keypress="onKeyPress($event)" autofocus></input>
               </label>
               <label class="item item-input item-stacked-label">
-                  <button type="button" class="button button-energized" ng-if="!submitInProgress" ng-disabled="form.$invalid" ng-click="submit(form)">Submit</button>
-                  <ion-spinner icon="bubbles" class="spinner-positive" ng-if="submitInProgress"></ion-spinner>
+                  <button type="button" class="button button-energized" ng-show="!submitInProgress" ng-disabled="form.$invalid" ng-click="submit(form)">Submit</button>
+                  <ion-spinner icon="bubbles" class="spinner-positive" ng-show="submitInProgress"></ion-spinner>
               </label>
             </div>
             <div class="unlink-link">

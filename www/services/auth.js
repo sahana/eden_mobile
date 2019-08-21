@@ -469,6 +469,17 @@
                     });
                 };
 
+                scope.onKeyPress = function(event) {
+                    switch(event.keyCode) {
+                        case 13:
+                            scope.submit();
+                            break;
+                        default:
+                            break;
+                    }
+                    return false;
+                };
+
                 var $ionicModal = $injector.get('$ionicModal');
                 $ionicModal.fromTemplateUrl('views/auth/session_prompt.html', {
                     scope: scope,
