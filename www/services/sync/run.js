@@ -666,10 +666,22 @@ EdenMobile.factory('SyncRun', [
 
             var deferred = $q.defer(),
                 self = this,
+                downloads = {},
                 dataImports = [],
                 pendingDefaults = [];
 
             schemaImports.forEach(function(schemaImport) {
+
+                // Check for file dependencies
+                var fileDownload;
+                for (var url in schemaImport.requiredFiles) {
+                    if (downloads[url] === undefined) {
+                        fileDownload = new FileDownload(schemaImport.job, url);
+                        downloads[url] = fileDownload;
+                        fileDownload.done();
+                    }
+                }
+
                 schemaImport.done().then(
                     function() {
                         // Schema import succeeded

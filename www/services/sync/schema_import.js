@@ -50,6 +50,9 @@ EdenMobile.factory('SchemaImport', [
             // The names of the tables this task requires
             this.requires = [];
 
+            // Files required for this task: {downloadURL: Dependency}
+            this.requiredFiles = {};
+
             // Default value lookups required for this task
             this.pendingDefaults = [];
 
@@ -65,9 +68,16 @@ EdenMobile.factory('SchemaImport', [
             // Collect dependencies
             if (importData.schema) {
                 var run = this.run;
+
+                // Required schemas
                 this.requires.forEach(function(requirement) {
                     dependencies.push(run.require(requirement));
                 });
+
+                // Required files
+                for (var url in this.requiredFiles) {
+                    dependencies.push(this.requiredFiles[url]);
+                }
             }
             this.dependencies = dependencies;
         });
@@ -96,6 +106,7 @@ EdenMobile.factory('SchemaImport', [
                 function() {
                     // all dependencies resolved => go ahead
                     console.log('Importing schema for ' + self.tableName);
+
                     emResources.install(self.tableName, self.schema).then(
                         function() {
                             // Schema installation successful
@@ -171,6 +182,9 @@ EdenMobile.factory('SchemaImport', [
                         }
                     }
                 }
+
+                // Resolve dependencies in settings
+                this.resolveSettings(fieldName, fieldSpec);
 
                 // Resolve default value
                 this.resolveDefault(fieldName, fieldSpec, reference);
@@ -337,6 +351,34 @@ EdenMobile.factory('SchemaImport', [
                         resourceName
                     );
                     this.pendingDefaults.push(defaultLookup);
+                }
+            }
+        };
+
+        /**
+         * Resolve dependencies in settings, schedule additional
+         * sync tasks as required
+         *
+         * @param {string} fieldName - the field name
+         * @param {object} fieldSpec - the field spec from the server
+         */
+        SchemaImport.prototype.resolveSettings = function(fieldName, fieldSpec) {
+
+            var fieldSettings = fieldSpec.settings;
+            if (fieldSettings) {
+
+                // Resolve image for this field
+                var image = fieldSettings.image;
+                if (image && image.url) {
+                    var imageURL = image.url,
+                        dependency = this.requiredFiles[imageURL];
+                    if (!dependency) {
+                        dependency = this.run.require(null, null, imageURL);
+                        this.requiredFiles[imageURL] = dependency;
+                    }
+                    dependency.resolved().then(function() {
+                        image.file = dependency.fileURI;
+                    });
                 }
             }
         };

@@ -171,7 +171,7 @@
     var sanitizeHost = function(srvURL, reqURL) {
 
         var srv = new URL(srvURL),
-            req = new URL(reqURL);
+            req = new URL(reqURL, srv);
 
         return srv.protocol + '//' + srv.host + req.pathname;
     };
