@@ -51,7 +51,7 @@ EdenMobile.factory('SchemaImport', [
             this.requires = [];
 
             // Files required for this task: {downloadURL: Dependency}
-            this.requiredFiles = {};
+            this.requiredImages = {};
 
             // Default value lookups required for this task
             this.pendingDefaults = [];
@@ -75,8 +75,8 @@ EdenMobile.factory('SchemaImport', [
                 });
 
                 // Required files
-                for (var url in this.requiredFiles) {
-                    dependencies.push(this.requiredFiles[url]);
+                for (var url in this.requiredImages) {
+                    dependencies.push(this.requiredImages[url]);
                 }
             }
             this.dependencies = dependencies;
@@ -371,10 +371,10 @@ EdenMobile.factory('SchemaImport', [
                 var image = fieldSettings.image;
                 if (image && image.url) {
                     var imageURL = image.url,
-                        dependency = this.requiredFiles[imageURL];
+                        dependency = this.requiredImages[imageURL];
                     if (!dependency) {
                         dependency = this.run.require(null, null, imageURL);
-                        this.requiredFiles[imageURL] = dependency;
+                        this.requiredImages[imageURL] = dependency;
                     }
                     dependency.resolved().then(function() {
                         image.file = dependency.fileURI;

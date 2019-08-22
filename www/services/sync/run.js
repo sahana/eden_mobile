@@ -672,11 +672,11 @@ EdenMobile.factory('SyncRun', [
 
             schemaImports.forEach(function(schemaImport) {
 
-                // Check for file dependencies
+                // Check for required images
                 var fileDownload;
-                for (var url in schemaImport.requiredFiles) {
+                for (var url in schemaImport.requiredImages) {
                     if (downloads[url] === undefined) {
-                        fileDownload = new FileDownload(schemaImport.job, url);
+                        fileDownload = new FileDownload(schemaImport.job, url, 'image');
                         downloads[url] = fileDownload;
                         fileDownload.done();
                     }

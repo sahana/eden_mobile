@@ -30,14 +30,17 @@ EdenMobile.factory('FileDownload', [
         "use strict";
 
         /**
-         * SyncTask to
-         * - download a file attachment of a record
+         * SyncTask to download a file from the server
          *
          * @param {string} downloadURL - the URL to download the file from
+         * @param {string} fileType - the type (purpose) of the file:
+         *                            - 'upload' = attachment of a record (upload-field)
+         *                            - 'image'  = an image for a form widget
          */
-        var FileDownload = SyncTask.define(function(downloadURL) {
+        var FileDownload = SyncTask.define(function(downloadURL, fileType) {
 
             this.downloadURL = downloadURL;
+            this.fileType = fileType || 'upload';
 
             this.run.provide(this, null, null, downloadURL);
         });
@@ -60,11 +63,19 @@ EdenMobile.factory('FileDownload', [
                         //console.log('File received: ' + fileName);
 
                         var dataType = data.type || 'application/octet-stream',
-                            blob = new Blob([data], {type: dataType});
-                        emFiles.createTempFile(fileName, blob, function(tempFileURI) {
-                            self.resolve(tempFileURI);
-                        });
+                            blob = new Blob([data], {type: dataType}),
+                            resolve = function(fileURI) {
+                                self.resolve(fileURI);
+                            };
 
+                        switch(self.fileType) {
+                            case 'image':
+                                emFiles.createImageFile(fileName, blob, resolve);
+                                break;
+                            default:
+                                emFiles.createTempFile(fileName, blob, resolve);
+                                break;
+                        }
                     } else {
                         self.reject('no data received from ' + url);
                     }

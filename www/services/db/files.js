@@ -48,19 +48,19 @@
 
     // ------------------------------------------------------------------------
     /**
-     * Get upload directory
+     * Get directory for persistent storage of files
      *
+     * @param {string} fileType - uploads|images (=sub-directory name)
      * @param {function} onSuccess - the success callback, receives the
      *                               upload directory entry as parameter
      */
-    var getUploadDirectory = function(onSuccess) {
+    var getDirectory = function(fileType, onSuccess) {
 
         var dataDirectory = cordova.file.externalDataDirectory ||
-                            cordova.file.dataDirectory,
-            uploadDirectory = 'uploads';
+                            cordova.file.dataDirectory;
 
         window.resolveLocalFileSystemURL(dataDirectory, function(dataDir) {
-            dataDir.getDirectory(uploadDirectory,
+            dataDir.getDirectory(fileType,
                 {
                     create: true
                 },
@@ -71,55 +71,7 @@
 
     // ------------------------------------------------------------------------
     /**
-     * Helper function to move a file to a persistent location
-     *
-     * @param {object} fileEntry - the file entry
-     * @param {function} callback - the callback function, receives
-     *                              the new file URI as parameter
-     * @param {string} resourceName - name of the resource the file is linked to
-     * @param {string} fieldName - name of the field the file is linked to
-     */
-    var moveFile = function(fileEntry, onSuccess, resourceName, fieldName) {
-
-        var fileName = fileEntry.name;
-
-        // Resolve targetDir, then move the file
-        getUploadDirectory(function(uploadDir) {
-
-            // Generate new file name
-            var newFileName = fileName;
-            if (!!resourceName && !!fieldName) {
-                newFileName = [resourceName, fieldName, fileName].join('.');
-            }
-
-            fileEntry.moveTo(uploadDir, newFileName, function(newFileEntry) {
-                if (onSuccess) {
-                    onSuccess(newFileEntry.nativeURL);
-                }
-            }, fsError('failed to move file'));
-        });
-    };
-
-    // ------------------------------------------------------------------------
-    /**
-     * API function to store a file for an upload-field
-     *
-     * @param {string} fileURI - the file URI
-     * @param {function} callback - the callback function, receives
-     *                              the new file URI as parameter
-     * @param {string} resourceName - name of the resource the file is linked to
-     * @param {string} fieldName - name of the field the file is linked to
-     */
-    var store = function(fileURI, callback, resourceName, fieldName) {
-
-        window.resolveLocalFileSystemURL(fileURI, function(fileEntry) {
-            moveFile(fileEntry, callback, resourceName, fieldName);
-        }, fsError('file not found'));
-    };
-
-    // ------------------------------------------------------------------------
-    /**
-     * Create a file from data at a temporary location (cache)
+     * Create a file from download-data at a temporary location (cache)
      *
      * @param {string} fileName - the name of the temporary file
      * @param {Blob} data - the data as Blob
@@ -148,6 +100,86 @@
                     });
                 }, fsError('can not write to cache directory'));
         });
+    };
+
+    // ------------------------------------------------------------------------
+    /**
+     * Create a file from download-data in the images-folder
+     *
+     * @param {string} fileName - the name of the temporary file
+     * @param {Blob} data - the data as Blob
+     * @param {function} callback - success callback, function(fileURI)
+     */
+    var createImageFile = function(fileName, data, callback) {
+
+        getDirectory('images', function(imagesDir) {
+
+            imagesDir.getFile(fileName, {create: true, exclusive: false},
+
+                function(fileEntry) {
+
+                    fileEntry.createWriter(function(fileWriter) {
+                        fileWriter.onwriteend = function() {
+                            if (callback) {
+                                callback(fileEntry.nativeURL);
+                            }
+                        };
+                        fileWriter.onerror = function(error) {
+                            fsError('unable to create image file: ' + error);
+                        };
+                        fileWriter.write(data);
+                    });
+                }, fsError('can not write to image directory'));
+        });
+    };
+
+    // ------------------------------------------------------------------------
+    /**
+     * Helper function to move a file from cache to a persistent location
+     *
+     * @param {object} fileEntry - the file entry
+     * @param {function} callback - the callback function, receives
+     *                              the new file URI as parameter
+     * @param {string} resourceName - name of the resource the file is linked to
+     * @param {string} fieldName - name of the field the file is linked to
+     */
+    var moveFile = function(fileEntry, onSuccess, resourceName, fieldName) {
+
+        var fileName = fileEntry.name;
+
+        // Resolve targetDir, then move the file
+        getDirectory('uploads', function(uploadDir) {
+
+            // Generate new file name
+            var newFileName = fileName;
+            if (!!resourceName && !!fieldName) {
+                newFileName = [resourceName, fieldName, fileName].join('.');
+            }
+
+            fileEntry.moveTo(uploadDir, newFileName, function(newFileEntry) {
+                if (onSuccess) {
+                    onSuccess(newFileEntry.nativeURL);
+                }
+            }, fsError('failed to move file'));
+        });
+    };
+
+    // ------------------------------------------------------------------------
+    /**
+     * API function to store a file for an upload-field; moves the file
+     * from the cache to a persistent location
+     *
+     * @param {string} fileURI - the (temp-)file URI
+     * @param {function} callback - the callback function, receives
+     *                              the new file URI as parameter
+     * @param {string} resourceName - name of the resource the file is linked to
+     * @param {string} fieldName - name of the field the file is linked to
+     */
+    var store = function(fileURI, callback, resourceName, fieldName) {
+
+        window.resolveLocalFileSystemURL(fileURI, function(fileEntry) {
+            moveFile(fileEntry, callback, resourceName, fieldName);
+        }, fsError('file not found'));
     };
 
     // ------------------------------------------------------------------------
@@ -238,6 +270,7 @@
             var api = {
 
                 createTempFile: createTempFile,
+                createImageFile: createImageFile,
 
                 store: store,
                 remove: remove,
