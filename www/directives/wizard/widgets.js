@@ -661,8 +661,8 @@
      *       }
      */
     EdenMobile.directive('emWizardImageMap', [
-        '$compile',
-        function($compile) {
+        '$compile', '$q',
+        function($compile, $q) {
 
             // ----------------------------------------------------------------
             /**
@@ -837,7 +837,8 @@
                 $compile(mapContainer)($scope);
 
                 // Get the image URI (=local file URI)
-                var imageURI = attr.image;
+                var imageURI = attr.image,
+                    mapLoaded = $q.defer();
                 if (imageURI) {
 
                     // Load the image to determine width and height
@@ -903,6 +904,7 @@
                         map.addLayer(imageLayer);
                         map.addLayer(regionLayer);
                         map.addLayer(pointLayer);
+                        mapLoaded.resolve([pointSource, regionSource]);
 
                         // Add the map view and adjust the aspect ratio
                         map.setView(new ol.View({
@@ -934,7 +936,30 @@
                         });
                     };
                     img.src = imageURI;
+                } else {
+                    mapLoaded.reject('no image URI');
                 }
+
+                // Render current field value (e.g. update or returning to section)
+                ngModel.$render = function() {
+
+                    // Wait for map and sources to become ready...
+                    mapLoaded.promise.then(function(sources) {
+                        var pointSource = sources[0],
+                            regionSource = sources[1],
+                            currentValue = ngModel.$modelValue;
+
+                        if (currentValue) {
+                            var selectedPoints = currentValue.selectedPoints;
+                            if (selectedPoints) {
+                                selectedPoints.forEach(function(coordinate) {
+                                    addSelectedPoint($scope, pointSource, coordinate);
+                                });
+                                updateSelectedRegions($scope, regionSource);
+                            }
+                        }
+                    });
+                };
             };
 
             // ----------------------------------------------------------------
