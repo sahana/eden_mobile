@@ -650,6 +650,303 @@
         }
     ]);
 
+    // ========================================================================
+    /**
+     * Image Map widget <em-wizard-image-map>
+     * - mark points of relevance on an image
+     * - marked points select pre-defined regions (polygons) in the image
+     * - produces JSON output, format:
+     *      {"selectedPoints": [[lon, lat], ...],
+     *       "selectedRegions": [regionID, ...],
+     *       }
+     */
+    EdenMobile.directive('emWizardImageMap', [
+        '$compile',
+        function($compile) {
+
+            // ----------------------------------------------------------------
+            /**
+             * Map styles for selected points and regions
+             */
+            var mapStyles = {
+                selectedPoints: new ol.style.Style({
+                    image: new ol.style.Circle({
+                        radius: 7,
+                        fill: new ol.style.Fill({
+                            color: [255, 0, 0, 0.8]
+                        }),
+                        stroke: new ol.style.Stroke({
+                            color: [255, 0, 0, 1.0],
+                            width: 2
+                        })
+                    })
+                }),
+                selectedRegions: new ol.style.Style({
+                    fill: new ol.style.Fill({
+                        color: [0, 85, 127, 0.4]
+                    }),
+                    stroke: new ol.style.Stroke({
+                        color: [0, 85, 127, 0.8],
+                        width: 2
+                    })
+                }),
+                deselectedRegions: new ol.style.Style({
+                    fill: new ol.style.Fill({
+                        color: [0, 0, 0, 0]
+                    }),
+                    stroke: new ol.style.Stroke({
+                        color: [0, 0, 0, 0],
+                        width: 2
+                    })
+                })
+            };
+
+            // ----------------------------------------------------------------
+            /**
+             * Add a selected point
+             * - updates $scope.selection.selectedPoints, detects duplicates,
+             *   moves re-selected points to the end of the array
+             * - adds a point feature to the point source, which renders
+             *   a circle marker on the point's position
+             *
+             * @param {object} $scope - the local scope of the widget
+             * @param {ol.source.Vector} pointSource - the point source
+             * @param {Array} coordinate - the point's coordinate [lon, lat]
+             *
+             * @returns {boolean} - whether a new points was indeed added
+             */
+            var addSelectedPoint = function($scope, pointSource, coordinate) {
+
+                var selection = $scope.selection,
+                    selectedPoints = selection.selectedPoints,
+                    newSelection = [],
+                    add = true;
+
+                selectedPoints.forEach(function(point) {
+                    if (point[0] != coordinate[0] || point[1] != coordinate[1]) {
+                        newSelection.push(point);
+                    } else {
+                        // This point was already selected
+                        add = false;
+                    }
+                });
+
+                newSelection.push(coordinate);
+                if (add) {
+                    var feature = new ol.Feature({
+                        geometry: new ol.geom.Point(coordinate)
+                    });
+                    pointSource.addFeature(feature);
+                }
+                selection.selectedPoints = newSelection;
+
+                return add;
+            };
+
+            // ----------------------------------------------------------------
+            /**
+             * Update selected regions
+             * - match $scope.selection.selectedPoints to pre-defined regions
+             * - make matching regions visible on the map
+             * - update $scope.selection.selectedRegions
+             *
+             * @param {object} $scope - the local scope of the widget
+             * @param {ol.source.Vector} regionSource - the regions source
+             *
+             * @returns {Array} - the IDs of the selected regions
+             */
+            var updateSelectedRegions = function($scope, regionSource) {
+
+                var selection = $scope.selection,
+                    selectedPoints = selection.selectedPoints;
+
+                var selectedRegionIDs = [],
+                    selected = {};
+                selectedPoints.forEach(function(coordinate) {
+                    // Get all regions matching this point
+                    var regions = regionSource.getFeaturesAtCoordinate(coordinate);
+
+                    regions.forEach(function(region) {
+                        var regionID = region.getProperties().region;
+                        if (!selected[regionID]) {
+                            selected[regionID] = true;
+                            selectedRegionIDs.push(regionID);
+                        }
+                    });
+                });
+
+                var allRegions = regionSource.getFeatures();
+                allRegions.forEach(function(region) {
+                    var regionID = region.getProperties().region;
+                    if (selected[regionID]) {
+                        region.setStyle(mapStyles.selectedRegions);
+                    } else {
+                        region.setStyle(mapStyles.deselectedRegions);
+                    }
+                });
+
+                selection.selectedRegions = selectedRegionIDs;
+
+                return selectedRegionIDs;
+            };
+
+            // ----------------------------------------------------------------
+            /**
+             * Adjust aspect ratio of the map to match that of the image
+             * - so that the image always fills the map canvas
+             * - must be called initially and whenever the map width changes
+             *
+             * @param {ol.Map} map - the map instance
+             * @param {DOMNode} img - the image element
+             */
+            var adjustAspectRatio = function(map, img) {
+
+                var extent = [0, 0, img.width, img.height],
+                    mapSize = map.getSize(),
+                    view = map.getView(),
+                    res = view.getResolutionForExtent(extent, [mapSize[0], img.height]);
+
+                map.setSize([mapSize[0], img.height / res]);
+                view.setResolution(res);
+            };
+
+            // ----------------------------------------------------------------
+            /**
+             * Link a DOM element to this directive
+             *
+             * @param {object} $scope - the local scope of the DOM element
+             * @param {DOMNode} elem - the element
+             * @param {object} attr - the element's HTML attributes
+             * @param {ngModelController} ngModel - the model controller
+             */
+            var link = function($scope, elem, attr, ngModel) {
+
+                // Initialize local scope
+                $scope.selection = {
+                    selectedPoints: [],
+                    selectedRegions: []
+                };
+
+                // Create the map container, append it to the DOM
+                // and compile it against the local scope
+                var fieldName = attr.field,
+                    mapContainer = angular.element('<div class="map">')
+                                          .attr('id', fieldName + 'image-map');
+
+                elem.append(mapContainer);
+                $compile(mapContainer)($scope);
+
+                // Get the image URI (=local file URI)
+                var imageURI = attr.image;
+                if (imageURI) {
+
+                    // Load the image to determine width and height
+                    var img = document.createElement('img');
+                    img.onload = function () {
+
+                        // Compute extent and projection
+                        var extent = [0, 0, img.width, img.height],
+                            projection = new ol.proj.Projection({
+                                code: 'preview-image',
+                                units: 'pixels',
+                                extent: extent
+                            });
+
+                        // Create the image layer
+                        var imageLayer = new ol.layer.Image({
+                            source: new ol.source.ImageStatic({
+                                url: imageURI,
+                                projection: projection,
+                                imageExtent: extent
+                            })
+                        });
+
+                        // Create a regions source
+                        var regionSource = new ol.source.Vector({
+                            wrapX: false
+                        });
+
+                        // Parse the regions and add them to the regionSource
+                        var format = new ol.format.GeoJSON({featureProjection: projection}),
+                            regions = elem.find('region');
+                        if (regions.length) {
+                            angular.forEach(regions, function(region) {
+                                var geojson = JSON.parse(angular.element(region).attr('geojson'));
+                                var feature = format.readFeatureFromObject(geojson);
+                                regionSource.addFeature(feature);
+                            });
+                        }
+
+                        // Create the regions layer
+                        var regionLayer = new ol.layer.Vector({
+                            source: regionSource,
+                            // Default style: deselected
+                            style: mapStyles.deselectedRegions
+                        });
+
+                        // Create the selected-points source and layer
+                        var pointSource = new ol.source.Vector({
+                                wrapX: false
+                            }),
+                            pointLayer = new ol.layer.Vector({
+                                source: pointSource,
+                                style: mapStyles.selectedPoints
+                            });
+
+                        // Build the map and add the layers
+                        var map = new ol.Map({
+                            controls: [],
+                            interactions: [],
+                            target: fieldName + 'image-map',
+                        });
+                        //$scope.map = map;
+                        map.addLayer(imageLayer);
+                        map.addLayer(regionLayer);
+                        map.addLayer(pointLayer);
+
+                        // Add the map view and adjust the aspect ratio
+                        map.setView(new ol.View({
+                            projection: projection,
+                            center: ol.extent.getCenter(extent),
+                        }));
+                        adjustAspectRatio(map, img);
+
+                        // Adjust aspect ratio whenever the map size changes
+                        // (e.g. device orientation changing)
+                        var adjusting = false;
+                        map.on('change:size', function() {
+                            if (adjusting) {
+                                return;
+                            }
+                            adjusting = true; // prevent self-triggering
+                            adjustAspectRatio(map, img);
+                            adjusting = false;
+                        });
+
+                        // Handle click on the map
+                        map.on('singleclick', function(e) {
+
+                            // TODO single select?
+                            if (addSelectedPoint($scope, pointSource, e.coordinate)) {
+                                updateSelectedRegions($scope, regionSource);
+                            }
+                            ngModel.$setViewValue(JSON.stringify($scope.selection));
+                        });
+                    };
+                    img.src = imageURI;
+                }
+            };
+
+            // ----------------------------------------------------------------
+            // Return the DDO
+            return {
+                link: link,
+                require: 'ngModel',
+                scope: true
+            };
+        }
+    ]);
+
 })(EdenMobile);
 
 // END ========================================================================

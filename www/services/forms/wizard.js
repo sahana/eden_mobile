@@ -152,7 +152,8 @@ EdenMobile.factory('emFormWizard', [
             }
 
             var element,
-                acceptedArgs; // acceptedArgs = ['argName', ...], set per widget
+                acceptedArgs, // acceptedArgs = ['argName', ...], set per widget
+                regions;
             switch(widgetType) {
                 case 'boolean':
                     element = '<em-wizard-boolean-widget>';
@@ -188,9 +189,15 @@ EdenMobile.factory('emFormWizard', [
 //                 case 'likert':
 //                     element = '<em-wizard-likert-widget>';
 //                     break;
-//                 case 'image-map':
-//                     element = '<em-wizard-image-map>';
-//                     break;
+                case 'image-map':
+                case 'heatmap':
+                    var imageURI = '';
+                    if (fieldSettings.image) {
+                        imageURI = fieldSettings.image.file || '';
+                    }
+                    element = '<em-wizard-image-map image="' + imageURI + '">';
+                    regions = widgetConfig.regions;
+                    break;
                 case 'json':
                     element = '<em-wizard-json-widget>';
                     break;
@@ -210,6 +217,16 @@ EdenMobile.factory('emFormWizard', [
                     if (value !== undefined && value !== null) {
                         widget.attr(argName, '' + value);
                     }
+                });
+            }
+
+            // Add inline-elements for widget
+            // TODO generalize this
+            if (regions && regions.constructor === Array) {
+                regions.forEach(function(region) {
+                    var inlineRegion = angular.element('<region>');
+                    inlineRegion.attr('geojson', region);
+                    widget.append(inlineRegion);
                 });
             }
 
