@@ -25,8 +25,6 @@
 
 (function(EdenMobile) {
 
-    // TODO implement more widgets
-
     "use strict";
 
     // ========================================================================
@@ -661,8 +659,8 @@
      *       }
      */
     EdenMobile.directive('emWizardImageMap', [
-        '$compile', '$q',
-        function($compile, $q) {
+        '$compile', '$q', 'emDialogs',
+        function($compile, $q, emDialogs) {
 
             // ----------------------------------------------------------------
             /**
@@ -718,18 +716,31 @@
             var addSelectedPoint = function($scope, pointSource, coordinate) {
 
                 var selection = $scope.selection,
-                    selectedPoints = selection.selectedPoints,
                     newSelection = [],
                     add = true;
 
-                selectedPoints.forEach(function(point) {
-                    if (point[0] != coordinate[0] || point[1] != coordinate[1]) {
-                        newSelection.push(point);
-                    } else {
-                        // This point was already selected
-                        add = false;
+                var maxSelectedPoints = $scope.maxSelectedPoints;
+                if (maxSelectedPoints == 1) {
+                    // Single-select => new selection replaces previous selection
+                    pointSource.clear();
+                } else {
+                    var selectedPoints = selection.selectedPoints;
+
+                    // Enforce maxSelectedPoints
+                    if (selectedPoints.length == maxSelectedPoints) {
+                        emDialogs.error('Only ' + maxSelectedPoints + ' clicks allowed');
+                        return false;
                     }
-                });
+
+                    selectedPoints.forEach(function(point) {
+                        if (point[0] != coordinate[0] || point[1] != coordinate[1]) {
+                            newSelection.push(point);
+                        } else {
+                            // This point was already selected
+                            add = false;
+                        }
+                    });
+                }
 
                 newSelection.push(coordinate);
                 if (add) {
@@ -801,8 +812,13 @@
              */
             var adjustAspectRatio = function(map, img) {
 
+                var mapSize = map.getSize();
+                if (mapSize === undefined) {
+                    // Map disposal triggers change:size too
+                    return;
+                }
+
                 var extent = [0, 0, img.width, img.height],
-                    mapSize = map.getSize(),
                     view = map.getView(),
                     res = view.getResolutionForExtent(extent, [mapSize[0], img.height]);
 
@@ -826,6 +842,15 @@
                     selectedPoints: [],
                     selectedRegions: []
                 };
+
+                // Get maxSelectedPoints from attr
+                var maxSelectedPoints = attr.maxSelectedPoints;
+                if (maxSelectedPoints) {
+                    maxSelectedPoints -= 0;
+                    if (!isNaN(maxSelectedPoints)) {
+                        $scope.maxSelectedPoints = maxSelectedPoints;
+                    }
+                }
 
                 // Create the map container, append it to the DOM
                 // and compile it against the local scope
@@ -927,12 +952,11 @@
 
                         // Handle click on the map
                         map.on('singleclick', function(e) {
-
-                            // TODO single select?
                             if (addSelectedPoint($scope, pointSource, e.coordinate)) {
                                 updateSelectedRegions($scope, regionSource);
                             }
                             ngModel.$setViewValue(JSON.stringify($scope.selection));
+                            ngModel.$setTouched();
                         });
                     };
                     img.src = imageURI;

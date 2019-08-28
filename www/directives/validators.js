@@ -80,6 +80,46 @@
 
             return {
                 require: 'ngModel',
+                restrict: 'A',
+                link: link
+            };
+        }
+    ]);
+
+    // ========================================================================
+    /**
+     * Minimum number of selected points in emWizardImageMap
+     */
+    EdenMobile.directive('minSelectedPoints', [
+        function() {
+
+            var link = function($scope, elem, attr, ngModel) {
+
+                var minSelectedPoints = attr.minSelectedPoints - 0;
+                if (!isNaN(minSelectedPoints) && minSelectedPoints > 0) {
+                    ngModel.$validators.minSelectedPoints = function(modelValue, viewValue) {
+                        var parsed;
+                        if (viewValue) {
+                            try {
+                                parsed = JSON.parse(viewValue.trim());
+                            } catch(e) {
+                                return false;
+                            }
+                        }
+                        if (parsed) {
+                            var selectedPoints = parsed.selectedPoints;
+                            return selectedPoints.constructor === Array && selectedPoints.length >= minSelectedPoints;
+                        } else {
+                            // No data yet => always invalid
+                            return false;
+                        }
+                    };
+                }
+            };
+
+            return {
+                require: 'ngModel',
+                restrict: 'A',
                 link: link
             };
         }

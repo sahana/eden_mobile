@@ -163,7 +163,49 @@
                 errors: ['json', 'parse'],
                 message: errorMsg
             };
-        }
+        },
+
+        // --------------------------------------------------------------------
+        /**
+         * Min/max number of selected options in list:* fields
+         */
+
+        // TODO
+
+        // --------------------------------------------------------------------
+        /**
+         * Minimum number of selected points in emWizardImageMap
+         */
+        minSelectedPoints: function(options) {
+
+            var errorMsg = options.error;
+            if (!errorMsg) {
+                errorMsg = 'Choose at least ' + options.number + ' point(s)';
+            }
+            return {
+                directives: {'min-selected-points': '' + options.number},
+                errors: ['minSelectedPoints'],
+                message: errorMsg
+            };
+        },
+
+        // --------------------------------------------------------------------
+        /**
+         * Maximum number of selected points in emWizardImageMap
+         * - will currently be enforced rather than validated
+         */
+        maxSelectedPoints: function(options) {
+
+            var errorMsg = options.error;
+            if (!errorMsg) {
+                errorMsg = 'Only ' + options.number + ' clicks allowed';
+            }
+            return {
+                directives: {'max-selected-points': '' + options.number},
+                errors: ['maxSelectedPoints'],
+                message: errorMsg
+            };
+        },
     };
 
     // ========================================================================
@@ -213,24 +255,56 @@
 
                 var fieldDescription = field._description,
                     settings = fieldDescription.settings,
-                    requires = fieldDescription.requires || (settings && settings.requires);
+                    requires = fieldDescription.requires || (settings && settings.requires) || {};
 
-                if (!requires) {
-                    // Fall back to default validators for the field type
-                    requires = {};
-                    switch(field.type) {
-                        case 'double':
+                // Mandatory validators and rule interpretation per field type
+                switch(field.type) {
+                    case 'double':
+                        // Mandatory isFloatInRange
+                        if (!requires.hasOwnProperty('isFloatInRange')) {
                             requires.isFloatInRange = {};
-                            break;
-                        case 'integer':
+                        }
+                        break;
+                    case 'integer':
+                        // Mandatory isIntInRange
+                        if (!requires.hasOwnProperty('isIntInRange')) {
                             requires.isIntInRange = {};
-                            break;
-                        case 'json':
+                        }
+                        break;
+                    case 'json':
+                        // Mandatory isJson
+                        if (!requires.hasOwnProperty('isJson')) {
                             requires.isJson = null;
-                            break;
-                        default:
-                            break;
-                    }
+                        }
+                        // Interpret other validators by widget type
+                        var widget = settings.widget;
+                        if (widget) {
+                            switch(widget.type) {
+                                case 'image-map':
+                                case 'heatmap':
+                                    // Translate required/isNotEmpty into minSelectedPoints
+                                    if (fieldDescription.required || requires.isNotEmpty !== undefined) {
+                                        requires.minSelectedPoints = 1;
+                                    }
+                                    // Translate selectedOpts into separate min/maxSelectedPoints
+                                    var selectedOpts = requires.selectedOpts;
+                                    if (selectedOpts) {
+                                        if (selectedOpts.min) {
+                                            requires.minSelectedPoints = {number: selectedOpts.min};
+                                        }
+                                        if (selectedOpts.max) {
+                                            requires.maxSelectedPoints = {number: selectedOpts.max};
+                                        }
+                                        delete requires.selectedOpts;
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                        break;
+                    default:
+                        break;
                 }
 
                 // Add isNotEmpty to any field marked as required (unless already present):

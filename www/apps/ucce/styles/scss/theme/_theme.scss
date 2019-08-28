@@ -54,7 +54,8 @@ form {
         input,
         textarea,
         select,
-        div.list.multi-select {
+        div.list.multi-select,
+        em-wizard-image-map div.map {
             &.ng-invalid {
                 border: 1px solid red;
             }

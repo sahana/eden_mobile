@@ -195,7 +195,7 @@ EdenMobile.factory('emFormWizard', [
                     if (fieldSettings.image) {
                         imageURI = fieldSettings.image.file || '';
                     }
-                    element = '<em-wizard-image-map image="' + imageURI + '">';
+                    element = '<em-wizard-image-map name="' + field.name + '" image="' + imageURI + '">';
                     regions = widgetConfig.regions;
                     break;
                 case 'json':
