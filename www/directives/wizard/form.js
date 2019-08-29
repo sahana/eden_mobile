@@ -50,6 +50,13 @@
                                   .attr('name', formName)
                                   .attr('novalidate', 'novalidate');
 
+                // Required-answers hint
+                var requiredHint = angular.element('<div class="required-hint">')
+                                          .text('* = answer required')
+                                          .attr('ng-if', 'formStatus.hasRequired');
+                form.append(requiredHint);
+                $scope.formStatus.hasRequired = false;
+
                 // Generate the form rows for this section
                 var formRows = angular.element('<div class="list">'),
                     displayLogic = {};
@@ -144,6 +151,7 @@
                 // Add validator directives
                 // - widgets must apply those to the actual inputs
                 var validate = emValidate.getDirectives(field),
+                    markRequired = false,
                     errors = [];
                 if (validate) {
                     validate.forEach(function(validation) {
@@ -152,6 +160,9 @@
                             directive;
                         for (directive in directives) {
                             widget.attr(directive, directives[directive]);
+                            if (directive == 'ng-required') {
+                                markRequired = true;
+                            }
                         }
 
                         var showOn = validation.errors.map(function(cond) {
@@ -166,7 +177,11 @@
                 var formRow = emFormStyle.formRow(formName,
                                                   field.getLabel(),
                                                   widget,
-                                                  errors);
+                                                  errors,
+                                                  markRequired);
+                if (markRequired) {
+                    $scope.formStatus.hasRequired = true;
+                }
 
                 // Display logic and required
                 // - skip display logic if field is marked as required

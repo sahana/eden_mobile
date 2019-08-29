@@ -46,6 +46,17 @@ form {
     em-wizard-image-map.ng-invalid div.map {
         border: 1px solid red;
     }
+    span.asterisk:before {
+        content: '*';
+        color: red;
+        margin: 0 0.2rem;
+    }
+    .required-hint {
+        color: red;
+        font-size: 0.8rem;
+        text-align: right;
+        margin-top: 0.5rem;
+    }
     .item-stacked-label {
         input,
         textarea,

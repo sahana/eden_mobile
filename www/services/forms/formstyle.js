@@ -49,13 +49,17 @@
     //
     function WizardFormStyle() {}
 
-    WizardFormStyle.prototype.formRow = function(formName, label, widget, errors) {
+    WizardFormStyle.prototype.formRow = function(formName, label, widget, errors, markRequired) {
 
         var labelContainer = angular.element('<div class="wizard-label">').html(label),
             widgetContainer = widget,
             formRow = angular.element('<label class="card item-stacked-label">')
                              .append(labelContainer)
                              .append(widgetContainer);
+
+        if (markRequired) {
+            labelContainer.append(angular.element('<span class="asterisk">'));
+        }
 
         if (errors) {
 
