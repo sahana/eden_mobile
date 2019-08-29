@@ -43,6 +43,9 @@ form {
         right: unset;
         left: 8px;
     }
+    em-wizard-image-map.ng-invalid div.map {
+        border: 1px solid red;
+    }
     .item-stacked-label {
         input,
         textarea,
@@ -54,8 +57,7 @@ form {
         input,
         textarea,
         select,
-        div.list.multi-select,
-        em-wizard-image-map div.map {
+        div.list.multi-select {
             &.ng-invalid {
                 border: 1px solid red;
             }

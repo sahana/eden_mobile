@@ -952,7 +952,21 @@
 
                         // Handle click on the map
                         map.on('singleclick', function(e) {
-                            if (addSelectedPoint($scope, pointSource, e.coordinate)) {
+
+                            // Ignore if click is outside of the image
+                            var coordinate = e.coordinate;
+                            if (coordinate[0] < 0 || coordinate[0] > img.width ||
+                                coordinate[1] < 0 || coordinate[1] > img.height) {
+                                return false;
+                            }
+
+                            // Round to full pixels
+                            coordinate = [
+                                Math.round(coordinate[0]),
+                                Math.round(coordinate[1])
+                            ];
+
+                            if (addSelectedPoint($scope, pointSource, coordinate)) {
                                 updateSelectedRegions($scope, regionSource);
                             }
                             ngModel.$setViewValue(JSON.stringify($scope.selection));
