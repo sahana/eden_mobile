@@ -251,17 +251,25 @@ EdenMobile.factory('emDisplayLogic', [
          * @returns {function} - show-function
          */
         DisplayLogic.prototype.selectedRegion = function(other, value) {
-            var form = this.form;
-            return function() {
-                var fieldValue = form[other];
-                if (isObject(fieldValue)) {
-                    var selectedRegions = fieldValue.selectedRegions;
-                    if (selectedRegions && selectedRegions.constructor === Array) {
-                        return selectedRegions.indexOf(value) != -1;
+            var form = this.form,
+                showIf;
+
+            value = value - 0;
+            if (isNaN(value)) {
+                // Only numbers can succeed
+                showIf = this.never;
+            } else {
+                showIf = function() {
+                    var fieldValue = form[other];
+                    if (isObject(fieldValue)) {
+                        var selectedRegions = fieldValue.selectedRegions;
+                        if (selectedRegions && selectedRegions.constructor === Array) {
+                            return selectedRegions.indexOf(value) != -1;
+                        }
                     }
-                }
-                return false;
-            };
+                    return false;
+                };
+            }
         };
 
         // --------------------------------------------------------------------
