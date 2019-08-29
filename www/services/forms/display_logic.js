@@ -27,6 +27,14 @@ EdenMobile.factory('emDisplayLogic', [
     function() {
 
         /**
+         * Helper to determine whether a variable is an
+         * object with iterable properties
+         */
+        var isObject = function(value) {
+            return value && typeof value === 'object' && value.constructor === Object;
+        };
+
+        /**
          * Display Logic Rule Processor; for use with ngShow
          * - ngShow = DisplayLogic(form, fieldName, rule).show()
          *
@@ -138,6 +146,9 @@ EdenMobile.factory('emDisplayLogic', [
                         case 'ge':
                             conditions.push(this.ge(other, value));
                             break;
+                        case 'selectedRegion':
+                            conditions.push(this.selectedRegion(other, value));
+                            break;
                         default:
                             break;
                     }
@@ -230,6 +241,26 @@ EdenMobile.factory('emDisplayLogic', [
             var form = this.form;
             return function() {
                 return form[other] >= value;
+            };
+        };
+
+        /**
+         * Show field if value of other field has a 'selectedRegions'
+         * property which contains value (=a certain regionID); for ImageMap
+         *
+         * @returns {function} - show-function
+         */
+        DisplayLogic.prototype.selectedRegion = function(other, value) {
+            var form = this.form;
+            return function() {
+                var fieldValue = form[other];
+                if (isObject(fieldValue)) {
+                    var selectedRegions = fieldValue.selectedRegions;
+                    if (selectedRegions && selectedRegions.constructor === Array) {
+                        return selectedRegions.indexOf(value) != -1;
+                    }
+                }
+                return false;
             };
         };
 
