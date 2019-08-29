@@ -27,11 +27,13 @@ EdenMobile.factory('emDisplayLogic', [
     function() {
 
         /**
-         * Helper to determine whether a variable is an
-         * object with iterable properties
+         * Type-check helpers
          */
         var isObject = function(value) {
             return value && typeof value === 'object' && value.constructor === Object;
+        };
+        var isArray = function(value) {
+            return value && typeof value === 'object' && value.constructor === Array;
         };
 
         /**
@@ -73,7 +75,7 @@ EdenMobile.factory('emDisplayLogic', [
                 // No rule => show never
                 this.show = this.never;
 
-            } else if (rule.constructor === Array) {
+            } else if (isArray(rule)) {
 
                 // Array of rules
 
@@ -109,7 +111,7 @@ EdenMobile.factory('emDisplayLogic', [
                     this.show = this.always;
                 }
 
-            } else if (typeof rule === 'object' && rule.constructor === Object) {
+            } else if (isObject(rule)) {
 
                 // Single rule
 
@@ -180,7 +182,13 @@ EdenMobile.factory('emDisplayLogic', [
         DisplayLogic.prototype.eq = function(other, value) {
             var form = this.form;
             return function() {
-                return form[other] == value;
+                var fieldValue = form[other];
+                if (isArray(fieldValue)) {
+                    // Treat as containment-operator with Array
+                    return fieldValue.indexOf(value) != -1;
+                } else {
+                    return fieldValue == value;
+                }
             };
         };
 
@@ -263,7 +271,7 @@ EdenMobile.factory('emDisplayLogic', [
                     var fieldValue = form[other];
                     if (isObject(fieldValue)) {
                         var selectedRegions = fieldValue.selectedRegions;
-                        if (selectedRegions && selectedRegions.constructor === Array) {
+                        if (isArray(selectedRegions)) {
                             return selectedRegions.indexOf(value) != -1;
                         }
                     }
