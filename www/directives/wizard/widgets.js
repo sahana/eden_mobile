@@ -1010,6 +1010,129 @@
         }
     ]);
 
+    // ========================================================================
+    /**
+     * Likert-scale widget <em-wizard-likert-scale>
+     */
+    EdenMobile.directive('emWizardLikertScale', [
+        '$compile', 'emLikertScale',
+        function($compile, emLikertScale) {
+
+            /**
+             * No-options-available hint
+             *
+             * @returns {angular.element} - the element to use as widget
+             */
+            var noOptionsHint = function() {
+                return angular.element('<span class="noopts">')
+                              .text('No options available');
+            };
+
+            var iconBar = function(fieldName, options, icons, attr) {
+                // TODO implement
+            };
+
+            // TODO docstring
+            var radioItems = function(fieldName, options, icons, attr) {
+
+                var widget = angular.element('<ion-list class="radio-options">'),
+                    valueRequired = attr.ngRequired;
+
+                options.forEach(function(option) {
+
+                    var value = option[0],
+                        repr = option[1];
+                    if (!value && value !== 0) {
+                        return;
+                    } else if (!repr) {
+                        repr = '' + option[0];
+                    }
+
+                    var icon = icons['' + value];
+                    if (icon) {
+                        repr = '<i class="' + icon + ' likert-vertical"></i>' + repr;
+                    }
+
+                    var item = angular.element('<ion-radio>')
+                                      .attr('name', fieldName)
+                                      .attr('value', value)
+                                      .html(repr);
+
+                    copyAttr(attr, item, [
+                        'ngModel',
+                        'disabled',
+                        'ngRequired'
+                    ]);
+                    widget.append(item);
+                });
+
+                return widget;
+            };
+
+            /**
+             * Link a DOM element to this directive
+             */
+            var link = function($scope, elem, attr) {
+
+                var fieldName = attr.field,
+                    scaleType = attr.scale,
+                    getOptions;
+
+                if (scaleType) {
+                    getOptions = emLikertScale.getOptions(scaleType);
+                } else {
+                    var resource = $scope.resource;
+                    getOptions = resource.getOptions(fieldName);
+                }
+
+                getOptions.then(
+                    function(options) {
+                        // Construct the widget
+                        var widget;
+                        if (!options.length) {
+                            widget = noOptionsHint();
+                        } else {
+
+                            var iconConfig = emLikertScale.getIcons(scaleType),
+                                icons = {};
+                            iconConfig.forEach(function(icon) {
+                                icons['' + icon[0]] = icon[1];
+                            });
+
+                            var inlineIcons = elem.find('likert-icon');
+                            angular.forEach(inlineIcons, function(icon) {
+                                var $icon = angular.element(icon);
+                                icons[$icon.attr('opt')] = $icon.attr('css');
+                            });
+
+                            if (emLikertScale.iconsOnly(scaleType)) {
+                                widget = iconBar(fieldName, options, icons, attr);
+                            } else {
+                                widget = radioItems(fieldName, options, icons, attr);
+                            }
+                        }
+
+                        // Add widget to DOM and compile it against scope
+                        elem.replaceWith(widget);
+                        $compile(widget)($scope);
+                    },
+                    function() {
+                        // This field has no options
+                        var widget = noOptionsHint();
+
+                        // Add widget to DOM and compile it against scope
+                        elem.replaceWith(widget);
+                        $compile(widget)($scope);
+                    });
+            };
+
+            // Return the DDO
+            return {
+                link: link
+            };
+        }
+    ]);
+
 })(EdenMobile);
 
 // END ========================================================================

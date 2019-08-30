@@ -24,8 +24,8 @@
  */
 
 EdenMobile.config([
-    'emFormStyleProvider', 'emAuthProvider',
-    function(emFormStyleProvider, emAuthProvider) {
+    'emFormStyleProvider', 'emAuthProvider', 'emLikertScaleProvider',
+    function(emFormStyleProvider, emAuthProvider, emLikertScaleProvider) {
 
         "use strict";
 
@@ -37,5 +37,28 @@ EdenMobile.config([
 
         // Session times out after 30 minutes of inaktivity
         emAuthProvider.sessionTimeout(30);
+
+        // Likert-scales used with this app
+        emLikertScaleProvider
+            .scale(
+                'appropriateness',
+                ['Very appropriate', 'Somewhat appropriate', 'Neither appropriate nor inappropriate', 'Somewhat inappropriate', 'Very inappropriate']
+            )
+            .scale(
+                'confidence',
+                ['Extremely confident', 'Very confident', 'Moderately confident', 'Slightly confident', 'Not confident at all']
+            )
+            .scale(
+                'frequency',
+                ['Always', 'Often', 'Occasionally', 'Rarely', 'Never']
+            )
+            .scale(
+                'safety',
+                ['Extremely safe', 'Very safe', 'Moderately safe', 'Slightly safe', 'Not safe at all']
+            )
+            .scale(
+                'satisfaction',
+                ['Very satisfied', 'Somewhat satisfied', 'Neither satisfied nor dissatisfied', 'Somewhat dissatisfied', 'Very dissatisfied']
+            );
     }
 ]);

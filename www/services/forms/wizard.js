@@ -152,8 +152,7 @@ EdenMobile.factory('emFormWizard', [
             }
 
             var element,
-                acceptedArgs, // acceptedArgs = ['argName', ...], set per widget
-                regions;
+                acceptedArgs; // acceptedArgs = ['argName', ...], set per widget
             switch(widgetType) {
                 case 'boolean':
                     element = '<em-wizard-boolean-widget>';
@@ -186,17 +185,12 @@ EdenMobile.factory('emFormWizard', [
                 case 'multiselect':
                     element = '<em-wizard-multi-select>';
                     break;
-//                 case 'likert':
-//                     element = '<em-wizard-likert-widget>';
-//                     break;
+                case 'likert':
+                    element = '<em-wizard-likert-scale>';
+                    break;
                 case 'image-map':
                 case 'heatmap':
-                    var imageURI = '';
-                    if (fieldSettings.image) {
-                        imageURI = fieldSettings.image.file || '';
-                    }
-                    element = '<em-wizard-image-map name="' + field.name + '" image="' + imageURI + '">';
-                    regions = widgetConfig.regions;
+                    element = '<em-wizard-image-map>';
                     break;
                 case 'json':
                     element = '<em-wizard-json-widget>';
@@ -206,8 +200,10 @@ EdenMobile.factory('emFormWizard', [
                     break;
             }
 
+            // Create the DOM element
             var widget = angular.element(element);
 
+            // Pass the field name to the widget
             widget.attr('field', field.name);
 
             // Set accepted arguments from widgetConfig
@@ -220,14 +216,48 @@ EdenMobile.factory('emFormWizard', [
                 });
             }
 
-            // Add inline-elements for widget
-            // TODO generalize this
-            if (regions && regions.constructor === Array) {
-                regions.forEach(function(region) {
-                    var inlineRegion = angular.element('<region>');
-                    inlineRegion.attr('geojson', region);
-                    widget.append(inlineRegion);
-                });
+            // Widget-specific attributes and inline elements
+            switch(widgetType) {
+                case 'image-map':
+                case 'heatmap':
+                    // Widget-directive is input itself => set a name
+                    widget.attr('name', field.name);
+                    if (fieldSettings.image) {
+                        widget.attr('image', fieldSettings.image.file || '');
+                    }
+                    // Add regions as inline-elements
+                    var regions = widgetConfig.regions;
+                    if (regions && regions.constructor === Array) {
+                        regions.forEach(function(region) {
+                            var inlineRegion = angular.element('<region>');
+                            inlineRegion.attr('geojson', region);
+                            widget.append(inlineRegion);
+                        });
+                    }
+                    break;
+                case 'likert':
+                    // Pass scale type and iconsOnly-option to widget
+                    if (widgetConfig.scale) {
+                        widget.attr('scale', '' + widgetConfig.scale);
+                    }
+                    if (widgetConfig.iconsOnly !== undefined) {
+                        widget.attr('icons-only', '' + !!widgetConfig.iconsOnly);
+                    }
+                    // Add custom icons as inline-elements
+                    var icons = widgetConfig.icons;
+                    if (icons && icons.constructor === Array) {
+                        icons.forEach(function(icon) {
+                            if (icon && icon.constructor === Array && icon.length == 2) {
+                                var inlineIcon = angular.element('<likert-icon>')
+                                                        .attr('value', icon[0])
+                                                        .attr('css', icon[1]);
+                                widget.append(inlineIcon);
+                            }
+                        });
+                    }
+                    break;
+                default:
+                    break;
             }
 
             return widget;
