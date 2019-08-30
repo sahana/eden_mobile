@@ -1028,15 +1028,23 @@
                               .text('No options available');
             };
 
-            var iconBar = function(fieldName, options, icons, attr) {
-                // TODO implement
-            };
+            /**
+             * Construct a radio list or bar with the options
+             *
+             * @param {string} fieldName - the field name
+             * @param {Array} options - the selectable options [[value, label], ...]
+             * @param {Array} icons - the option icons [[value, css-class], ...]
+             * @param {boolean} iconsOnly - render only icons as horizontal bar
+             * @param {object} attr - the DOM attributes of the directive
+             */
+            var radioItems = function(fieldName, options, icons, iconsOnly, attr) {
 
-            // TODO docstring
-            var radioItems = function(fieldName, options, icons, attr) {
-
-                var widget = angular.element('<ion-list class="radio-options">'),
-                    valueRequired = attr.ngRequired;
+                var widget;
+                if (iconsOnly) {
+                    widget = angular.element('<div class="likert-icon-bar">');
+                } else {
+                    widget = angular.element('<ion-list class="radio-options">');
+                }
 
                 options.forEach(function(option) {
 
@@ -1050,7 +1058,11 @@
 
                     var icon = icons['' + value];
                     if (icon) {
-                        repr = '<i class="' + icon + ' likert-vertical"></i>' + repr;
+                        if (iconsOnly) {
+                            repr = '<i class="' + icon + ' likert-horizontal"></i>';
+                        } else {
+                            repr = '<i class="' + icon + ' likert-vertical"></i>' + repr;
+                        }
                     }
 
                     var item = angular.element('<ion-radio>')
@@ -1094,7 +1106,9 @@
                         } else {
 
                             var iconConfig = emLikertScale.getIcons(scaleType),
+                                iconsOnly = emLikertScale.iconsOnly(scaleType),
                                 icons = {};
+
                             iconConfig.forEach(function(icon) {
                                 icons['' + icon[0]] = icon[1];
                             });
@@ -1105,11 +1119,7 @@
                                 icons[$icon.attr('opt')] = $icon.attr('css');
                             });
 
-                            if (emLikertScale.iconsOnly(scaleType)) {
-                                widget = iconBar(fieldName, options, icons, attr);
-                            } else {
-                                widget = radioItems(fieldName, options, icons, attr);
-                            }
+                            widget = radioItems(fieldName, options, icons, iconsOnly, attr);
                         }
 
                         // Add widget to DOM and compile it against scope

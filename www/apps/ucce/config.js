@@ -59,6 +59,28 @@ EdenMobile.config([
             .scale(
                 'satisfaction',
                 ['Very satisfied', 'Somewhat satisfied', 'Neither satisfied nor dissatisfied', 'Somewhat dissatisfied', 'Very dissatisfied']
+            )
+            .scale(
+                'smiley-5',
+                ['very sad', 'sad', 'neutral', 'happy', 'very happy'],
+                [
+                    ['very sad', 'ucce ucce-smiley-5'],
+                    ['sad', 'ucce ucce-smiley-4'],
+                    ['neutral', 'ucce ucce-smiley-3'],
+                    ['happy', 'ucce ucce-smiley-2'],
+                    ['very happy', 'ucce ucce-smiley-1']
+                ],
+                true // icon-only
+            )
+            .scale(
+                'smiley-3',
+                ['sad', 'neutral', 'happy'],
+                [
+                    ['sad', 'ucce ucce-smiley-4'],
+                    ['neutral', 'ucce ucce-smiley-3'],
+                    ['happy', 'ucce ucce-smiley-2']
+                ],
+                true // icon-only
             );
     }
 ]);

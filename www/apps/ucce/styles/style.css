@@ -119,34 +119,58 @@ form i.likert-vertical {
   margin-right: 0.75rem;
 }
 /* line 99, scss/theme/_theme.scss */
+form .likert-icon-bar .item.item-radio {
+  display: inline-block;
+  margin: 0 0.7rem;
+  border: 1px solid #E0E0E0 !important;
+}
+/* line 103, scss/theme/_theme.scss */
+form .likert-icon-bar .item.item-radio .radio-icon {
+  display: none;
+  visibility: none;
+}
+/* line 107, scss/theme/_theme.scss */
+form .likert-icon-bar .item.item-radio .likert-horizontal {
+  display: inline-block;
+}
+/* line 110, scss/theme/_theme.scss */
+form .likert-icon-bar .item.item-radio .radio-content .item-content {
+  padding: 0 0.7rem;
+  font-size: 3.6rem;
+}
+/* line 114, scss/theme/_theme.scss */
+form .likert-icon-bar .item.item-radio input:checked + .radio-content .item-content {
+  background: #fbe128;
+}
+/* line 119, scss/theme/_theme.scss */
 form .wizard-label {
   margin-top: 0.5rem;
   margin-bottom: 0.3rem;
   font-weight: bold;
 }
 
-/* line 105, scss/theme/_theme.scss */
+/* line 125, scss/theme/_theme.scss */
 .wizard-submit-buttons {
   padding: 0px 10px;
 }
 
-/* line 109, scss/theme/_theme.scss */
+/* line 129, scss/theme/_theme.scss */
 .data-collector-instructions {
   background-color: #E0E0E0;
 }
-/* line 111, scss/theme/_theme.scss */
+/* line 131, scss/theme/_theme.scss */
 .data-collector-instructions .say {
   font-weight: bold;
   font-size: 0.9rem;
   padding-top: 0.3rem;
 }
-/* line 116, scss/theme/_theme.scss */
+/* line 136, scss/theme/_theme.scss */
 .data-collector-instructions .do {
   font-weight: normal;
   font-size: 0.9rem;
 }
 
-/* line 122, scss/theme/_theme.scss */
+/* line 142, scss/theme/_theme.scss */
 .session-prompt.modal {
   top: 0 !important;
   right: 0 !important;
@@ -155,32 +179,32 @@ form .wizard-label {
   width: 100% !important;
   height: 100% !important;
 }
-/* line 130, scss/theme/_theme.scss */
+/* line 150, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form {
   margin-top: 10%;
   width: 100%;
 }
-/* line 133, scss/theme/_theme.scss */
+/* line 153, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form label.item-input {
   text-align: center;
   border: 0;
 }
-/* line 136, scss/theme/_theme.scss */
+/* line 156, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form label.item-input .input-label {
   margin-bottom: 1rem;
   font-size: 1.8rem;
 }
-/* line 141, scss/theme/_theme.scss */
+/* line 161, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form input {
   margin: 0 auto;
   margin-bottom: 0.5rem;
   width: 14rem;
 }
-/* line 146, scss/theme/_theme.scss */
+/* line 166, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form .button {
   min-width: 14rem;
 }
-/* line 149, scss/theme/_theme.scss */
+/* line 169, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form .unlink-link {
   text-align: center;
   margin-top: 10%;

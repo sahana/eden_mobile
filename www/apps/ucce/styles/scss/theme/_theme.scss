@@ -96,6 +96,26 @@ form {
         font-size: 1.5rem;
         margin-right: 0.75rem;
     }
+    .likert-icon-bar .item.item-radio {
+        display: inline-block;
+        margin: 0 0.7rem;
+        border: 1px solid #E0E0E0!important;
+        .radio-icon {
+            display: none;
+            visibility: none;
+        }
+        .likert-horizontal {
+            display: inline-block;
+        }
+        .radio-content .item-content {
+            padding: 0 0.7rem;
+            font-size: 3.6rem;
+        }
+        input:checked + .radio-content .item-content {
+            background: #fbe128;
+        }
+    }
+
     .wizard-label {
         margin-top: 0.5rem;
         margin-bottom: 0.3rem;
