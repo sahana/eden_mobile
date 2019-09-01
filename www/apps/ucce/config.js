@@ -42,43 +42,73 @@ EdenMobile.config([
         emLikertScaleProvider
             .scale(
                 'appropriateness',
-                ['Very appropriate', 'Somewhat appropriate', 'Neither appropriate nor inappropriate', 'Somewhat inappropriate', 'Very inappropriate']
+                [
+                    [0, 'Very appropriate'],
+                    [1, 'Somewhat appropriate'],
+                    [2, 'Neither appropriate nor inappropriate'],
+                    [3, 'Somewhat inappropriate'],
+                    [4, 'Very inappropriate']
+                ]
             )
             .scale(
                 'confidence',
-                ['Extremely confident', 'Very confident', 'Moderately confident', 'Slightly confident', 'Not confident at all']
+                [
+                    [0, 'Extremely confident'],
+                    [1, 'Very confident'],
+                    [2, 'Moderately confident'],
+                    [3, 'Slightly confident'],
+                    [4, 'Not confident at all'],
+                ]
             )
             .scale(
                 'frequency',
-                ['Always', 'Often', 'Occasionally', 'Rarely', 'Never']
+                [
+                    [0, 'Always'],
+                    [1, 'Often'],
+                    [2, 'Occasionally'],
+                    [3, 'Rarely'],
+                    [4, 'Never']
+                ]
             )
             .scale(
                 'safety',
-                ['Extremely safe', 'Very safe', 'Moderately safe', 'Slightly safe', 'Not safe at all']
+                [
+                    [0, 'Extremely safe'],
+                    [1, 'Very safe'],
+                    [2, 'Moderately safe'],
+                    [3, 'Slightly safe'],
+                    [4, 'Not safe at all']
+                ]
             )
             .scale(
                 'satisfaction',
-                ['Very satisfied', 'Somewhat satisfied', 'Neither satisfied nor dissatisfied', 'Somewhat dissatisfied', 'Very dissatisfied']
+                [
+                    [0, 'Very satisfied'],
+                    [1, 'Somewhat satisfied'],
+                    [2, 'Neither satisfied nor dissatisfied'],
+                    [3, 'Somewhat dissatisfied'],
+                    [4, 'Very dissatisfied']
+                ]
             )
             .scale(
                 'smiley-5',
-                ['very sad', 'sad', 'neutral', 'happy', 'very happy'],
+                [4, 3, 2, 1, 0],
                 [
-                    ['very sad', 'ucce ucce-smiley-5'],
-                    ['sad', 'ucce ucce-smiley-4'],
-                    ['neutral', 'ucce ucce-smiley-3'],
-                    ['happy', 'ucce ucce-smiley-2'],
-                    ['very happy', 'ucce ucce-smiley-1']
+                    [0, 'ucce ucce-smiley-1'],
+                    [1, 'ucce ucce-smiley-2'],
+                    [2, 'ucce ucce-smiley-3'],
+                    [3, 'ucce ucce-smiley-4'],
+                    [4, 'ucce ucce-smiley-6']
                 ],
                 true // icon-only
             )
             .scale(
                 'smiley-3',
-                ['sad', 'neutral', 'happy'],
+                [2, 1, 0],
                 [
-                    ['sad', 'ucce ucce-smiley-4'],
-                    ['neutral', 'ucce ucce-smiley-3'],
-                    ['happy', 'ucce ucce-smiley-2']
+                    [0, 'ucce ucce-smiley-3'],
+                    [1, 'ucce ucce-smiley-4'],
+                    [2, 'ucce ucce-smiley-5']
                 ],
                 true // icon-only
             );
