@@ -59,7 +59,7 @@
                     widgetOptions = [];
                 if (scaleOptions) {
                     scaleOptions.forEach(function(option) {
-                        if (!option) {
+                        if (option === undefined || option === null || option === '') {
                             return;
                         }
                         if (option.constructor !== Array) {
