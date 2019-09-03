@@ -758,8 +758,8 @@
             /**
              * Update selected regions
              * - match $scope.selection.selectedPoints to pre-defined regions
-             * - make matching regions visible on the map
              * - update $scope.selection.selectedRegions
+             * - make matching regions visible on the map
              *
              * @param {object} $scope - the local scope of the widget
              * @param {ol.source.Vector} regionSource - the regions source
@@ -786,6 +786,9 @@
                     });
                 });
 
+                // Highlight selected regions (currently not wanted)
+                // TODO make widget option
+                /*
                 var allRegions = regionSource.getFeatures();
                 allRegions.forEach(function(region) {
                     var regionID = region.getProperties().region;
@@ -795,6 +798,7 @@
                         region.setStyle(mapStyles.deselectedRegions);
                     }
                 });
+                */
 
                 selection.selectedRegions = selectedRegionIDs;
 
