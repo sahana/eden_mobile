@@ -171,6 +171,11 @@ form .wizard-label {
 }
 
 /* line 142, scss/theme/_theme.scss */
+.other-option.item-checkbox .item-content {
+  pointer-events: auto;
+}
+
+/* line 146, scss/theme/_theme.scss */
 .session-prompt.modal {
   top: 0 !important;
   right: 0 !important;
@@ -179,32 +184,32 @@ form .wizard-label {
   width: 100% !important;
   height: 100% !important;
 }
-/* line 150, scss/theme/_theme.scss */
+/* line 154, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form {
   margin-top: 10%;
   width: 100%;
 }
-/* line 153, scss/theme/_theme.scss */
+/* line 157, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form label.item-input {
   text-align: center;
   border: 0;
 }
-/* line 156, scss/theme/_theme.scss */
+/* line 160, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form label.item-input .input-label {
   margin-bottom: 1rem;
   font-size: 1.8rem;
 }
-/* line 161, scss/theme/_theme.scss */
+/* line 165, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form input {
   margin: 0 auto;
   margin-bottom: 0.5rem;
   width: 14rem;
 }
-/* line 166, scss/theme/_theme.scss */
+/* line 170, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form .button {
   min-width: 14rem;
 }
-/* line 169, scss/theme/_theme.scss */
+/* line 173, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form .unlink-link {
   text-align: center;
   margin-top: 10%;

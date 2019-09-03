@@ -139,6 +139,10 @@ form {
     }
 }
 
+.other-option.item-checkbox .item-content {
+    pointer-events: auto;
+}
+
 .session-prompt.modal {
     top: 0!important;
     right: 0!important;

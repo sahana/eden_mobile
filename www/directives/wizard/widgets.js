@@ -464,6 +464,9 @@
                 copyAttr(attr, widget, [
                     'ngModel',
                     'disabled',
+                    'otherOption',
+                    'otherField',
+                    'otherLabel',
                     'ngRequired'
                 ]);
 
@@ -522,15 +525,25 @@
              */
             var link = function($scope, elem, attr, ngModel) {
 
+                var otherOption = attr.otherOption;
+
                 // Inspect the options, build selectable items array
                 var options = elem.find('option'),
-                    items = [];
-                angular.forEach(options, function(option) {
-                    var $option = angular.element(option);
+                    items = [],
+                    otherIndex;
+                angular.forEach(options, function(option, index) {
+                    var $option = angular.element(option),
+                        value = $option.val(),
+                        isOther = false;
+                    if (otherOption && value == otherOption) {
+                        isOther = true;
+                        otherIndex = index;
+                    }
                     items.push({
                         value: $option.val(),
                         label: $option.text(),
-                        checked: false
+                        checked: false,
+                        isOther: isOther
                     });
                 });
                 $scope.items = items;
@@ -539,11 +552,36 @@
                 var checkboxList = angular.element('<div class="list multi-select">'),
                     checkboxes = angular.element('<ion-checkbox>')
                                         .attr('ng-repeat', 'item in items')
+                                        .attr('ng-if', '!item.isOther')
                                         .attr('ng-model', 'item.checked')
                                         .attr('ng-change', 'select()')
                                         .text('{{item.label}}')
                                         .val('{{item.value}}');
                 checkboxList.append(checkboxes);
+
+                // Append other-checkbox
+                if (otherIndex !== undefined) {
+                    var prefix = attr.ngModel.split('.', 1)[0],
+                        otherField = attr.otherField,
+                        otherLabel = attr.otherLabel || 'Other';
+
+                    var otherCheckbox = angular.element('<ion-checkbox class="other-option">')
+                                               .attr('ng-model', 'items[' + otherIndex + '].checked')
+                                               .attr('ng-change', 'select()')
+                                               .val(otherOption);
+                    if (otherField) {
+                        var otherInput = angular.element('<input type="text">')
+                                                .attr('name', otherField)
+                                                .attr('placeholder', otherLabel)
+                                                .attr('ng-disabled', '!items[' + otherIndex + '].checked')
+                                                .attr('ng-model', prefix + '.' + otherField);
+                        otherCheckbox.append(otherInput);
+                    } else {
+                        otherCheckbox.text(otherLabel);
+                    }
+                    checkboxList.append(otherCheckbox);
+                }
+
                 copyAttr(attr, checkboxList, [
                     'name',
                     'ngModel',

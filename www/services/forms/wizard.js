@@ -256,6 +256,22 @@ EdenMobile.factory('emFormWizard', [
                         });
                     }
                     break;
+                case 'options':
+                case 'multiselect':
+                    var other = fieldSettings.other;
+                    if (other) {
+                        var otherField = field.getTable().$(other);
+                        if (otherField) {
+                            var otherOption = '__other__';
+                            if (fieldType == 'integer') {
+                                otherOption = 99999;
+                            }
+                            widget.attr('other-field', other);
+                            widget.attr('other-option', otherOption);
+                            widget.attr('other-label', otherField.getLabel());
+                        }
+                    }
+                    break;
                 default:
                     break;
             }
