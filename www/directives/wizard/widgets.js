@@ -898,7 +898,7 @@
                 // and compile it against the local scope
                 var fieldName = attr.field,
                     mapContainer = angular.element('<div class="map">')
-                                          .attr('id', fieldName + 'image-map');
+                                          .attr('id', fieldName + '-image-map');
 
                 elem.append(mapContainer);
                 $compile(mapContainer)($scope);
@@ -965,7 +965,7 @@
                         var map = new ol.Map({
                             controls: [],
                             interactions: [],
-                            target: fieldName + 'image-map',
+                            target: fieldName + '-image-map',
                         });
                         //$scope.map = map;
                         map.addLayer(imageLayer);

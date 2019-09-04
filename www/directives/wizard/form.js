@@ -289,6 +289,175 @@
 
     // ========================================================================
     /**
+     * Directive for <em-form-row-image-map>
+     * - display an image from an image map widget incl one selected region
+     */
+    EdenMobile.directive('emFormRowImageMap', [
+        '$compile',
+        function($compile) {
+
+            // ----------------------------------------------------------------
+            /**
+             * Map styles for selected points and regions
+             */
+            var mapStyles = {
+                selectedRegions: new ol.style.Style({
+                    fill: new ol.style.Fill({
+                        color: [0, 85, 127, 0.4]
+                    }),
+                    stroke: new ol.style.Stroke({
+                        color: [0, 85, 127, 0.8],
+                        width: 2
+                    })
+                }),
+            };
+
+            // ----------------------------------------------------------------
+            /**
+             * Adjust aspect ratio of the map to match that of the image
+             * - so that the image always fills the map canvas
+             * - must be called initially and whenever the map width changes
+             *
+             * @param {ol.Map} map - the map instance
+             * @param {DOMNode} img - the image element
+             */
+            var adjustAspectRatio = function(map, img) {
+
+                var mapSize = map.getSize();
+                if (mapSize === undefined) {
+                    // Map disposal triggers change:size too
+                    return;
+                }
+
+                var extent = [0, 0, img.width, img.height],
+                    view = map.getView(),
+                    res = view.getResolutionForExtent(extent, [mapSize[0], img.height]);
+
+                map.setSize([mapSize[0], img.height / res]);
+                view.setResolution(res);
+            };
+
+            // ----------------------------------------------------------------
+            /**
+             * Link a DOM element to this directive
+             *
+             * @param {object} $scope - the local scope of the DOM element
+             * @param {DOMNode} elem - the element
+             * @param {object} attr - the element's HTML attributes
+             */
+            var link = function($scope, elem, attr) {
+
+                // Create the map container, append it to the DOM
+                // and compile it against the local scope
+                var fieldName = attr.field,
+                    mapContainer = angular.element('<div class="map image-map-preview">')
+                                          .attr('id', fieldName + '-image-map-review');
+
+                elem.append(mapContainer);
+                $compile(mapContainer)($scope);
+
+                // Get the image URI (=local file URI)
+                var imageURI = attr.image;
+                if (imageURI) {
+
+                    // Load the image to determine width and height
+                    var img = document.createElement('img');
+                    img.onload = function () {
+
+                        // Compute extent and projection
+                        var extent = [0, 0, img.width, img.height],
+                            projection = new ol.proj.Projection({
+                                code: 'preview-image',
+                                units: 'pixels',
+                                extent: extent
+                            });
+
+                        // Create the image layer
+                        var imageLayer = new ol.layer.Image({
+                            source: new ol.source.ImageStatic({
+                                url: imageURI,
+                                projection: projection,
+                                imageExtent: extent
+                            })
+                        });
+
+                        // Create a regions source
+                        var regionSource = new ol.source.Vector({
+                            wrapX: false
+                        });
+
+                        // Parse the regions and add them to the regionSource
+                        var format = new ol.format.GeoJSON({featureProjection: projection}),
+                            regions = elem.find('region');
+                        if (regions.length) {
+                            angular.forEach(regions, function(region) {
+                                var geojson = JSON.parse(angular.element(region).attr('geojson'));
+                                // TODO filter for region ID if in attr
+                                var feature = format.readFeatureFromObject(geojson);
+                                regionSource.addFeature(feature);
+                            });
+                        }
+
+                        // Create the regions layer
+                        var regionLayer = new ol.layer.Vector({
+                            source: regionSource,
+                            // Default style: deselected
+                            style: mapStyles.selectedRegions
+                        });
+
+                        // Build the map and add the layers
+                        var map = new ol.Map({
+                            controls: [],
+                            interactions: [],
+                            target: fieldName + '-image-map-review',
+                        });
+                        //$scope.map = map;
+                        map.addLayer(imageLayer);
+                        map.addLayer(regionLayer);
+
+                        // Add the map view and adjust the aspect ratio
+                        map.setView(new ol.View({
+                            projection: projection,
+                            center: ol.extent.getCenter(extent),
+                        }));
+                        adjustAspectRatio(map, img);
+
+                        // Adjust aspect ratio whenever the map size changes
+                        // (e.g. device orientation changing)
+                        var adjusting = false;
+                        map.on('change:size', function() {
+                            if (adjusting) {
+                                return;
+                            }
+                            adjusting = true; // prevent self-triggering
+                            adjustAspectRatio(map, img);
+                            adjusting = false;
+                        });
+
+                        var displayLogic = mapContainer.parent().attr('ng-show');
+                        if (displayLogic) {
+                            $scope.$watch(displayLogic, function() {
+                                if (map.getSize() !== undefined) {
+                                    map.updateSize();
+                                }
+                            });
+                        }
+                    };
+                    img.src = imageURI;
+                }
+            };
+
+            // ----------------------------------------------------------------
+            // Return the DDO
+            return {
+                link: link,
+                scope: true
+            };
+        }
+    ]);
+
+    // ========================================================================
+    /**
      * Directive for <em-wizard-header>:
      *   - the top bar in the wizard view
      */

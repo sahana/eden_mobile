@@ -131,11 +131,11 @@ EdenMobile.factory('emFormWizard', [
          *                         <em-form-row-image> or <em-form-row-image-map>,
          *                         to be passed on to form style
          */
-        var getImage = function(field, pipe) {
+        var getImage = function(field, regionID, pipe) {
 
             var fieldDescription = field._description,
-                fieldSettings = fieldDescription.settings,
-                imageConfig = fieldSettings.image,
+                fieldSettings = fieldDescription.settings || {},
+                imageConfig = fieldSettings.image || fieldSettings.pipeImage,
                 image;
 
             if (imageConfig) {
@@ -158,6 +158,12 @@ EdenMobile.factory('emFormWizard', [
                             var regions = widgetConfig.regions;
                             if (regions && regions.constructor === Array) {
                                 regions.forEach(function(region) {
+                                    if (regionID !== undefined) {
+                                        var geojson = JSON.parse(region);
+                                        if (geojson.properties.region != regionID) {
+                                            return;
+                                        }
+                                    }
                                     var inlineRegion = angular.element('<region>');
                                     inlineRegion.attr('geojson', region);
                                     image.append(inlineRegion);
@@ -174,7 +180,7 @@ EdenMobile.factory('emFormWizard', [
                     // Pipe
                     var other = field.getTable().$(imageConfig.from);
                     if (other) {
-                        image  = getImage(other, true);
+                        image  = getImage(other, imageConfig.region, true);
                     }
                 }
             }

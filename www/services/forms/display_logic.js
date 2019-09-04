@@ -278,6 +278,7 @@ EdenMobile.factory('emDisplayLogic', [
                     return false;
                 };
             }
+            return showIf;
         };
 
         // --------------------------------------------------------------------
