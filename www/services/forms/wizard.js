@@ -159,6 +159,7 @@ EdenMobile.factory('emFormWizard', [
                             if (regions && regions.constructor === Array) {
                                 regions.forEach(function(region) {
                                     if (regionID !== undefined) {
+                                        // Filter out irrelevant regions
                                         var geojson = JSON.parse(region);
                                         if (geojson.properties.region != regionID) {
                                             return;
@@ -176,7 +177,6 @@ EdenMobile.factory('emFormWizard', [
                                        .attr('image', imageConfig.file);
                     }
                 } else if (imageConfig.from) {
-
                     // Pipe
                     var other = field.getTable().$(imageConfig.from);
                     if (other) {

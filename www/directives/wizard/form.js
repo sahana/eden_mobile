@@ -392,7 +392,6 @@
                         if (regions.length) {
                             angular.forEach(regions, function(region) {
                                 var geojson = JSON.parse(angular.element(region).attr('geojson'));
-                                // TODO filter for region ID if in attr
                                 var feature = format.readFeatureFromObject(geojson);
                                 regionSource.addFeature(feature);
                             });
@@ -434,6 +433,9 @@
                             adjusting = false;
                         });
 
+                        // Watch the displayLogic of the formRow to update the
+                        // map when formRow is revealed
+                        // TODO possible race condition here?
                         var displayLogic = mapContainer.parent().attr('ng-show');
                         if (displayLogic) {
                             $scope.$watch(displayLogic, function() {
