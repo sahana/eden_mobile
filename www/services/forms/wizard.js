@@ -119,6 +119,71 @@ EdenMobile.factory('emFormWizard', [
 
         // --------------------------------------------------------------------
         /**
+         * Get the image for a survey question
+         * - either directly from file URI, or
+         * - the image of another question (image-pipe), or
+         * - the image from a heatmap with region-overlay
+         *
+         * @param {Field} field - the field (=survey question) to get the image for
+         * @param {boolean} pipe - whether this is a pipe lookup (internal)
+         *
+         * @returns {DOMElement} - a directive to render the image, either
+         *                         <em-form-row-image> or <em-form-row-image-map>,
+         *                         to be passed on to form style
+         */
+        var getImage = function(field, pipe) {
+
+            var fieldDescription = field._description,
+                fieldSettings = fieldDescription.settings,
+                imageConfig = fieldSettings.image,
+                image;
+
+            if (imageConfig) {
+                if (imageConfig.file) {
+
+                    // Get the widget type
+                    var widgetConfig = fieldDescription.widget || fieldSettings && fieldSettings.widget,
+                        widgetType;
+                    if (widgetConfig) {
+                        widgetType = widgetConfig.type;
+                    }
+
+                    if (widgetType == "heatmap" || widgetType == "image-map") {
+                        // Render image map if via pipe
+                        if (pipe) {
+                            image = angular.element('<em-form-row-image-map>')
+                                           .attr('image', imageConfig.file)
+                                           .attr('map', field.name);
+
+                            var regions = widgetConfig.regions;
+                            if (regions && regions.constructor === Array) {
+                                regions.forEach(function(region) {
+                                    var inlineRegion = angular.element('<region>');
+                                    inlineRegion.attr('geojson', region);
+                                    image.append(inlineRegion);
+                                });
+                            }
+                        }
+                    } else {
+                        // Render image directly from URI
+                        image = angular.element('<em-form-row-image>')
+                                       .attr('image', imageConfig.file);
+                    }
+                } else if (imageConfig.from) {
+
+                    // Pipe
+                    var other = field.getTable().$(imageConfig.from);
+                    if (other) {
+                        image  = getImage(other, true);
+                    }
+                }
+            }
+
+            return image;
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Get a form widget for a Field
          *
          * @param {Field} field - the Field
@@ -284,7 +349,8 @@ EdenMobile.factory('emFormWizard', [
         //
         return {
             getSections: getSections,
-            getWidget: getWidget
+            getWidget: getWidget,
+            getImage: getImage
         };
     }
 ]);

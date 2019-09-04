@@ -173,9 +173,9 @@
                 }
 
                 // Use emFormStyle to render the form row
-                // TODO: - image
                 var formRow = emFormStyle.formRow(formName,
                                                   field.getLabel(),
+                                                  emFormWizard.getImage(field),
                                                   widget,
                                                   errors,
                                                   markRequired);
@@ -250,6 +250,35 @@
                 // Add card to DOM and compile it against scope
                 elem.replaceWith(card);
                 $compile(card)($scope);
+            };
+
+            return {
+                link: link
+            };
+        }
+    ]);
+
+    // ========================================================================
+    /**
+     * Directive for <em-form-row-image>
+     * - display an image for a survey question
+     */
+    EdenMobile.directive('emFormRowImage', [
+        '$compile',
+        function($compile) {
+
+            var link = function($scope, elem, attr) {
+                var fileURI = attr.image;
+                if (fileURI) {
+                    var image = angular.element('<img>')
+                                       .attr('src', fileURI),
+                        widget = angular.element('<div class="form-row-image">')
+                                        .append(image);
+
+                    // Add to DOM and compile against scope
+                    elem.replaceWith(widget);
+                    $compile(widget)($scope);
+                }
             };
 
             return {

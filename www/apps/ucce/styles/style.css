@@ -148,34 +148,39 @@ form .wizard-label {
   margin-bottom: 0.3rem;
   font-weight: bold;
 }
+/* line 124, scss/theme/_theme.scss */
+form .form-row-image img {
+  max-width: 66%;
+  max-height: 600px;
+}
 
-/* line 125, scss/theme/_theme.scss */
+/* line 129, scss/theme/_theme.scss */
 .wizard-submit-buttons {
   padding: 0px 10px;
 }
 
-/* line 129, scss/theme/_theme.scss */
+/* line 133, scss/theme/_theme.scss */
 .data-collector-instructions {
   background-color: #E0E0E0;
 }
-/* line 131, scss/theme/_theme.scss */
+/* line 135, scss/theme/_theme.scss */
 .data-collector-instructions .say {
   font-weight: bold;
   font-size: 0.9rem;
   padding-top: 0.3rem;
 }
-/* line 136, scss/theme/_theme.scss */
+/* line 140, scss/theme/_theme.scss */
 .data-collector-instructions .do {
   font-weight: normal;
   font-size: 0.9rem;
 }
 
-/* line 142, scss/theme/_theme.scss */
+/* line 146, scss/theme/_theme.scss */
 .other-option.item-checkbox .item-content {
   pointer-events: auto;
 }
 
-/* line 146, scss/theme/_theme.scss */
+/* line 150, scss/theme/_theme.scss */
 .session-prompt.modal {
   top: 0 !important;
   right: 0 !important;
@@ -184,32 +189,32 @@ form .wizard-label {
   width: 100% !important;
   height: 100% !important;
 }
-/* line 154, scss/theme/_theme.scss */
+/* line 158, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form {
   margin-top: 10%;
   width: 100%;
 }
-/* line 157, scss/theme/_theme.scss */
+/* line 161, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form label.item-input {
   text-align: center;
   border: 0;
 }
-/* line 160, scss/theme/_theme.scss */
+/* line 164, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form label.item-input .input-label {
   margin-bottom: 1rem;
   font-size: 1.8rem;
 }
-/* line 165, scss/theme/_theme.scss */
+/* line 169, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form input {
   margin: 0 auto;
   margin-bottom: 0.5rem;
   width: 14rem;
 }
-/* line 170, scss/theme/_theme.scss */
+/* line 174, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form .button {
   min-width: 14rem;
 }
-/* line 173, scss/theme/_theme.scss */
+/* line 177, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form .unlink-link {
   text-align: center;
   margin-top: 10%;

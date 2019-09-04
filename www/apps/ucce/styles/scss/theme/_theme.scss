@@ -121,6 +121,10 @@ form {
         margin-bottom: 0.3rem;
         font-weight: bold;
     }
+    .form-row-image img {
+        max-width: 66%;
+        max-height: 600px;
+    }
 }
 .wizard-submit-buttons {
     padding: 0px 10px;
