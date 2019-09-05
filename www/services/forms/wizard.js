@@ -188,6 +188,9 @@ EdenMobile.factory('emFormWizard', [
                 }
             }
 
+            if (image) {
+                image.attr('field', field.name);
+            }
             return image;
         };
 
