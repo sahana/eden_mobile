@@ -940,6 +940,9 @@
                         if (regions.length) {
                             angular.forEach(regions, function(region) {
                                 var geojson = JSON.parse(angular.element(region).attr('geojson'));
+                                if (!geojson || !geojson.properties) {
+                                    return;
+                                }
                                 var feature = format.readFeatureFromObject(geojson);
                                 regionSource.addFeature(feature);
                             });
