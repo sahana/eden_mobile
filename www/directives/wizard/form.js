@@ -293,8 +293,8 @@
      * - display an image from an image map widget incl one selected region
      */
     EdenMobile.directive('emFormRowImageMap', [
-        '$compile',
-        function($compile) {
+        '$compile', '$timeout',
+        function($compile, $timeout) {
 
             // ----------------------------------------------------------------
             /**
@@ -435,13 +435,12 @@
 
                         // Watch the displayLogic of the formRow to update the
                         // map when formRow is revealed
-                        // TODO possible race condition here?
-                        var displayLogic = mapContainer.parent().attr('ng-show');
+                        var displayLogic = elem.parent().attr('ng-show');
                         if (displayLogic) {
                             $scope.$watch(displayLogic, function() {
-                                if (map.getSize() !== undefined) {
+                                $timeout(function() {
                                     map.updateSize();
-                                }
+                                }, 0, false);
                             });
                         }
                     };
