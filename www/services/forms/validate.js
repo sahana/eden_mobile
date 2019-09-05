@@ -296,6 +296,9 @@
                                             requires.maxSelectedPoints = {number: selectedOpts.max};
                                         }
                                         delete requires.selectedOpts;
+                                    } else {
+                                        // Assume default maxSelectedPoints=1
+                                        requires.maxSelectedPoints = {number: 1};
                                     }
                                     break;
                                 default:
