@@ -296,83 +296,76 @@
              *
              * @returns {angular.element} - the element to use as widget
              */
-            var radioItems = function(fieldName, options, attr) {
+            var radioItems = function($scope, fieldName, options, attr) {
 
-                var widget = angular.element('<ion-list class="radio-options">'),
-                    valueRequired = attr.ngRequired;
+                var otherOption = attr.otherOption;
 
-                options.forEach(function(option) {
+                // Inspect the options, build selectable items array
+                var items = [],
+                    otherIndex;
+                angular.forEach(options, function(option, index) {
                     var value = option[0],
-                        repr = option[1];
-                    if (!value && value !== 0) {
-                        // Empty-option
-                        if (valueRequired) {
-                            return;
-                        } else if (!repr){
-                            repr = '-';
-                        }
-                    } else if (!repr) {
-                        repr = '' + option[0];
+                        label = option[1],
+                        isOther = false;
+                    if (otherOption && value == otherOption) {
+                        isOther = true;
+                        otherIndex = index;
                     }
-
-                    var item = angular.element('<ion-radio>')
-                                      .attr('name', fieldName)
-                                      .attr('value', value)
-                                      .html(repr);
-                    copyAttr(attr, item, [
-                        'ngModel',
-                        'disabled',
-                        'ngRequired'
-                    ]);
-                    widget.append(item);
+                    items.push({
+                        value: value,
+                        label: label,
+                        isOther: isOther
+                    });
                 });
+                $scope.items = items;
 
-                return widget;
-            };
+                // Construct the radio items list
+                var radioList = angular.element('<ion-list class="radio-options">'),
+                    radioItems = angular.element('<ion-radio>')
+                                        .attr('ng-repeat', 'item in items')
+                                        .attr('ng-if', '!item.isOther')
+                                        .attr('name', fieldName)
+                                        .attr('value', '{{item.value}}')
+                                        .text('{{item.label}}');
 
-            /**
-             * Standard platform-specific SELECT
-             *
-             * @param {string} fieldName - the field name
-             * @param {Array} options - the selectable options [[value, repr], ...]
-             * @param {object} attr - the DOM attributes of the widget directive
-             *
-             * @returns {angular.element} - the element to use as widget
-             */
-            var standardSelect = function(fieldName, options, attr) {
-
-                var widget = angular.element('<select>'),
-                    valueRequired = attr.ngRequired;
-
-                options.forEach(function(option) {
-                    var value = option[0],
-                        repr = option[1];
-                    if (!value && value !== 0) {
-                        // Empty-option
-                        if (valueRequired) {
-                            return;
-                        } else if (!repr){
-                            repr = '-';
-                        }
-                    } else if (!repr) {
-                        repr = '' + option[0];
-                    }
-
-                    var item = angular.element('<option>')
-                                      .attr('value', value)
-                                      .html(repr);
-                    widget.append(item);
-                });
-
-                widget.attr('name', fieldName);
-
-                copyAttr(attr, widget, [
+                copyAttr(attr, radioItems, [
                     'ngModel',
                     'disabled',
                     'ngRequired'
                 ]);
+                radioList.append(radioItems);
 
-                return widget;
+                // Append other-option if defined
+                if (otherIndex !== undefined) {
+
+                    var prefix = attr.ngModel.split('.', 1)[0],
+                        otherField = attr.otherField,
+                        otherLabel = attr.otherLabel || 'Other',
+                        otherValue = '' + items[otherIndex].value;
+
+                    var otherRadio = angular.element('<ion-radio class="other-option">')
+                                            .attr('name', fieldName)
+                                            .attr('value', otherValue);
+                    copyAttr(attr, otherRadio, [
+                        'ngModel',
+                        'disabled',
+                        'ngRequired'
+                    ]);
+
+                    if (otherField) {
+                        var otherInput = angular.element('<input type="text">')
+                                                .attr('name', otherField)
+                                                .attr('placeholder', otherLabel)
+                                                .attr('ng-disabled', attr.ngModel + '!="' + otherValue + '"')
+                                                .attr('ng-model', prefix + '.' + otherField);
+                        otherRadio.append(otherInput);
+                    } else {
+                        otherRadio.text(otherLabel);
+                    }
+                    radioList.append(otherRadio);
+                }
+
+                return radioList;
             };
 
             /**
@@ -389,10 +382,8 @@
                         var widget;
                         if (!options.length) {
                             widget = noOptionsHint();
-                        } else if (options.length <= 20) {
-                            widget = radioItems(fieldName, options, attr);
                         } else {
-                            widget = standardSelect(fieldName, options, attr);
+                            widget = radioItems($scope, fieldName, options, attr);
                         }
 
                         // Add widget to DOM and compile it against scope
@@ -411,7 +402,8 @@
 
             // Return the DDO
             return {
-                link: link
+                link: link,
+                scope: true
             };
         }
     ]);

@@ -180,11 +180,18 @@ form .image-map-preview {
 }
 
 /* line 149, scss/theme/_theme.scss */
+.other-option.item-radio .item-content,
 .other-option.item-checkbox .item-content {
   pointer-events: auto;
 }
 
 /* line 153, scss/theme/_theme.scss */
+.other-option.item-radio .item-content input {
+  position: relative;
+  left: auto;
+}
+
+/* line 158, scss/theme/_theme.scss */
 .session-prompt.modal {
   top: 0 !important;
   right: 0 !important;
@@ -193,32 +200,32 @@ form .image-map-preview {
   width: 100% !important;
   height: 100% !important;
 }
-/* line 161, scss/theme/_theme.scss */
+/* line 166, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form {
   margin-top: 10%;
   width: 100%;
 }
-/* line 164, scss/theme/_theme.scss */
+/* line 169, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form label.item-input {
   text-align: center;
   border: 0;
 }
-/* line 167, scss/theme/_theme.scss */
+/* line 172, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form label.item-input .input-label {
   margin-bottom: 1rem;
   font-size: 1.8rem;
 }
-/* line 172, scss/theme/_theme.scss */
+/* line 177, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form input {
   margin: 0 auto;
   margin-bottom: 0.5rem;
   width: 14rem;
 }
-/* line 177, scss/theme/_theme.scss */
+/* line 182, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form .button {
   min-width: 14rem;
 }
-/* line 180, scss/theme/_theme.scss */
+/* line 185, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form .unlink-link {
   text-align: center;
   margin-top: 10%;

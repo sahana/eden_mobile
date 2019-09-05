@@ -146,8 +146,13 @@ form {
     }
 }
 
+.other-option.item-radio .item-content,
 .other-option.item-checkbox .item-content {
     pointer-events: auto;
+}
+.other-option.item-radio .item-content input {
+    position: relative;
+    left: auto;
 }
 
 .session-prompt.modal {
