@@ -90,7 +90,8 @@
                 var update = surveyList(surveys, $scope.numCols);
 
                 // Compile the new list with $scope and add it to the DOM
-                elem.append($compile(update)($scope));
+                elem.append(update);
+                $compile(update)($scope);
             };
 
             // ----------------------------------------------------------------
@@ -137,6 +138,43 @@
                     $scope.completeResponses = survey.completeResponses;
                     $scope.unsyncedResponses = survey.unsyncedResponses;
                 }
+            };
+        }
+    ]);
+
+    // ========================================================================
+    /**
+     * Directive <em-survey-language-selector>
+     */
+    EdenMobile.directive('emSurveyLanguageSelector', [
+        '$compile',
+        function($compile) {
+
+            var link = function($scope, elem, attr) {
+
+                // Create selector
+                var selector = angular.element('<select class="survey-language-selector">')
+                                      .attr('ng-model', 'l10n.currentLanguage');
+
+                // Append default language (English)
+                var defaultLanguage = angular.element('<option>')
+                                             .attr('value', '')
+                                             .text('English');
+                selector.append(defaultLanguage);
+
+                // Append other languages
+                var option = angular.element('<option ng-repeat="lang in l10n.surveyLanguages">')
+                                    .attr('ng-if', 'lang && lang[0] && lang[1]')
+                                    .attr('value', '{{lang[0]}}')
+                                    .text('{{lang[1]}}');
+                selector.append(option);
+
+                elem.replaceWith(selector);
+                $compile(selector)($scope);
+            };
+
+            return {
+                link: link
             };
         }
     ]);

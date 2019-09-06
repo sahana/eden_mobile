@@ -41,6 +41,7 @@ EdenMobile.controller("EMSurveyList", [
         // Initialize scope objects
         $scope.resources = {};
         $scope.surveys = [];
+        $scope.l10n = {};
 
         /**
          * Get survey data for a resource
@@ -79,6 +80,9 @@ EdenMobile.controller("EMSurveyList", [
             console.log('EMSurveyList.updateSurveyList');
 
             $scope.title = session.projectTitle || 'Current Surveys';
+
+            $scope.l10n.surveyLanguages = session.surveyLanguages || [];
+
             $scope.pendingUploads = false;
 
             var resources = {},
@@ -133,12 +137,17 @@ EdenMobile.controller("EMSurveyList", [
 
         // Automatically refresh survey list when session gets connected
         $scope.$on('emSessionConnected', function() {
-           refreshSurveyList(true);
+            refreshSurveyList(true);
         });
 
         // Automatically refresh survey list when device comes back online
         $scope.$on('emDeviceOnline', function() {
-           refreshSurveyList(true);
+            refreshSurveyList(true);
+        });
+
+        // Handle language selection
+        $scope.$watch('l10n.currentLanguage', function() {
+            // TODO Update language in session, then updateSurveyList
         });
 
         // Upload-function
