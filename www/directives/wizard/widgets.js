@@ -931,7 +931,17 @@
                             regions = elem.find('region');
                         if (regions.length) {
                             angular.forEach(regions, function(region) {
-                                var geojson = JSON.parse(angular.element(region).attr('geojson'));
+                                if (!region) {
+                                    // Empty string or null
+                                    return;
+                                }
+                                var geojson;
+                                try {
+                                    geojson = JSON.parse(angular.element(region).attr('geojson'));
+                                } catch(e) {
+                                    // Invalid JSON
+                                    return;
+                                }
                                 if (!geojson || !geojson.properties) {
                                     return;
                                 }

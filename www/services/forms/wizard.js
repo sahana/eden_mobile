@@ -158,7 +158,17 @@ EdenMobile.factory('emFormWizard', [
                             var regions = widgetConfig.regions;
                             if (regions && regions.constructor === Array) {
                                 regions.forEach(function(region) {
-                                    var geojson = JSON.parse(region);
+                                    if (!region) {
+                                        // Empty string or null
+                                        return;
+                                    }
+                                    var geojson;
+                                    try {
+                                        geojson = JSON.parse(region);
+                                    } catch(e) {
+                                        // Invalid JSON
+                                        return;
+                                    }
                                     if (!geojson || !geojson.properties) {
                                         return;
                                     }
