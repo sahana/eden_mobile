@@ -705,8 +705,8 @@
      *       }
      */
     EdenMobile.directive('emWizardImageMap', [
-        '$compile', '$q', 'emDialogs',
-        function($compile, $q, emDialogs) {
+        '$compile', '$q',
+        function($compile, $q) {
 
             // ----------------------------------------------------------------
             /**
@@ -763,6 +763,8 @@
 
                 var selection = $scope.selection,
                     newSelection = [],
+                    newFeatures = [],
+                    feature,
                     add = true;
 
                 var maxSelectedPoints = $scope.maxSelectedPoints;
@@ -770,32 +772,43 @@
                     // Single-select => new selection replaces previous selection
                     pointSource.clear();
                 } else {
-                    var selectedPoints = selection.selectedPoints;
+                    var selectedPoints = selection.selectedPoints,
+                        features = $scope.points;
 
-                    // Enforce maxSelectedPoints
-                    if (selectedPoints.length == maxSelectedPoints) {
-                        emDialogs.error('Only ' + maxSelectedPoints + ' clicks allowed');
-                        return false;
-                    }
-
-                    selectedPoints.forEach(function(point) {
+                    selectedPoints.forEach(function(point, index) {
                         if (point[0] != coordinate[0] || point[1] != coordinate[1]) {
                             newSelection.push(point);
+                            newFeatures.push(features[index]);
                         } else {
                             // This point was already selected
                             add = false;
+                            feature = features[index];
                         }
                     });
+
+                    if (maxSelectedPoints && newSelection.length == maxSelectedPoints) {
+                        // Drop the first point
+                        pointSource.removeFeature(newFeatures[0]);
+                        newSelection = newSelection.slice(1);
+                        newFeatures = newFeatures.slice(1);
+                    }
                 }
 
+                // Add the selected point
                 newSelection.push(coordinate);
+                selection.selectedPoints = newSelection;
+
+                // Add point feature if new
                 if (add) {
-                    var feature = new ol.Feature({
+                    feature = new ol.Feature({
                         geometry: new ol.geom.Point(coordinate)
                     });
                     pointSource.addFeature(feature);
                 }
-                selection.selectedPoints = newSelection;
+
+                // Remember the feature
+                newFeatures.push(feature);
+                $scope.points = newFeatures;
 
                 return add;
             };
@@ -892,6 +905,7 @@
                     selectedPoints: [],
                     selectedRegions: []
                 };
+                $scope.points = [];
 
                 // Get maxSelectedPoints from attr
                 var maxSelectedPoints = attr.maxSelectedPoints;
