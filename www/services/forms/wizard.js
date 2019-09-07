@@ -215,7 +215,7 @@ EdenMobile.factory('emFormWizard', [
         var getWidget = function(field) {
 
             var fieldDescription = field._description,
-                fieldSettings = fieldDescription.settings,
+                fieldSettings = fieldDescription.settings || {},
                 widgetConfig = fieldDescription.widget || fieldSettings && fieldSettings.widget;
 
             var fieldType = field.type,

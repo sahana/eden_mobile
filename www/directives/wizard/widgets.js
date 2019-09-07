@@ -307,6 +307,10 @@
                     var value = option[0],
                         label = option[1],
                         isOther = false;
+                    if (value === '' || value === null || value === undefined) {
+                        // Skip empty-option (even if the server allows it)
+                        return;
+                    }
                     if (otherOption && value == otherOption) {
                         isOther = true;
                         otherIndex = index;
@@ -324,6 +328,7 @@
                     radioItems = angular.element('<ion-radio>')
                                         .attr('ng-repeat', 'item in items')
                                         .attr('ng-if', '!item.isOther')
+                                        .attr('ng-click', 'deselect(item.value)')
                                         .attr('name', fieldName)
                                         .attr('value', '{{item.value}}')
                                         .text('{{item.label}}');
@@ -371,7 +376,7 @@
             /**
              * Link a DOM element to this directive
              */
-            var link = function($scope, elem, attr) {
+            var link = function($scope, elem, attr, ngModel) {
 
                 var resource = $scope.resource,
                     fieldName = attr.field;
@@ -398,11 +403,22 @@
                         elem.replaceWith(widget);
                         $compile(widget)($scope);
                     });
+
+                // Second click on a selected option de-selects it
+                $scope.deselect = function(value) {
+                    if (value != $scope.selected) {
+                        $scope.selected = value;
+                    } else {
+                        $scope.selected = undefined;
+                        ngModel.$setViewValue(undefined);
+                    }
+                };
             };
 
             // Return the DDO
             return {
                 link: link,
+                require: 'ngModel',
                 scope: true
             };
         }
