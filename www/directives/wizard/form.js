@@ -145,7 +145,7 @@
                 // Generate the widget and bind it to form
                 var formName = attr.formname || 'wizard',
                     prefix = attr.prefix || 'form',
-                    widget = emFormWizard.getWidget(field)
+                    widget = emFormWizard.getWidget(field, $scope.currentLanguage)
                                          .attr('ng-model', prefix + '.' + fieldName);
 
                 // Add validator directives

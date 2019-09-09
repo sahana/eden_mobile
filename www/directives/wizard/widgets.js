@@ -383,6 +383,10 @@
 
                 resource.getOptions(fieldName).then(
                     function(options) {
+
+                        // Translate options
+                        options = resource.getOptionsL10n(fieldName, options, $scope.currentLanguage);
+
                         // Construct the widget
                         var widget;
                         if (!options.length) {
@@ -489,6 +493,9 @@
 
                 resource.getOptions(fieldName).then(
                     function(options) {
+                        // Translate options
+                        options = resource.getOptionsL10n(fieldName, options, $scope.currentLanguage);
+
                         // Construct the widget
                         var widget;
                         if (!options.length) {

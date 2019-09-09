@@ -475,6 +475,70 @@ EdenMobile.factory('emResources', [
 
         // --------------------------------------------------------------------
         /**
+         * Get localized option labels
+         *
+         * @param {string} fieldName - the field name
+         * @param {Array} options - the current field options
+         * @param {string} language - the language to translate to
+         *
+         * @returns {Array} - the translated options
+         */
+        Resource.prototype.getOptionsL10n = function(fieldName, options, language) {
+
+            if (!options) {
+                return options;
+            }
+
+            var field = this.fields[fieldName];
+            if (!field) {
+                // No such field
+                return options;
+            }
+
+            var l10n = field.getSetting('l10n');
+            if (!l10n) {
+                // No translations for this field available
+                return options;
+            }
+
+            var translations = l10n[language];
+            if (!translations) {
+                // No translations for this language available
+                return options;
+            }
+
+            var optionsL10n = translations.options;
+            if (!optionsL10n) {
+                // No translation of field options available
+                return options;
+            }
+
+            var getTranslation;
+            if (optionsL10n.constructor === Array) {
+                getTranslation = function(option, index) {
+                    return optionsL10n[index];
+                };
+            } else if (typeof optionsL10n == 'object' && optionsL10n.constructor === Object) {
+                getTranslation = function(option) {
+                    return optionsL10n[option[0]];
+                };
+            } else {
+                // Invalid format for option-translations
+                return options;
+            }
+
+            return options.map(function(option, index) {
+                var l10nLabel = getTranslation(option, index);
+                if (l10nLabel !== undefined) {
+                    return [option[0], l10nLabel];
+                } else {
+                    return option;
+                }
+            });
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Get a string representation for a field value
          *
          * @param {string} fieldName - the field name

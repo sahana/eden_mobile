@@ -257,6 +257,8 @@
                     settings = fieldDescription.settings,
                     requires = fieldDescription.requires || (settings && settings.requires) || {};
 
+                requires = angular.extend({}, requires);
+
                 // Mandatory validators and rule interpretation per field type
                 switch(field.type) {
                     case 'double':

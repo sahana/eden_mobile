@@ -209,10 +209,11 @@ EdenMobile.factory('emFormWizard', [
          * Get a form widget for a Field
          *
          * @param {Field} field - the Field
+         * @param {string} language - the current L10n language
          *
          * @returns {angular.element} - the widget
          */
-        var getWidget = function(field) {
+        var getWidget = function(field, language) {
 
             var fieldDescription = field._description,
                 fieldSettings = fieldDescription.settings || {},
@@ -355,7 +356,7 @@ EdenMobile.factory('emFormWizard', [
                             }
                             widget.attr('other-field', other);
                             widget.attr('other-option', otherOption);
-                            widget.attr('other-label', otherField.getLabel());
+                            widget.attr('other-label', otherField.getLabel(language));
                         }
                     }
                     break;
