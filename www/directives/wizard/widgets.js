@@ -303,7 +303,7 @@
                 // Inspect the options, build selectable items array
                 var items = [],
                     otherIndex;
-                angular.forEach(options, function(option, index) {
+                angular.forEach(options, function(option) {
                     var value = option[0],
                         label = option[1],
                         isOther = false;
@@ -313,7 +313,7 @@
                     }
                     if (otherOption && value == otherOption) {
                         isOther = true;
-                        otherIndex = index;
+                        otherIndex = items.length;
                     }
                     items.push({
                         value: value,
@@ -590,11 +590,30 @@
                                                 .attr('placeholder', otherLabel)
                                                 .attr('ng-disabled', '!items[' + otherIndex + '].checked')
                                                 .attr('ng-model', prefix + '.' + otherField);
-                        otherCheckbox.append(otherInput);
+
+                        // Set alternative click-action
+                        // - Ionic tap-click-forwarding to the checkbox cannot be caught,
+                        //   so we disable it and handle the native click-event ourselves:
+                        otherCheckbox.attr('data-tap-disabled', 'true')
+                                     .attr('ng-click', 'otherClick($event)')
+                                     .append(otherInput);
+                        $scope.otherClick = function(e) {
+                            e.preventDefault();
+                            if (items[otherIndex].checked) {
+                                // Deselect if clicking outside text input
+                                if (e.target.type != "text") {
+                                    items[otherIndex].checked = false;
+                                }
+                            } else {
+                                // Select
+                                items[otherIndex].checked = true;
+                            }
+                        };
                     } else {
                         otherCheckbox.text(otherLabel);
                     }
                     checkboxList.append(otherCheckbox);
+
                 }
 
                 copyAttr(attr, checkboxList, [
