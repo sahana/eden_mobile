@@ -251,6 +251,29 @@
 
             // ----------------------------------------------------------------
             /**
+             * Update the current session
+             *
+             * @param {object} data - the data to update {key: value}
+             *
+             * @returns {promise} - a promise that is resolved into the
+             *                      updated session data when the update
+             *                      is complete
+             */
+            var updateSession = function(data) {
+
+                if (!currentSession) {
+                    return $q.reject('no current session');
+                }
+                if (data && typeof data == 'object' && data.constructor === Object) {
+                    currentSession = angular.extend(currentSession, data);
+                }
+                return storeSession().then(function() {
+                    return currentSession;
+                });
+            };
+
+            // ----------------------------------------------------------------
+            /**
              * Suspend the current session:
              * - removes the session context and master key from memory
              */
@@ -554,6 +577,7 @@
                 },
 
                 getSession: getSession,
+                updateSession: updateSession,
                 exitSession: exitSession,
                 setSessionTimer: setSessionTimer
             };

@@ -82,6 +82,7 @@ EdenMobile.controller("EMSurveyList", [
             $scope.title = session.projectTitle || 'Current Surveys';
 
             $scope.l10n.surveyLanguages = session.surveyLanguages || [];
+            $scope.l10n.currentLanguage = session.currentLanguage || '';
 
             $scope.pendingUploads = false;
 
@@ -147,7 +148,10 @@ EdenMobile.controller("EMSurveyList", [
 
         // Handle language selection
         $scope.$watch('l10n.currentLanguage', function() {
-            // TODO Update language in session, then updateSurveyList
+            emAuth.updateSession({currentLanguage: $scope.l10n.currentLanguage}).then(
+                function(session) {
+                    updateSurveyList(session);
+                });
         });
 
         // Upload-function
