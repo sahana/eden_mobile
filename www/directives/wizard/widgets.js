@@ -383,15 +383,14 @@
 
                 resource.getOptions(fieldName).then(
                     function(options) {
-
-                        // Translate options
-                        options = resource.getOptionsL10n(fieldName, options, $scope.currentLanguage);
-
                         // Construct the widget
                         var widget;
                         if (!options.length) {
                             widget = noOptionsHint();
                         } else {
+                            // Translate options
+                            options = resource.getOptionsL10n(fieldName, options, $scope.currentLanguage);
+
                             widget = radioItems($scope, fieldName, options, attr);
                         }
 
@@ -493,14 +492,14 @@
 
                 resource.getOptions(fieldName).then(
                     function(options) {
-                        // Translate options
-                        options = resource.getOptionsL10n(fieldName, options, $scope.currentLanguage);
-
                         // Construct the widget
                         var widget;
                         if (!options.length) {
                             widget = noOptionsHint();
                         } else {
+                            // Translate options
+                            options = resource.getOptionsL10n(fieldName, options, $scope.currentLanguage);
+
                             widget = standardSelect(fieldName, options, attr);
                             widget.attr('multiple', 'true');
                             widget.attr('em-multi-select-checkbox', '');
@@ -1189,14 +1188,14 @@
              */
             var link = function($scope, elem, attr) {
 
-                var fieldName = attr.field,
+                var resource = $scope.resource,
+                    fieldName = attr.field,
                     scaleType = attr.scale,
                     getOptions;
 
                 if (scaleType) {
                     getOptions = emLikertScale.getOptions(scaleType);
                 } else {
-                    var resource = $scope.resource;
                     getOptions = resource.getOptions(fieldName);
                 }
 
@@ -1212,6 +1211,10 @@
                                 iconsOnly = emLikertScale.iconsOnly(scaleType),
                                 icons = {};
 
+                            if (!iconsOnly) {
+                                // Translate options
+                                options = resource.getOptionsL10n(fieldName, options, $scope.currentLanguage);
+                            }
                             iconConfig.forEach(function(icon) {
                                 icons['' + icon[0]] = icon[1];
                             });

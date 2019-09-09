@@ -527,14 +527,29 @@ EdenMobile.factory('emResources', [
                 return options;
             }
 
-            return options.map(function(option, index) {
+            var emptyOption;
+            options = options.filter(function(option, index) {
+                // Skip empty-option (added by IS_IN_SET, not in L10n)
+                if (!option[0] && option[0] !== 0) {
+                    emptyOption = [index, option];
+                    return false;
+                }
+                return true;
+            }).map(function(option, index) {
                 var l10nLabel = getTranslation(option, index);
-                if (l10nLabel !== undefined) {
-                    return [option[0], l10nLabel];
+                if (!!l10nLabel) {
+                    return [option[0], '' + l10nLabel];
                 } else {
                     return option;
                 }
             });
+
+            // Re-insert empty-option as+where it was
+            if (emptyOption) {
+                options.splice(emptyOption[0], 0, emptyOption[1]);
+            }
+
+            return options;
         };
 
         // --------------------------------------------------------------------
