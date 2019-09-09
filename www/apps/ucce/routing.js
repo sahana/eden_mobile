@@ -55,6 +55,9 @@
                     // Can use 0 as record ID to create a new record
                     cache: false,
                     url: '/{resourceName}/{recordID:int}/wizard',
+                    params: {
+                        language: ''
+                    },
                     controller: 'EMFormWizardController',
                     template: '<ion-nav-view></ion-nav-view>'
                 })
@@ -65,7 +68,7 @@
                     },
                     controller: 'EMFormSectionController',
                     templateUrl: 'views/wizard/form.html'
-                })
+                });
 
             // Default to survey list (for now)
             $urlRouterProvider.otherwise("/surveys");

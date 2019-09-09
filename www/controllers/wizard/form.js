@@ -40,6 +40,8 @@ EdenMobile.controller("EMFormWizardController", [
             recordID = $stateParams.recordID,
             returnTo = $stateParams.returnTo || 'surveys';
 
+        $scope.currentLanguage = $stateParams.language || '';
+
         // --------------------------------------------------------------------
         /**
          * Retrieve the record (or defaults) to populate the form

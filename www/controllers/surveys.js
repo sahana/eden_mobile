@@ -41,7 +41,10 @@ EdenMobile.controller("EMSurveyList", [
         // Initialize scope objects
         $scope.resources = {};
         $scope.surveys = [];
-        $scope.l10n = {};
+        $scope.l10n = {
+            surveyLanguages: [],
+            currentLanguage: ''
+        };
 
         /**
          * Get survey data for a resource
