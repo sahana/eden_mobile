@@ -492,6 +492,25 @@ EdenMobile.factory('Field', [
 
         // --------------------------------------------------------------------
         /**
+         * Settings-getter
+         *
+         * @param {string} name - the name of the setting
+         *
+         * @returns {*} - the current value of the setting
+         *
+         */
+        Field.prototype.getSetting = function(name) {
+
+            var settings = this._description.settings;
+
+            if (!settings || !name) {
+                return; // undefined
+            }
+            return settings['' + name];
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Get the Table this fields belongs to
          *
          * @returns {Table} - the table
@@ -512,11 +531,25 @@ EdenMobile.factory('Field', [
         /**
          * Get a label for this field
          *
+         * @param {string} language - the L10n language code
+         *
          * @returns {string} - the label
          */
-        Field.prototype.getLabel = function() {
+        Field.prototype.getLabel = function(language) {
 
-            return this._description.label || emUtils.capitalize(this.name);
+            var label;
+
+            if (language) {
+                var l10n = this.getSetting('l10n');
+                if (l10n) {
+                    var labels = l10n[language];
+                    if (labels) {
+                        label = labels.label;
+                    }
+                }
+            }
+
+            return label || this._description.label || emUtils.capitalize(this.name);
         };
 
         // --------------------------------------------------------------------

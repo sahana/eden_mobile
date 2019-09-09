@@ -174,7 +174,7 @@
 
                 // Use emFormStyle to render the form row
                 var formRow = emFormStyle.formRow(formName,
-                                                  field.getLabel(),
+                                                  field.getLabel($scope.currentLanguage),
                                                   emFormWizard.getImage(field),
                                                   widget,
                                                   errors,
