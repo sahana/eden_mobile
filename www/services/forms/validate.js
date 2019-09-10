@@ -167,10 +167,49 @@
 
         // --------------------------------------------------------------------
         /**
-         * Min/max number of selected options in list:* fields
+         * TODO test
+         * TODO docstring
          */
+        selectedOpts: function(options) {
 
-        // TODO
+            var directives = {},
+                errors = [],
+                min, // = options.min,
+                max = options.max;
+            // TODO not working: validation erases entire selection
+            //if (min !== undefined && !isNaN(min - 0)) {
+            //    min = directives['min-selected'] = '' + min;
+            //}
+            if (max !== undefined && !isNaN(max - 0)) {
+                max = directives['max-selected'] = '' + max;
+            }
+
+            var errorMsg = options.error;
+            if (!errorMsg) {
+                if (min && max) {
+                    if (min == max) {
+                        errorMsg = 'Select ' + min + ' options';
+                    } else {
+                        errorMsg = 'Select between ' + min + ' and ' + max + ' options';
+                    }
+                    errors = errors.concat(['minSelected', 'maxSelected']);
+                } else if (min) {
+                    errorMsg = 'Select ' + min + ' or more options';
+                    errors.push('minSelected');
+                } else if (max) {
+                    errorMsg = 'Max ' + max + ' options can be selected';
+                    errors.push('maxSelected');
+                } else {
+                    errorMsg = '';
+                }
+            }
+
+            return {
+                directives: directives,
+                errors: errors,
+                message: errorMsg,
+            };
+        },
 
         // --------------------------------------------------------------------
         /**
@@ -206,6 +245,7 @@
                 message: errorMsg
             };
         },
+
     };
 
     // ========================================================================
@@ -319,7 +359,9 @@
                     if (field.hasOptions()) {
                         // Typically using a selector, so adapt language of error message
                         if (field.type.slice(0, 5) == 'list:') {
-                            requires.isNotEmpty = {error: 'Select at least one option'};
+                            if (!requires.selectedOpts || !requires.selectedOpts.min) {
+                                requires.isNotEmpty = {error: 'Select at least one option'};
+                            }
                         } else {
                             requires.isNotEmpty = {error: 'Select a value'};
                         }

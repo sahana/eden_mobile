@@ -478,7 +478,9 @@
                     'otherOption',
                     'otherField',
                     'otherLabel',
-                    'ngRequired'
+                    'ngRequired',
+                    'minSelected',
+                    'maxSelected',
                 ]);
 
                 return widget;
@@ -531,8 +533,8 @@
      * - <select multiple='true' em-multi-select-checkbox>
      */
     EdenMobile.directive('emMultiSelectCheckbox', [
-        '$compile',
-        function($compile) {
+        '$compile', 'emDialogs',
+        function($compile, emDialogs) {
 
             /**
              * Link this directive to a <select> element
@@ -562,13 +564,18 @@
                 });
                 $scope.items = items;
 
+                var maxSelected = attr.maxSelected;
+                if (maxSelected && !isNaN(maxSelected - 0)) {
+                    $scope.maxSelected = maxSelected - 0;
+                }
+
                 // Construct the checkbox list
                 var checkboxList = angular.element('<div class="list multi-select">'),
                     checkboxes = angular.element('<ion-checkbox>')
                                         .attr('ng-repeat', 'item in items')
                                         .attr('ng-if', '!item.isOther')
                                         .attr('ng-model', 'item.checked')
-                                        .attr('ng-change', 'select()')
+                                        .attr('ng-change', 'select(item)')
                                         .text('{{item.label}}')
                                         .val('{{item.value}}');
                 checkboxList.append(checkboxes);
@@ -581,7 +588,6 @@
 
                     var otherCheckbox = angular.element('<ion-checkbox class="other-option">')
                                                .attr('ng-model', 'items[' + otherIndex + '].checked')
-                                               .attr('ng-change', 'select()')
                                                .val(otherOption);
                     if (otherField) {
                         var otherInput = angular.element('<input type="text">')
@@ -597,15 +603,22 @@
                                      .attr('ng-click', 'otherClick($event)')
                                      .append(otherInput);
                         $scope.otherClick = function(e) {
+
                             e.preventDefault();
-                            if (items[otherIndex].checked) {
+
+                            var items = $scope.items,
+                                otherItem = items[otherIndex];
+
+                            if (otherItem.checked) {
                                 // Deselect if clicking outside text input
                                 if (e.target.type != "text") {
-                                    items[otherIndex].checked = false;
+                                    otherItem.checked = false;
+                                    $scope.select(otherItem);
                                 }
                             } else {
                                 // Select
-                                items[otherIndex].checked = true;
+                                otherItem.checked = true;
+                                $scope.select(otherItem);
                             }
                         };
                     } else {
@@ -623,7 +636,18 @@
 
 
                 // Function to update the model when a checkbox status has changed
-                $scope.select = function() {
+                $scope.select = function(item) {
+
+                    var checked = $scope.items.filter(function(item) {
+                        return item.checked;
+                    });
+
+                    var maxSelected = $scope.maxSelected;
+                    if (maxSelected !== undefined && item.checked && checked.length > maxSelected) {
+                        emDialogs.error('Max ' + maxSelected + ' options can be selected');
+                        item.checked = false;
+                    }
+
                     var selected = $scope.items.filter(function(item) {
                         return item.checked;
                     }).map(function(item) {
@@ -632,7 +656,6 @@
                     ngModel.$setViewValue(selected);
                     ngModel.$setDirty();
                     ngModel.$setTouched();
-                    checkboxList[0].focus();
                 };
 
                 // Function to update the checkbox status when the model has changed

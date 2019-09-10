@@ -126,5 +126,30 @@
     ]);
 
     // ========================================================================
+    /**
+     * Minimum number of selected options in emWizardMultiSelect
+     */
+    EdenMobile.directive('minSelected', [
+        function() {
+
+            var link = function($scope, elem, attr, ngModel) {
+
+                var minSelected = attr.minSelected - 0;
+                if (!isNaN(minSelected) && minSelected > 0) {
+                    ngModel.$validators.minSelected = function(modelValue, viewValue) {
+                        return !!viewValue && viewValue.length >= minSelected;
+                    };
+                }
+            };
+
+            return {
+                require: 'ngModel',
+                restrict: 'A',
+                link: link
+            };
+        }
+    ]);
+
+    // ========================================================================
 
 })(EdenMobile);
