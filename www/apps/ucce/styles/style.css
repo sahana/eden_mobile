@@ -238,3 +238,8 @@ form .image-map-preview {
   text-align: center;
   margin-top: 10%;
 }
+
+/* line 198, scss/theme/_theme.scss */
+a.button.unlink-button {
+  color: #00aaa0;
+}

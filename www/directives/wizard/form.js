@@ -29,6 +29,43 @@
 
     // ========================================================================
     /**
+     * Helper function to get the translations for a non-field form element
+     *
+     * @param {object} formElement - the form element
+     * @param {object} labels - the untranslated labels {key: label}
+     * @param {string} language - the language to translate to
+     *
+     * @returns {object} - the translated labels {key: label}
+     */
+    var getTranslation = function(formElement, labels, language) {
+
+        if (!language) {
+            return labels;
+        }
+
+        var l10n = formElement.l10n;
+        if (!l10n) {
+            return labels;
+        }
+
+        var labelsL10n = l10n[language];
+        if (!labelsL10n) {
+            return labels;
+        }
+
+        var translated = angular.extend({}, labels);
+        for (var key in labels) {
+            var translation = labelsL10n[key];
+            if (!!translation) {
+                translated[key] = '' + translation;
+            }
+        }
+
+        return translated;
+    };
+
+    // ========================================================================
+    /**
      * Directive for <em-form-section>:
      *   - a section of a form
      */
@@ -71,13 +108,22 @@
                             break;
                         case 'instructions':
                             formRow = angular.element('<em-instructions>');
+
+                            // Find and extract the labels
+                            var labels = {
+                                do: formElement.do,
+                                say: formElement.say
+                            };
+                            labels = getTranslation(formElement, labels, $scope.currentLanguage);
+
+                            // Add instructions
                             var instruction;
-                            if (formElement.do) {
-                                instruction = angular.element('<do>').text(formElement.do);
+                            if (labels.do) {
+                                instruction = angular.element('<do>').text(labels.do);
                                 formRow.append(instruction);
                             }
-                            if (formElement.say) {
-                                instruction = angular.element('<say>').text(formElement.say);
+                            if (labels.say) {
+                                instruction = angular.element('<say>').text(labels.say);
                                 formRow.append(instruction);
                             }
                             break;
