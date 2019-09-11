@@ -349,10 +349,10 @@
             var mapStyles = {
                 selectedRegions: new ol.style.Style({
                     fill: new ol.style.Fill({
-                        color: [0, 85, 127, 0.4]
+                        color: [255, 255, 0, 0.4]
                     }),
                     stroke: new ol.style.Stroke({
-                        color: [0, 85, 127, 0.8],
+                        color: [255, 255, 0, 0.8],
                         width: 2
                     })
                 }),
