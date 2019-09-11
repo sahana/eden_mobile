@@ -326,7 +326,7 @@
              * @returns {promise} - a promise that resolves into the context
              *                      data the server returned for the key
              */
-            var validateMasterKey = function(key) {
+            var validateMasterKey = function(key, quiet) {
 
                 if (!key) {
                     key = masterKey;
@@ -354,12 +354,40 @@
                         if (typeof error == 'string') {
                             deferred.reject(error);
                         } else {
-                            emServer.httpError(error);
-                            deferred.reject();
+                            if (quiet) {
+                                deferred.reject(error);
+                            } else {
+                                emServer.httpError(error);
+                                deferred.reject();
+                            }
                         }
                     });
 
                 return deferred.promise;
+            };
+
+            // ----------------------------------------------------------------
+            /**
+             * Refresh the session data from server
+             *
+             * @param {boolean} quiet - fail silently on HTTP errors (e.g.
+             *                          server unavailable)
+             *
+             * @returns {promise} - a promise that is resolved into the
+             *                      updated session data when successful
+             */
+            var refreshSession = function(quiet) {
+
+                if (!currentSession) {
+                    return $q.reject('no current session');
+                }
+                if (!masterKey) {
+                    return $q.reject('no master key to refresh session data');
+                }
+
+                return validateMasterKey(masterKey, quiet).then(function(data) {
+                    return updateSession(data);
+                });
             };
 
             // ----------------------------------------------------------------
@@ -577,6 +605,7 @@
                 },
 
                 getSession: getSession,
+                refreshSession: refreshSession,
                 updateSession: updateSession,
                 exitSession: exitSession,
                 setSessionTimer: setSessionTimer

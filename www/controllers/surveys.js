@@ -130,6 +130,10 @@ EdenMobile.controller("EMSurveyList", [
          */
         var refreshSurveyList = function(quiet) {
            emAuth.getSession(true).then(function(session) {
+               emAuth.refreshSession(true).then(function(session) {
+                   $scope.title = session.projectTitle || 'Current Surveys';
+                   $scope.l10n.surveyLanguages = session.surveyLanguages || [];
+               });
                emSync.fetchNewForms(quiet, session.masterkey_uuid).then(function() {
                    updateSurveyList(session);
                });
