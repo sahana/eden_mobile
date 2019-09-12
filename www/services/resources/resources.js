@@ -763,7 +763,12 @@ EdenMobile.factory('emResources', [
         };
 
         // --------------------------------------------------------------------
-        // TODO docstring
+        /**
+         * Remove this resource from the registry and database
+         *
+         * @returns {promise} - a promise that is resolved when the resource
+         *                      has been removed
+         */
         Resource.prototype.drop = function() {
 
             var resourceName = this.name;
@@ -782,43 +787,52 @@ EdenMobile.factory('emResources', [
                     if (alias) {
                         delete parent._links[alias];
                     }
+                    return $q.resolve();
                 } else {
                     // Drop link table
+                    var linkRemoved;
                     if (this.link) {
-                        this.link.drop();
+                        linkRemoved = this.link.drop();
+                    } else {
+                        linkRemoved = $q.resolve();
                     }
                     // Remove from parent
                     if (alias) {
                         delete parent._components[alias];
                         delete parent.activeComponents[alias];
                     }
+                    return linkRemoved;
                 }
             } else {
                 // Drop all components
+                var componentsRemoved = [];
                 Object.values(this._components).forEach(function(component) {
-                    component.drop();
+                    componentsRemoved.push(component.drop());
                 });
 
-                // Remove resource schema (don't wait for it)
-                emDB.table('em_resource').then(function(table) {
-                    table.where(table.$('name').equals(resourceName)).delete();
-                });
+                var self = this;
+                return $q.all(componentsRemoved).then(function() {
 
-                // Remove from registry
-                delete resources[this.name];
-
-                // Drop the table, if possible
-                var table = this.table,
-                    tableName = this.tableName;
-                table.drop().then(
-                    function() {
-                        // Success
-                    },
-                    function(/* error */) {
-                        setupDefaultResource(tableName);
+                    // Remove resource schema (don't wait for it)
+                    emDB.table('em_resource').then(function(table) {
+                        table.where(table.$('name').equals(resourceName)).delete();
                     });
-            }
 
+                    // Remove from registry
+                    delete resources[resourceName];
+
+                    // Drop the table, if possible
+                    var table = self.table,
+                        tableName = self.tableName;
+                    table.drop().then(
+                        function() {
+                            // Success
+                        },
+                        function(/* error */) {
+                            setupDefaultResource(tableName);
+                        });
+                });
+            }
         };
 
         // --------------------------------------------------------------------
@@ -943,38 +957,49 @@ EdenMobile.factory('emResources', [
          */
         Resource.prototype.saveSchema = function() {
 
-            var name = this.name,
-                fields = this.fields,
-                fieldName,
-                field,
-                fieldDef = {};
+            var self = this;
+            $q.when(this.schemaSaved).then(function() {
 
-            // Encode the schema
-            for (fieldName in fields) {
-                field = fields[fieldName];
-                if (!field.meta) {
-                    fieldDef[fieldName] = field.description();
-                }
-            }
-            var schema = {
-                'name': name,
-                'tablename': this.tableName,
-                'controller': this.controller,
-                'function': this.function,
-                'fields': fieldDef,
-                'settings': this.settings,
-                'main': this.main
-            };
+                var schemaSaved = $q.defer();
+                self.schemaSaved = schemaSaved.promise;
 
-            // Save the schema
-            emDB.table('em_resource').then(function(table) {
-                var dbSet = table.where(table.$('name').equals(name));
-                dbSet.select(['id'], {limit: 1}, function(rows) {
-                    if (rows.length) {
-                        dbSet.update(schema);
-                    } else {
-                        table.insert(schema);
+                var name = self.name,
+                    fields = self.fields,
+                    fieldName,
+                    field,
+                    fieldDef = {};
+
+                // Encode the schema
+                for (fieldName in fields) {
+                    field = fields[fieldName];
+                    if (!field.meta) {
+                        fieldDef[fieldName] = field.description();
                     }
+                }
+                var schema = {
+                    'name': name,
+                    'tablename': self.tableName,
+                    'controller': self.controller,
+                    'function': self.function,
+                    'fields': fieldDef,
+                    'settings': self.settings,
+                    'main': self.main
+                };
+
+                // Save the schema
+                emDB.table('em_resource').then(function(table) {
+                    var dbSet = table.where(table.$('name').equals(name));
+                    dbSet.select(['id'], {limit: 1}, function(rows) {
+                        if (rows.length) {
+                            dbSet.update(schema, function() {
+                                schemaSaved.resolve();
+                            });
+                        } else {
+                            table.insert(schema, function() {
+                                schemaSaved.resolve();
+                            });
+                        }
+                    });
                 });
             });
         };

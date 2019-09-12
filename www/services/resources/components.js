@@ -157,8 +157,13 @@ EdenMobile.factory('emComponents', [
         };
 
         // --------------------------------------------------------------------
-        // TODO docstring
-        // TODO cleanup vars
+        /**
+         * Check if a table can be a component
+         *
+         * @param {string} tableName - the table name
+         *
+         * @returns {boolean}
+         */
         var hasParent = function(tableName) {
 
             for (var master in hooks) {
@@ -173,8 +178,14 @@ EdenMobile.factory('emComponents', [
         };
 
         // --------------------------------------------------------------------
-        // TODO docstring
-        // TODO implement this
+        /**
+         * Remove all component hooks for a table
+         *
+         * @param {Table} table - the table
+         *
+         * @returns {promise} - a promise that is resolved when the process
+         *                      is complete
+         */
         var removeHooks = function(table) {
 
             var tableName = table.name,

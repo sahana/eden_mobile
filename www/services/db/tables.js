@@ -296,8 +296,11 @@ EdenMobile.factory('Table', [
         };
 
         // --------------------------------------------------------------------
-        // TODO docstring
-        // TODO implement this
+        /**
+         * Delete all object keys for this table
+         *
+         * @note: never run this while there are still records in the table!
+         */
         Table.prototype._deleteObjectKeys = function() {
 
             var db = this._db,
@@ -439,8 +442,13 @@ EdenMobile.factory('Table', [
         };
 
         // --------------------------------------------------------------------
-        // TODO docstring
-        // TODO complete implementation
+        /**
+         * Remove this table from the database, including any related files,
+         * object keys and the schema
+         *
+         * @returns {promise} - a promise that is resolved when the process
+         *                      was successful, or rejected otherwise
+         */
         Table.prototype.drop = function() {
 
             // Cannot drop from clone
@@ -631,38 +639,53 @@ EdenMobile.factory('Table', [
                 return;
             }
 
-            var fields = this.fields,
-                fieldName,
-                field,
-                fieldDef = {},
-                settings = this.settings;
+            var self = this;
+            $q.when(this.schemaSaved).then(function() {
 
-            for (fieldName in fields) {
-                field = fields[fieldName];
-                if (!field.meta) {
-                    fieldDef[fieldName] = field.description();
+                var schemaSaved = $q.defer();
+                self.schemaSaved = schemaSaved.promise;
+
+                var fields = self.fields,
+                    fieldName,
+                    field,
+                    fieldDef = {},
+                    settings = self.settings;
+
+                for (fieldName in fields) {
+                    field = fields[fieldName];
+                    if (!field.meta) {
+                        fieldDef[fieldName] = field.description();
+                    }
                 }
-            }
 
-            var schema = {
-                name: this.name,
-                fields: fieldDef,
-                settings: settings
-            };
+                var schema = {
+                    name: self.name,
+                    fields: fieldDef,
+                    settings: settings
+                };
 
-            var dbSet = schemaTable.where(schemaTable.$('name').equals(this.name));
-            dbSet.select(['id'], {limit: 1}, function(rows) {
-                if (rows.length) {
-                    dbSet.update(schema);
-                } else {
-                    schemaTable.insert(schema);
-                }
+                var dbSet = schemaTable.where(schemaTable.$('name').equals(self.name));
+                dbSet.select(['id'], {limit: 1}, function(rows) {
+                    if (rows.length) {
+                        dbSet.update(schema, function() {
+                            schemaSaved.resolve();
+                        });
+                    } else {
+                        schemaTable.insert(schema, function() {
+                            schemaSaved.resolve();
+                        });
+                    }
+                });
             });
         };
 
         // --------------------------------------------------------------------
-        // TODO docstring
-        // TODO complete implementation
+        /**
+         * Remove the schema for this table from the database
+         *
+         * @returns {promise} - a promise that is resolved when the schema
+         *                      has been removed
+         */
         Table.prototype.removeSchema = function() {
 
             var deferred = $q.defer(),
@@ -920,8 +943,11 @@ EdenMobile.factory('Table', [
         };
 
         // --------------------------------------------------------------------
-        // TODO docstring
-        // TODO implement this
+        /**
+         * Get the file URIs of all widget images in this table
+         *
+         * @returns {Array} - an array of file URIs
+         */
         Table.prototype.getWidgetImages = function() {
 
             var fields = this.fields,
