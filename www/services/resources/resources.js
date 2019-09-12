@@ -48,9 +48,9 @@ EdenMobile.factory('emResources', [
          * @param {object} options - the options
          * @param {Resource} parent - the parent resource (for components/links)
          */
-        function Resource(table, schema, parent) {
+        function Resource(table, options, parent) {
 
-            var settings = schema.settings || {};
+            var settings = options.settings || {};
 
             // Table and Database
             this.table = table;
@@ -76,7 +76,7 @@ EdenMobile.factory('emResources', [
             this.function = settings.function;
 
             // Fields
-            var fieldOptions = schema.fields || {},
+            var fieldOptions = options.fields || {},
                 fields = {},
                 field;
             for (var fieldName in table.fields) {
@@ -763,6 +763,65 @@ EdenMobile.factory('emResources', [
         };
 
         // --------------------------------------------------------------------
+        // TODO docstring
+        Resource.prototype.drop = function() {
+
+            var resourceName = this.name;
+
+            // Remove from table registry
+            delete this.table.resources[resourceName];
+
+            var parent = this.parent;
+            if (parent) {
+                var linked = this.linked,
+                    alias = this.alias;
+                if (linked) {
+                    // Remove from linked table
+                    linked.link = undefined;
+                    // Remove from parent
+                    if (alias) {
+                        delete parent._links[alias];
+                    }
+                } else {
+                    // Drop link table
+                    if (this.link) {
+                        this.link.drop();
+                    }
+                    // Remove from parent
+                    if (alias) {
+                        delete parent._components[alias];
+                        delete parent.activeComponents[alias];
+                    }
+                }
+            } else {
+                // Drop all components
+                Object.values(this._components).forEach(function(component) {
+                    component.drop();
+                });
+
+                // Remove resource schema (don't wait for it)
+                emDB.table('em_resource').then(function(table) {
+                    table.where(table.$('name').equals(resourceName)).delete();
+                });
+
+                // Remove from registry
+                delete resources[this.name];
+
+                // Drop the table, if possible
+                var table = this.table,
+                    tableName = this.tableName;
+                table.drop().then(
+                    function() {
+                        // Success
+                    },
+                    function(/* error */) {
+                        setupDefaultResource(tableName);
+                    });
+            }
+
+        };
+
+        // --------------------------------------------------------------------
         /**
          * Identify a record, use like:
          *      - resource.identify(record).then(function(recordID){});
@@ -1003,7 +1062,7 @@ EdenMobile.factory('emResources', [
             return emDB.table(tableName).then(function(table) {
                 if (table !== undefined &&
                     Object.keys(table.resources).length === 0) {
-                    var resource = new Resource(table);
+                    var resource = new Resource(table, {});
                     resources[resource.name] = resource;
                 }
             });

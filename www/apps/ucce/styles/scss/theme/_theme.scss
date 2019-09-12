@@ -98,7 +98,8 @@ form {
     }
     .likert-icon-bar .item.item-radio {
         display: inline-block;
-        margin: 0 0.7rem;
+        //margin: 0 0.7rem;
+        margin: 0 calc(0.7vw);
         border: 1px solid #E0E0E0!important;
         .radio-icon {
             display: none;
@@ -108,8 +109,11 @@ form {
             display: inline-block;
         }
         .radio-content .item-content {
-            padding: 0 0.7rem;
-            font-size: 3.6rem;
+            //padding: 0 0.7rem;
+            //font-size: 3.6rem;
+            padding: 0 calc(0.2rem + 0.7vw);
+            font-size: calc(1.5rem + 4vw);
+            line-height: calc(1.5rem + 6vw);
         }
         input:checked + .radio-content .item-content {
             background: #fbe128;
@@ -139,10 +143,12 @@ form {
         font-weight: bold;
         font-size: 0.9rem;
         padding-top: 0.3rem;
+        white-space: pre-line;
     }
     .do {
         font-weight: normal;
         font-size: 0.9rem;
+        white-space: pre-line;
     }
 }
 

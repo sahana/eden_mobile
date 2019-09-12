@@ -157,6 +157,46 @@ EdenMobile.factory('emComponents', [
         };
 
         // --------------------------------------------------------------------
+        // TODO docstring
+        // TODO cleanup vars
+        var hasParent = function(tableName) {
+
+            for (var master in hooks) {
+                for (var alias in hooks[master]) {
+                    var hook = hooks[master][alias];
+                    if (hook.tableName == tableName || hook.link == tableName) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+
+        // --------------------------------------------------------------------
+        // TODO docstring
+        // TODO implement this
+        var removeHooks = function(table) {
+
+            var tableName = table.name,
+                db = table._db;
+
+            return db.ready.then(function() {
+                delete hooks[tableName];
+
+                var db = table._db,
+                    objectTypes = table.objectTypes;
+                table.objectTypes = {};
+
+                for (var objectType in objectTypes) {
+                    if (db.getInstanceTables(objectType).length === 0) {
+                        delete hooks[objectType];
+                    }
+                }
+                table.objectTypes = objectTypes;
+            });
+        };
+
+        // --------------------------------------------------------------------
         /**
          * Remove all component hooks involving user tables
          */
@@ -191,6 +231,8 @@ EdenMobile.factory('emComponents', [
             addComponent: addComponent,
             getHooks: getHooks,
             getComponent: getComponent,
+            hasParent: hasParent,
+            removeHooks: removeHooks,
             reset: reset
         };
 
