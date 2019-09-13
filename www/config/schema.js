@@ -152,6 +152,10 @@ EdenMobile.factory('emDefaultSchema', ['emUtils', function (emUtils) {
             'main': {
                 type: 'boolean',
                 defaultValue: false
+            },
+            'inactive': {
+                type: 'boolean',
+                defaultValue: false
             }
         },
 

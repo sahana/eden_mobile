@@ -68,6 +68,9 @@ EdenMobile.factory('emResources', [
             this.schemaDate = null;
             this.lastSync = null;
 
+            // Inactive (no longer available on server)
+            this.inactive = settings.inactive;
+
             // Is this a main resource (or a component/lookup table)?
             this.main = !!settings.main;
 
@@ -983,7 +986,8 @@ EdenMobile.factory('emResources', [
                     'function': self.function,
                     'fields': fieldDef,
                     'settings': self.settings,
-                    'main': self.main
+                    'main': self.main,
+                    'inactive': self.inactive
                 };
 
                 // Save the schema
@@ -1072,6 +1076,24 @@ EdenMobile.factory('emResources', [
             return this.lastSync;
         };
 
+        // --------------------------------------------------------------------
+        /**
+         * Set (or reset) the inactive-flag of this resource
+         *
+         * @param {boolean} inactive - whether the resource is inactive, i.e.
+         *                             no longer available on the server
+         */
+        Resource.prototype.setInactive = function(inactive) {
+
+            inactive = !!inactive;
+
+            if (this.inactive !== inactive) {
+
+                this.inactive = inactive;
+                this.saveSchema();
+            }
+        };
+
         // ====================================================================
         /**
          * Set up the default resource for a table; default resources are
@@ -1136,7 +1158,8 @@ EdenMobile.factory('emResources', [
                         'name': record.name,
                         'controller': record.controller,
                         'function': record.function,
-                        'main': record.main
+                        'main': record.main,
+                        'inactive': record.inactive
                     });
 
                     var fieldOpts = record.fields;
@@ -1183,7 +1206,8 @@ EdenMobile.factory('emResources', [
                     'settings',
                     'schema_date',
                     'lastsync',
-                    'main'
+                    'main',
+                    'inactive'
                 ];
 
                 table.select(fields, function(rows) {
@@ -1367,6 +1391,24 @@ EdenMobile.factory('emResources', [
                     }
                 });
                 return resourceInstalled.promise;
+            },
+
+            /**
+             * Mark all main-resources as inactive that are no longer
+             * available on the server
+             *
+             * @param {Array} available - array of resource names which are
+             *                            currently available on the server
+             */
+            markInactive: function(available) {
+
+                resourcesLoaded.then(function() {
+                    Object.values(resources).forEach(function(resource) {
+                        if (resource.main) {
+                            resource.setInactive(available.indexOf(resource.name) == -1);
+                        }
+                    });
+                });
             },
 
             /**

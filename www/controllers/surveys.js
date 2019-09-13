@@ -31,8 +31,8 @@
  * @memberof EdenMobile
  */
 EdenMobile.controller("EMSurveyList", [
-    '$scope', '$q', 'emAuth', 'emDialogs', 'emResources', 'emSync',
-    function($scope, $q, emAuth, emDialogs, emResources, emSync) {
+    '$ionicLoading', '$scope', '$q', 'emAuth', 'emDialogs', 'emResources', 'emSync',
+    function($ionicLoading, $scope, $q, emAuth, emDialogs, emResources, emSync) {
 
         "use strict";
 
@@ -92,22 +92,22 @@ EdenMobile.controller("EMSurveyList", [
             var resources = {},
                 surveys = [];
 
-            emResources.resourceList().then(function(resourceList) {
+            return emResources.resourceList().then(function(resourceList) {
 
                 // Get survey data
                 var deferred = [];
                 resourceList.forEach(function(item) {
-                    if (item.numRows) {
-                        $scope.pendingUploads = true;
-                    }
                     if (item.resource.main) {
+                        if (item.numRows && !item.resource.inactive) {
+                            $scope.pendingUploads = true;
+                        }
                         deferred.push(addSurveyData(item));
                     }
                 });
 
                 if (deferred.length) {
                     // Refresh scope when all survey data are available
-                    $q.all(deferred).then(function(surveyInfos) {
+                    return $q.all(deferred).then(function(surveyInfos) {
                         surveyInfos.forEach(function(survey) {
                             surveys.push(survey);
                             resources[survey.resource.name] = survey;
@@ -119,6 +119,7 @@ EdenMobile.controller("EMSurveyList", [
                     // Refresh scope right away
                     $scope.resources = {};
                     $scope.surveys = [];
+                    return $q.resolve();
                 }
             });
         };
@@ -140,29 +141,9 @@ EdenMobile.controller("EMSurveyList", [
            });
         };
 
-        // Manual trigger to refresh the survey list
-        $scope.update = refreshSurveyList;
-
-        // Automatically refresh survey list when session gets connected
-        $scope.$on('emSessionConnected', function() {
-            refreshSurveyList(true);
-        });
-
-        // Automatically refresh survey list when device comes back online
-        $scope.$on('emDeviceOnline', function() {
-            refreshSurveyList(true);
-        });
-
-        // Handle language selection
-        $scope.$watch('l10n.currentLanguage', function() {
-            emAuth.updateSession({currentLanguage: $scope.l10n.currentLanguage}).then(
-                function(session) {
-                    updateSurveyList(session);
-                });
-        });
-
         // Upload-function
         $scope.upload = function() {
+
             emAuth.getSession().then(function(session) {
                 emSync.uploadAllData().then(function(result) {
                     var failures = result.failed;
@@ -182,8 +163,52 @@ EdenMobile.controller("EMSurveyList", [
             });
         };
 
+        // Delete-survey-function (called from emSurveyCard)
+        $scope.delete = function(resourceName) {
+
+            var survey = $scope.resources[resourceName];
+
+            emDialogs.confirmAction(
+                'Delete Survey',
+                'The survey and all responses for it will be removed from the app. Are you sure?',
+                function() {
+                    emAuth.getSession().then(function(session) {
+                        $ionicLoading.show({
+                            template: 'Deleting survey...'
+                        }).then(function() {
+                            survey.resource.drop().then(function() {
+                                updateSurveyList(session).then(function() {
+                                    $ionicLoading.hide();
+                                });
+                            });
+                        });
+                    });
+                });
+        };
+
+        // Manual trigger to refresh the survey list
+        $scope.update = refreshSurveyList;
+
         // Unlink-function
         $scope.unlink = emAuth.exitSession;
+
+        // Automatically refresh survey list when session gets connected
+        $scope.$on('emSessionConnected', function() {
+            refreshSurveyList(true);
+        });
+
+        // Automatically refresh survey list when device comes back online
+        $scope.$on('emDeviceOnline', function() {
+            refreshSurveyList(true);
+        });
+
+        // Handle language selection
+        $scope.$watch('l10n.currentLanguage', function() {
+            emAuth.updateSession({currentLanguage: $scope.l10n.currentLanguage}).then(
+                function(session) {
+                    updateSurveyList(session);
+                });
+        });
 
         // Update the survey list every time when entering the view
         $scope.$on('$ionicView.enter', function() {

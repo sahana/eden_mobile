@@ -23,6 +23,27 @@
         margin: 1rem;
     }
 }
+
+.survey-card-content.survey-inactive {
+    h2 {
+        padding: 0 0.5rem;
+        margin-top: -0.3rem;
+        color: lightgrey;
+        text-decoration: line-through;
+    }
+    .survey-inactive-hint {
+        font-size: 0.7rem;
+        color: red;
+        text-align: center;
+        margin-top: 0;
+    }
+    table {
+        td, h3 {
+            color: lightgrey;
+        }
+    }
+}
+
 .col.survey-unlink {
     text-align: right;
 }

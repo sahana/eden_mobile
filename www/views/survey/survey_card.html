@@ -1,7 +1,8 @@
 <div class="card">
   <div class="item item-divider survey-card-top"></div>
-  <div class="item item-text-wrap survey-card-content">
+  <div class="item item-text-wrap survey-card-content" ng-class='{"survey-inactive": inactive}'>
     <h2>{{surveyTitle}}</h2>
+    <div class="survey-inactive-hint" ng-if="inactive">Inactive</div>
     <table>
       <tr>
         <td><h3>Complete Responses</h3></td><!-- TODO i18n -->
@@ -14,6 +15,7 @@
     </table>
   </div>
   <div class="item item-centered">
-    <a class="button button-energized" ui-sref="wizard({resourceName: resourceName, recordID: 0, language: l10n.currentLanguage})" ui-sref-opts="{reload: true}">Start Survey</a>
+    <a class="button button-energized" ng-if="!inactive" ui-sref="wizard({resourceName: resourceName, recordID: 0, language: l10n.currentLanguage})" ui-sref-opts="{reload: true}">Start Survey</a>
+    <a class="button button-stable" ng-if="inactive" ng-click="delete(resourceName)">Delete</a>
   </div>
 </div>

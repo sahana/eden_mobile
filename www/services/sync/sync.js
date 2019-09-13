@@ -172,14 +172,17 @@ EdenMobile.factory('emSync', [
 
                 resource = resourceData.resource;
 
-                item = items[resource.name];
-                if (item !== undefined) {
-                    upload = item.upload;
+                if (resource.inactive) {
+                    upload = false;
                 } else {
-                    // @todo: check autoUpload option for default
-                    upload = true;
+                    item = items[resource.name];
+                    if (item !== undefined) {
+                        upload = item.upload;
+                    } else {
+                        // @todo: check autoUpload option for default
+                        upload = true;
+                    }
                 }
-
                 entry = {
                     'label': resource.getLabel(true),
                     'resourceName': resource.name,
@@ -241,6 +244,11 @@ EdenMobile.factory('emSync', [
                 quiet: quiet,
                 masterKeyUUID: masterKeyUUID
             }).then(function(formList) {
+
+                // Update master resources as active/inactive
+                emResources.markInactive(formList.map(function(entry) {
+                    return entry.resourceName;
+                }));
 
                 // Check if there are any new items
                 var newForms = formList.filter(function(entry) {
