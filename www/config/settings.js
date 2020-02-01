@@ -38,14 +38,12 @@ EdenMobile.value('emSettings', {
 
         'url': {
             type: 'url',
+            // Can hardcode a value for a Production instance like this (however, better to configure in local.json):
+            //defaultValue: 'https://sahana.example.com/eden',
             // Useful for local debugging (use Port Forwarding in Chrome's Developer Tools):
-            // - although better to use local.json (copy from local.json.example)
             //defaultValue: 'http://localhost:8000/eden',
-            // Can hardcode a value for a Production instance like this:
-            //defaultValue: 'http://sahana.example.com/eden',
-            //writable: false,
             label: 'Sahana Server URL',
-            help: 'e.g. http://sahana.example.com/eden',
+            help: 'e.g. https://sahana.example.com/eden',
             placeholder: 'Enter the server URL',
             onValidation: function(value) {
                 // https://gist.github.com/dperini/729294
@@ -68,9 +66,10 @@ EdenMobile.value('emSettings', {
             placeholder: 'Enter your password'
         },
 
-        // Hidden setting for MasterKeyAuth app key (can be configured in local.json)
+        // Hidden setting for MasterKeyAuth app key (better to configure in local.json)
         'appKey': {
             type: 'password',
+            //defaultValue: 'settings.auth.masterkey_app_key',
             label: 'Application Key',
             readable: false,
             writable: false
