@@ -23,6 +23,27 @@
         margin: 1rem;
     }
 }
+
+.survey-card-content.survey-inactive {
+    h2 {
+        padding: 0 0.5rem;
+        margin-top: -0.3rem;
+        color: lightgrey;
+        text-decoration: line-through;
+    }
+    .survey-inactive-hint {
+        font-size: 0.7rem;
+        color: red;
+        text-align: center;
+        margin-top: 0;
+    }
+    table {
+        td, h3 {
+            color: lightgrey;
+        }
+    }
+}
+
 .col.survey-unlink {
     text-align: right;
 }
@@ -98,7 +119,8 @@ form {
     }
     .likert-icon-bar .item.item-radio {
         display: inline-block;
-        margin: 0 0.7rem;
+        //margin: 0 0.7rem;
+        margin: 0 calc(0.7vw);
         border: 1px solid #E0E0E0!important;
         .radio-icon {
             display: none;
@@ -108,8 +130,11 @@ form {
             display: inline-block;
         }
         .radio-content .item-content {
-            padding: 0 0.7rem;
-            font-size: 3.6rem;
+            //padding: 0 0.7rem;
+            //font-size: 3.6rem;
+            padding: 0 calc(0.2rem + 0.7vw);
+            font-size: calc(1.5rem + 4vw);
+            line-height: calc(1.5rem + 6vw);
         }
         input:checked + .radio-content .item-content {
             background: #fbe128;

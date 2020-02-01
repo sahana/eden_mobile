@@ -91,37 +91,38 @@ EdenMobile.factory('Dependency', [
             this.providers.push(provider);
 
             var self = this;
-            provider.done().then(
-                function(value) {
-                    if (self.isResolved) {
-                        // Another provider has succeeded first, or the
-                        // object was known before the current SyncRun
-                        // => just check if complete
-                        self.checkComplete();
-                    } else {
-                        // Provider has succeeded
-                        if (value) {
-                            // Provider has returned a value
-                            // => resolve dependency, then check if complete
-                            self.resolve(value, true).then(
-                                function() {
-                                    self.checkComplete();
-                                },
-                                function(reason) {
-                                    // Provider result is not valid (bug!)
-                                    throw new Error('invalid provider result (' + reason + ')!');
-                                });
+            $q.when(this.pending).finally(function() {
+                self.pending = provider.done().then(
+                    function(value) {
+                        if (self.isResolved) {
+                            // Another provider has succeeded first, or the
+                            // object was known before the current SyncRun
+                            // => just check if complete
+                            self.checkComplete();
                         } else {
-                            // Provider has not produced a result
-                            self.checkResolvable();
+                            // Provider has succeeded
+                            if (value) {
+                                // Provider has returned a value
+                                // => resolve dependency, then check if complete
+                                self.resolve(value, true).then(
+                                    function() {
+                                        self.checkComplete();
+                                    },
+                                    function(reason) {
+                                        // Provider result is not valid (bug!)
+                                        throw new Error('invalid provider result (' + reason + ')!');
+                                    });
+                            } else {
+                                // Provider has not produced a result
+                                self.checkResolvable();
+                            }
                         }
-                    }
-                },
-                function() {
-                    // Provider has failed
-                    self.checkResolvable();
-                }
-            );
+                    },
+                    function() {
+                        // Provider has failed
+                        self.checkResolvable();
+                    });
+            });
         };
 
         // --------------------------------------------------------------------

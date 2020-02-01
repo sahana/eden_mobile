@@ -24,8 +24,8 @@
  */
 
 EdenMobile.factory('Table', [
-    '$q', 'emDefaultSchema', 'emFiles', 'Expression', 'Field',  'Set',
-    function ($q, emDefaultSchema, emFiles, Expression, Field, Set) {
+    '$q', 'emComponents', 'emDefaultSchema', 'emFiles', 'Expression', 'Field',  'Set',
+    function ($q, emComponents, emDefaultSchema, emFiles, Expression, Field, Set) {
 
         "use strict";
 
@@ -297,6 +297,22 @@ EdenMobile.factory('Table', [
 
         // --------------------------------------------------------------------
         /**
+         * Delete all object keys for this table
+         *
+         * @note: never run this while there are still records in the table!
+         */
+        Table.prototype._deleteObjectKeys = function() {
+
+            var db = this._db,
+                objectKeyTable = db.tables.em_object;
+
+            objectKeyTable
+                .where(objectKeyTable.$('tablename').is(this.name))
+                .delete();
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Get a Resource for this Table; e.g. to resolve component aliases
          *
          * @param {string} name - the resource name (optional), if omitted,
@@ -427,6 +443,77 @@ EdenMobile.factory('Table', [
 
         // --------------------------------------------------------------------
         /**
+         * Remove this table from the database, including any related files,
+         * object keys and the schema
+         *
+         * @returns {promise} - a promise that is resolved when the process
+         *                      was successful, or rejected otherwise
+         */
+        Table.prototype.drop = function() {
+
+            // Cannot drop from clone
+            if (this._original) {
+                return $q.reject('trying to drop table from clone');
+            }
+
+            // Do not drop system tables
+            if (this.name.slice(0, 3) == 'em_') {
+                return $q.reject('cannot drop system tables');
+            }
+
+            // Do not drop tables with active resources
+            var resources = this.resources;
+            for (var resourceName in resources) {
+                if (resourceName != this.name || resources[resourceName].main) {
+                    return $q.reject('table has active resources');
+                }
+            }
+
+            // Do not drop tables subject to foreign key constraints
+            var db = this._db,
+                tableName = this.name;
+            for (var tn in db.tables) {
+                if (tn == tableName) {
+                    continue;
+                }
+                var table = db.tables[tn];
+                for (var fn in table.fields) {
+                    var field = table.fields[fn],
+                        fk = field.getForeignKey();
+                    if (fk && fk.table == tableName) {
+                        return $q.reject('table is referenced by other table');
+                    }
+                }
+            }
+
+            // Do not drop tables that may still be required as components/linktables
+            if (emComponents.hasParent(tableName)) {
+                return $q.reject('table is still requires as component/link');
+            }
+
+            var self = this;
+            return emComponents.removeHooks(this).then(function() {
+                self.removeSchema().then(function() {
+                    self.getFiles().then(function(orphanedFiles) {
+                        var deferred = $q.defer();
+                        db._adapter.executeSql(self._drop(), [],
+                            function(/* result */) {
+                                emFiles.removeAll(orphanedFiles);
+                                self._deleteObjectKeys();
+                                delete db.tables[tableName];
+                                deferred.resolve();
+                            },
+                            function(error) {
+                                db.sqlError(error);
+                            });
+                        return deferred.promise;
+                    });
+                });
+            });
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Create this table in the database
          *
          * @param {Array} records - Array of records to populate the table with
@@ -552,33 +639,82 @@ EdenMobile.factory('Table', [
                 return;
             }
 
-            var fields = this.fields,
-                fieldName,
-                field,
-                fieldDef = {},
-                settings = this.settings;
+            var self = this;
+            $q.when(this.schemaSaved).then(function() {
 
-            for (fieldName in fields) {
-                field = fields[fieldName];
-                if (!field.meta) {
-                    fieldDef[fieldName] = field.description();
+                var schemaSaved = $q.defer();
+                self.schemaSaved = schemaSaved.promise;
+
+                var fields = self.fields,
+                    fieldName,
+                    field,
+                    fieldDef = {},
+                    settings = self.settings;
+
+                for (fieldName in fields) {
+                    field = fields[fieldName];
+                    if (!field.meta) {
+                        fieldDef[fieldName] = field.description();
+                    }
                 }
+
+                var schema = {
+                    name: self.name,
+                    fields: fieldDef,
+                    settings: settings
+                };
+
+                var dbSet = schemaTable.where(schemaTable.$('name').equals(self.name));
+                dbSet.select(['id'], {limit: 1}, function(rows) {
+                    if (rows.length) {
+                        dbSet.update(schema, function() {
+                            schemaSaved.resolve();
+                        });
+                    } else {
+                        schemaTable.insert(schema, function() {
+                            schemaSaved.resolve();
+                        });
+                    }
+                });
+            });
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Remove the schema for this table from the database
+         *
+         * @returns {promise} - a promise that is resolved when the schema
+         *                      has been removed
+         */
+        Table.prototype.removeSchema = function() {
+
+            var deferred = $q.defer(),
+                db = this._db;
+
+            if (this._original) {
+                // Trying to remove schema of clone
+                deferred.reject('Table.removeSchema must be called for original table');
             }
 
-            var schema = {
-                name: this.name,
-                fields: fieldDef,
-                settings: settings
-            };
+            var schemaTable = db.tables.em_schema;
+            if (schemaTable === undefined) {
+                deferred.reject('No schema table');
+            }
 
-            var dbSet = schemaTable.where(schemaTable.$('name').equals(this.name));
-            dbSet.select(['id'], {limit: 1}, function(rows) {
-                if (rows.length) {
-                    dbSet.update(schema);
-                } else {
-                    schemaTable.insert(schema);
-                }
-            });
+            var widgetImages = this.getWidgetImages(),
+                dbSet = schemaTable.where(schemaTable.$('name').equals(this.name));
+            dbSet.delete(
+                function() {
+                    if (widgetImages && widgetImages.length) {
+                        emFiles.removeAll(widgetImages);
+                    }
+                    deferred.resolve();
+                },
+                function(error) {
+                    deferred.reject(error);
+                });
+
+            return deferred.promise;
         };
 
         // --------------------------------------------------------------------
@@ -804,6 +940,34 @@ EdenMobile.factory('Table', [
             }
 
             return deferred.promise;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Get the file URIs of all widget images in this table
+         *
+         * @returns {Array} - an array of file URIs
+         */
+        Table.prototype.getWidgetImages = function() {
+
+            var fields = this.fields,
+                images = [];
+
+            for (var fieldName in fields) {
+                var field = fields[fieldName],
+                    fieldDescription = field._description,
+                    fieldSettings = fieldDescription.settings || {},
+                    imageConfig = fieldSettings.image || fieldSettings.pipeImage;
+
+                if (imageConfig) {
+                    var imageURI = imageConfig.file;
+                    if (imageURI) {
+                        images.push(imageURI);
+                    }
+                }
+            }
+
+            return images;
         };
 
         // --------------------------------------------------------------------

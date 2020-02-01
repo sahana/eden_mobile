@@ -158,6 +158,57 @@ EdenMobile.factory('emComponents', [
 
         // --------------------------------------------------------------------
         /**
+         * Check if a table can be a component
+         *
+         * @param {string} tableName - the table name
+         *
+         * @returns {boolean}
+         */
+        var hasParent = function(tableName) {
+
+            for (var master in hooks) {
+                for (var alias in hooks[master]) {
+                    var hook = hooks[master][alias];
+                    if (hook.tableName == tableName || hook.link == tableName) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+
+        // --------------------------------------------------------------------
+        /**
+         * Remove all component hooks for a table
+         *
+         * @param {Table} table - the table
+         *
+         * @returns {promise} - a promise that is resolved when the process
+         *                      is complete
+         */
+        var removeHooks = function(table) {
+
+            var tableName = table.name,
+                db = table._db;
+
+            return db.ready.then(function() {
+                delete hooks[tableName];
+
+                var db = table._db,
+                    objectTypes = table.objectTypes;
+                table.objectTypes = {};
+
+                for (var objectType in objectTypes) {
+                    if (db.getInstanceTables(objectType).length === 0) {
+                        delete hooks[objectType];
+                    }
+                }
+                table.objectTypes = objectTypes;
+            });
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Remove all component hooks involving user tables
          */
         var reset = function() {
@@ -191,6 +242,8 @@ EdenMobile.factory('emComponents', [
             addComponent: addComponent,
             getHooks: getHooks,
             getComponent: getComponent,
+            hasParent: hasParent,
+            removeHooks: removeHooks,
             reset: reset
         };
 

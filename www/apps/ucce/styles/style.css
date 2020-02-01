@@ -31,53 +31,72 @@
   margin: 1rem;
 }
 
-/* line 26, scss/theme/_theme.scss */
+/* line 28, scss/theme/_theme.scss */
+.survey-card-content.survey-inactive h2 {
+  padding: 0 0.5rem;
+  margin-top: -0.3rem;
+  color: lightgrey;
+  text-decoration: line-through;
+}
+/* line 34, scss/theme/_theme.scss */
+.survey-card-content.survey-inactive .survey-inactive-hint {
+  font-size: 0.7rem;
+  color: red;
+  text-align: center;
+  margin-top: 0;
+}
+/* line 41, scss/theme/_theme.scss */
+.survey-card-content.survey-inactive table td, .survey-card-content.survey-inactive table h3 {
+  color: lightgrey;
+}
+
+/* line 47, scss/theme/_theme.scss */
 .col.survey-unlink {
   text-align: right;
 }
 
-/* line 29, scss/theme/_theme.scss */
+/* line 50, scss/theme/_theme.scss */
 .button[disabled] {
   background-color: #ccc;
 }
 
-/* line 32, scss/theme/_theme.scss */
+/* line 53, scss/theme/_theme.scss */
 .item-centered {
   text-align: center;
 }
 
-/* line 36, scss/theme/_theme.scss */
+/* line 57, scss/theme/_theme.scss */
 form {
   width: 90%;
 }
-/* line 38, scss/theme/_theme.scss */
+/* line 59, scss/theme/_theme.scss */
 form .item-toggle {
   height: 40px;
   border: 0;
 }
-/* line 42, scss/theme/_theme.scss */
+/* line 63, scss/theme/_theme.scss */
 form label.toggle {
   right: unset;
   left: 8px;
 }
-/* line 46, scss/theme/_theme.scss */
+/* line 67, scss/theme/_theme.scss */
 form em-wizard-image-map.ng-invalid div.map {
   border: 1px solid red;
 }
-/* line 49, scss/theme/_theme.scss */
+/* line 70, scss/theme/_theme.scss */
 form span.asterisk:before {
   content: '*';
   color: red;
   margin: 0 0.2rem;
 }
-/* line 54, scss/theme/_theme.scss */
+/* line 75, scss/theme/_theme.scss */
 form .required-hint {
   color: red;
   font-size: 0.8rem;
   text-align: right;
   margin-top: 0.5rem;
 }
-/* line 61, scss/theme/_theme.scss */
+/* line 82, scss/theme/_theme.scss */
 form .item-stacked-label input,
 form .item-stacked-label textarea,
 form .item-stacked-label select {
@@ -85,115 +104,132 @@ form .item-stacked-label select {
   padding: 4px;
   width: auto;
 }
-/* line 72, scss/theme/_theme.scss */
+/* line 93, scss/theme/_theme.scss */
 form .item-stacked-label input.ng-invalid,
 form .item-stacked-label textarea.ng-invalid,
 form .item-stacked-label select.ng-invalid,
 form .item-stacked-label div.list.multi-select.ng-invalid {
   border: 1px solid red;
 }
-/* line 76, scss/theme/_theme.scss */
+/* line 97, scss/theme/_theme.scss */
 form .item-stacked-label input[type="date"] {
   min-width: 8rem;
 }
-/* line 79, scss/theme/_theme.scss */
+/* line 100, scss/theme/_theme.scss */
 form .item-stacked-label select[multiple] {
   padding: 0.5rem;
 }
-/* line 83, scss/theme/_theme.scss */
+/* line 104, scss/theme/_theme.scss */
 form .item-stacked-label label.item-radio.ng-invalid .radio-content {
   border-left: 1px solid red;
   border-right: 1px solid red;
 }
-/* line 87, scss/theme/_theme.scss */
+/* line 108, scss/theme/_theme.scss */
 form .item-stacked-label label.item-radio.ng-invalid:first-child .radio-content {
   border-top: 1px solid red;
 }
-/* line 90, scss/theme/_theme.scss */
+/* line 111, scss/theme/_theme.scss */
 form .item-stacked-label label.item-radio.ng-invalid:last-child .radio-content {
   border-bottom: 1px solid red;
 }
-/* line 95, scss/theme/_theme.scss */
+/* line 116, scss/theme/_theme.scss */
 form i.likert-vertical {
   font-size: 1.5rem;
   margin-right: 0.75rem;
 }
-/* line 99, scss/theme/_theme.scss */
+/* line 120, scss/theme/_theme.scss */
 form .likert-icon-bar .item.item-radio {
   display: inline-block;
-  margin: 0 0.7rem;
+  margin: 0 calc(0.7vw);
   border: 1px solid #E0E0E0 !important;
 }
-/* line 103, scss/theme/_theme.scss */
+/* line 125, scss/theme/_theme.scss */
 form .likert-icon-bar .item.item-radio .radio-icon {
   display: none;
   visibility: none;
 }
-/* line 107, scss/theme/_theme.scss */
+/* line 129, scss/theme/_theme.scss */
 form .likert-icon-bar .item.item-radio .likert-horizontal {
   display: inline-block;
 }
-/* line 110, scss/theme/_theme.scss */
+/* line 132, scss/theme/_theme.scss */
 form .likert-icon-bar .item.item-radio .radio-content .item-content {
-  padding: 0 0.7rem;
-  font-size: 3.6rem;
+  padding: 0 calc(0.2rem + 0.7vw);
+  font-size: calc(1.5rem + 4vw);
+  line-height: calc(1.5rem + 6vw);
 }
-/* line 114, scss/theme/_theme.scss */
+/* line 139, scss/theme/_theme.scss */
 form .likert-icon-bar .item.item-radio input:checked + .radio-content .item-content {
   background: #fbe128;
 }
-/* line 119, scss/theme/_theme.scss */
+/* line 144, scss/theme/_theme.scss */
 form .wizard-label {
   margin-top: 0.5rem;
   margin-bottom: 0.3rem;
   font-weight: bold;
 }
-/* line 124, scss/theme/_theme.scss */
+/* line 149, scss/theme/_theme.scss */
 form .form-row-image img {
   max-width: 66%;
   max-height: 600px;
 }
-/* line 128, scss/theme/_theme.scss */
+/* line 153, scss/theme/_theme.scss */
 form .image-map-preview {
   max-width: 66%;
 }
 
-/* line 132, scss/theme/_theme.scss */
+/* line 157, scss/theme/_theme.scss */
 .wizard-submit-buttons {
   padding: 0px 10px;
 }
 
-/* line 136, scss/theme/_theme.scss */
+/* line 161, scss/theme/_theme.scss */
 .data-collector-instructions {
   background-color: #E0E0E0;
 }
-/* line 138, scss/theme/_theme.scss */
+/* line 163, scss/theme/_theme.scss */
 .data-collector-instructions .say {
   font-weight: bold;
   font-size: 0.9rem;
   padding-top: 0.3rem;
   white-space: pre-line;
 }
+<<<<<<< HEAD
 /* line 144, scss/theme/_theme.scss */
+=======
+/* line 169, scss/theme/_theme.scss */
+>>>>>>> fb8bf2dba32251f2ce9817db826045503654c0fb
 .data-collector-instructions .do {
   font-weight: normal;
   font-size: 0.9rem;
   white-space: pre-line;
 }
 
+<<<<<<< HEAD
 /* line 151, scss/theme/_theme.scss */
+=======
+/* line 176, scss/theme/_theme.scss */
+>>>>>>> fb8bf2dba32251f2ce9817db826045503654c0fb
 .other-option.item-radio .item-content,
 .other-option.item-checkbox .item-content {
   pointer-events: auto;
 }
 
+<<<<<<< HEAD
 /* line 155, scss/theme/_theme.scss */
+=======
+/* line 180, scss/theme/_theme.scss */
+>>>>>>> fb8bf2dba32251f2ce9817db826045503654c0fb
 .other-option.item-radio .item-content input {
   position: relative;
   left: auto;
 }
 
+<<<<<<< HEAD
 /* line 160, scss/theme/_theme.scss */
+=======
+/* line 185, scss/theme/_theme.scss */
+>>>>>>> fb8bf2dba32251f2ce9817db826045503654c0fb
 .survey-language-selector {
   min-height: 2.7rem;
   padding: 0.5rem;
@@ -201,7 +237,11 @@ form .image-map-preview {
   min-width: 12.0rem;
 }
 
+<<<<<<< HEAD
 /* line 167, scss/theme/_theme.scss */
+=======
+/* line 192, scss/theme/_theme.scss */
+>>>>>>> fb8bf2dba32251f2ce9817db826045503654c0fb
 .session-prompt.modal {
   top: 0 !important;
   right: 0 !important;
@@ -210,38 +250,66 @@ form .image-map-preview {
   width: 100% !important;
   height: 100% !important;
 }
+<<<<<<< HEAD
 /* line 175, scss/theme/_theme.scss */
+=======
+/* line 200, scss/theme/_theme.scss */
+>>>>>>> fb8bf2dba32251f2ce9817db826045503654c0fb
 .session-prompt.modal form.session-prompt-form {
   margin-top: 10%;
   width: 100%;
 }
+<<<<<<< HEAD
 /* line 178, scss/theme/_theme.scss */
+=======
+/* line 203, scss/theme/_theme.scss */
+>>>>>>> fb8bf2dba32251f2ce9817db826045503654c0fb
 .session-prompt.modal form.session-prompt-form label.item-input {
   text-align: center;
   border: 0;
 }
+<<<<<<< HEAD
 /* line 181, scss/theme/_theme.scss */
+=======
+/* line 206, scss/theme/_theme.scss */
+>>>>>>> fb8bf2dba32251f2ce9817db826045503654c0fb
 .session-prompt.modal form.session-prompt-form label.item-input .input-label {
   margin-bottom: 1rem;
   font-size: 1.8rem;
 }
+<<<<<<< HEAD
 /* line 186, scss/theme/_theme.scss */
+=======
+/* line 211, scss/theme/_theme.scss */
+>>>>>>> fb8bf2dba32251f2ce9817db826045503654c0fb
 .session-prompt.modal form.session-prompt-form input {
   margin: 0 auto;
   margin-bottom: 0.5rem;
   width: 14rem;
 }
+<<<<<<< HEAD
 /* line 191, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form .button {
   min-width: 14rem;
 }
 /* line 194, scss/theme/_theme.scss */
+=======
+/* line 216, scss/theme/_theme.scss */
+.session-prompt.modal form.session-prompt-form .button {
+  min-width: 14rem;
+}
+/* line 219, scss/theme/_theme.scss */
+>>>>>>> fb8bf2dba32251f2ce9817db826045503654c0fb
 .session-prompt.modal form.session-prompt-form .unlink-link {
   text-align: center;
   margin-top: 10%;
 }
 
+<<<<<<< HEAD
 /* line 200, scss/theme/_theme.scss */
+=======
+/* line 225, scss/theme/_theme.scss */
+>>>>>>> fb8bf2dba32251f2ce9817db826045503654c0fb
 a.button.unlink-button {
   color: #00aaa0;
 }

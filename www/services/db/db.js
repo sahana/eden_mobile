@@ -279,6 +279,9 @@ EdenMobile.factory('emDB', [
          */
         Database.prototype._clean = function() {
 
+            // TODO Must remove orphaned files
+            // TODO Must remove orphaned widget images
+
             var adapter = this._adapter,
                 deferred = $q.defer();
 
@@ -324,6 +327,17 @@ EdenMobile.factory('emDB', [
             }, onError);
 
             return deferred.promise;
+        };
+
+        // --------------------------------------------------------------------
+        // TODO docstring
+        // TODO implement
+        Database.prototype.getInstanceTables = function(objectType) {
+
+            var self = this;
+            return Object.values(self.tables).filter(function(table) {
+                return table.objectTypes.hasOwnProperty(objectType);
+            });
         };
 
         // ====================================================================

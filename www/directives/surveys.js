@@ -137,6 +137,7 @@
                     $scope.surveyTitle = survey.resource.getLabel(true);
                     $scope.completeResponses = survey.completeResponses;
                     $scope.unsyncedResponses = survey.unsyncedResponses;
+                    $scope.inactive = survey.resource.inactive;
                 }
             };
         }

@@ -48,9 +48,9 @@ EdenMobile.factory('emResources', [
          * @param {object} options - the options
          * @param {Resource} parent - the parent resource (for components/links)
          */
-        function Resource(table, schema, parent) {
+        function Resource(table, options, parent) {
 
-            var settings = schema.settings || {};
+            var settings = options.settings || {};
 
             // Table and Database
             this.table = table;
@@ -68,6 +68,9 @@ EdenMobile.factory('emResources', [
             this.schemaDate = null;
             this.lastSync = null;
 
+            // Inactive (no longer available on server)
+            this.inactive = settings.inactive;
+
             // Is this a main resource (or a component/lookup table)?
             this.main = !!settings.main;
 
@@ -76,7 +79,7 @@ EdenMobile.factory('emResources', [
             this.function = settings.function;
 
             // Fields
-            var fieldOptions = schema.fields || {},
+            var fieldOptions = options.fields || {},
                 fields = {},
                 field;
             for (var fieldName in table.fields) {
@@ -764,6 +767,79 @@ EdenMobile.factory('emResources', [
 
         // --------------------------------------------------------------------
         /**
+         * Remove this resource from the registry and database
+         *
+         * @returns {promise} - a promise that is resolved when the resource
+         *                      has been removed
+         */
+        Resource.prototype.drop = function() {
+
+            var resourceName = this.name;
+
+            // Remove from table registry
+            delete this.table.resources[resourceName];
+
+            var parent = this.parent;
+            if (parent) {
+                var linked = this.linked,
+                    alias = this.alias;
+                if (linked) {
+                    // Remove from linked table
+                    linked.link = undefined;
+                    // Remove from parent
+                    if (alias) {
+                        delete parent._links[alias];
+                    }
+                    return $q.resolve();
+                } else {
+                    // Drop link table
+                    var linkRemoved;
+                    if (this.link) {
+                        linkRemoved = this.link.drop();
+                    } else {
+                        linkRemoved = $q.resolve();
+                    }
+                    // Remove from parent
+                    if (alias) {
+                        delete parent._components[alias];
+                        delete parent.activeComponents[alias];
+                    }
+                    return linkRemoved;
+                }
+            } else {
+                // Drop all components
+                var componentsRemoved = [];
+                Object.values(this._components).forEach(function(component) {
+                    componentsRemoved.push(component.drop());
+                });
+
+                var self = this;
+                return $q.all(componentsRemoved).then(function() {
+
+                    // Remove resource schema (don't wait for it)
+                    emDB.table('em_resource').then(function(table) {
+                        table.where(table.$('name').equals(resourceName)).delete();
+                    });
+
+                    // Remove from registry
+                    delete resources[resourceName];
+
+                    // Drop the table, if possible
+                    var table = self.table,
+                        tableName = self.tableName;
+                    table.drop().then(
+                        function() {
+                            // Success
+                        },
+                        function(/* error */) {
+                            setupDefaultResource(tableName);
+                        });
+                });
+            }
+        };
+
+        // --------------------------------------------------------------------
+        /**
          * Identify a record, use like:
          *      - resource.identify(record).then(function(recordID){});
          *
@@ -884,38 +960,50 @@ EdenMobile.factory('emResources', [
          */
         Resource.prototype.saveSchema = function() {
 
-            var name = this.name,
-                fields = this.fields,
-                fieldName,
-                field,
-                fieldDef = {};
+            var self = this;
+            $q.when(this.schemaSaved).then(function() {
 
-            // Encode the schema
-            for (fieldName in fields) {
-                field = fields[fieldName];
-                if (!field.meta) {
-                    fieldDef[fieldName] = field.description();
-                }
-            }
-            var schema = {
-                'name': name,
-                'tablename': this.tableName,
-                'controller': this.controller,
-                'function': this.function,
-                'fields': fieldDef,
-                'settings': this.settings,
-                'main': this.main
-            };
+                var schemaSaved = $q.defer();
+                self.schemaSaved = schemaSaved.promise;
 
-            // Save the schema
-            emDB.table('em_resource').then(function(table) {
-                var dbSet = table.where(table.$('name').equals(name));
-                dbSet.select(['id'], {limit: 1}, function(rows) {
-                    if (rows.length) {
-                        dbSet.update(schema);
-                    } else {
-                        table.insert(schema);
+                var name = self.name,
+                    fields = self.fields,
+                    fieldName,
+                    field,
+                    fieldDef = {};
+
+                // Encode the schema
+                for (fieldName in fields) {
+                    field = fields[fieldName];
+                    if (!field.meta) {
+                        fieldDef[fieldName] = field.description();
                     }
+                }
+                var schema = {
+                    'name': name,
+                    'tablename': self.tableName,
+                    'controller': self.controller,
+                    'function': self.function,
+                    'fields': fieldDef,
+                    'settings': self.settings,
+                    'main': self.main,
+                    'inactive': self.inactive
+                };
+
+                // Save the schema
+                emDB.table('em_resource').then(function(table) {
+                    var dbSet = table.where(table.$('name').equals(name));
+                    dbSet.select(['id'], {limit: 1}, function(rows) {
+                        if (rows.length) {
+                            dbSet.update(schema, function() {
+                                schemaSaved.resolve();
+                            });
+                        } else {
+                            table.insert(schema, function() {
+                                schemaSaved.resolve();
+                            });
+                        }
+                    });
                 });
             });
         };
@@ -988,6 +1076,24 @@ EdenMobile.factory('emResources', [
             return this.lastSync;
         };
 
+        // --------------------------------------------------------------------
+        /**
+         * Set (or reset) the inactive-flag of this resource
+         *
+         * @param {boolean} inactive - whether the resource is inactive, i.e.
+         *                             no longer available on the server
+         */
+        Resource.prototype.setInactive = function(inactive) {
+
+            inactive = !!inactive;
+
+            if (this.inactive !== inactive) {
+
+                this.inactive = inactive;
+                this.saveSchema();
+            }
+        };
+
         // ====================================================================
         /**
          * Set up the default resource for a table; default resources are
@@ -1003,7 +1109,7 @@ EdenMobile.factory('emResources', [
             return emDB.table(tableName).then(function(table) {
                 if (table !== undefined &&
                     Object.keys(table.resources).length === 0) {
-                    var resource = new Resource(table);
+                    var resource = new Resource(table, {});
                     resources[resource.name] = resource;
                 }
             });
@@ -1052,7 +1158,8 @@ EdenMobile.factory('emResources', [
                         'name': record.name,
                         'controller': record.controller,
                         'function': record.function,
-                        'main': record.main
+                        'main': record.main,
+                        'inactive': record.inactive
                     });
 
                     var fieldOpts = record.fields;
@@ -1099,7 +1206,8 @@ EdenMobile.factory('emResources', [
                     'settings',
                     'schema_date',
                     'lastsync',
-                    'main'
+                    'main',
+                    'inactive'
                 ];
 
                 table.select(fields, function(rows) {
@@ -1283,6 +1391,24 @@ EdenMobile.factory('emResources', [
                     }
                 });
                 return resourceInstalled.promise;
+            },
+
+            /**
+             * Mark all main-resources as inactive that are no longer
+             * available on the server
+             *
+             * @param {Array} available - array of resource names which are
+             *                            currently available on the server
+             */
+            markInactive: function(available) {
+
+                resourcesLoaded.then(function() {
+                    Object.values(resources).forEach(function(resource) {
+                        if (resource.main) {
+                            resource.setInactive(available.indexOf(resource.name) == -1);
+                        }
+                    });
+                });
             },
 
             /**
