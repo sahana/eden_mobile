@@ -119,101 +119,106 @@ form .item-stacked-label input[type="date"] {
 form .item-stacked-label select[multiple] {
   padding: 0.5rem;
 }
-/* line 104, scss/theme/_theme.scss */
+/* line 103, scss/theme/_theme.scss */
+form .item-stacked-label label .item-content {
+  overflow: visible;
+  white-space: pre-line;
+}
+/* line 108, scss/theme/_theme.scss */
 form .item-stacked-label label.item-radio.ng-invalid .radio-content {
   border-left: 1px solid red;
   border-right: 1px solid red;
 }
-/* line 108, scss/theme/_theme.scss */
+/* line 112, scss/theme/_theme.scss */
 form .item-stacked-label label.item-radio.ng-invalid:first-child .radio-content {
   border-top: 1px solid red;
 }
-/* line 111, scss/theme/_theme.scss */
+/* line 115, scss/theme/_theme.scss */
 form .item-stacked-label label.item-radio.ng-invalid:last-child .radio-content {
   border-bottom: 1px solid red;
 }
-/* line 116, scss/theme/_theme.scss */
+/* line 120, scss/theme/_theme.scss */
 form i.likert-vertical {
   font-size: 1.5rem;
   margin-right: 0.75rem;
 }
-/* line 120, scss/theme/_theme.scss */
+/* line 124, scss/theme/_theme.scss */
 form .likert-icon-bar .item.item-radio {
   display: inline-block;
   margin: 0 calc(0.7vw);
   border: 1px solid #E0E0E0 !important;
 }
-/* line 125, scss/theme/_theme.scss */
+/* line 129, scss/theme/_theme.scss */
 form .likert-icon-bar .item.item-radio .radio-icon {
   display: none;
   visibility: none;
 }
-/* line 129, scss/theme/_theme.scss */
+/* line 133, scss/theme/_theme.scss */
 form .likert-icon-bar .item.item-radio .likert-horizontal {
   display: inline-block;
 }
-/* line 132, scss/theme/_theme.scss */
+/* line 136, scss/theme/_theme.scss */
 form .likert-icon-bar .item.item-radio .radio-content .item-content {
   padding: 0 calc(0.2rem + 0.7vw);
   font-size: calc(1.5rem + 4vw);
   line-height: calc(1.5rem + 6vw);
 }
-/* line 139, scss/theme/_theme.scss */
+/* line 143, scss/theme/_theme.scss */
 form .likert-icon-bar .item.item-radio input:checked + .radio-content .item-content {
   background: #fbe128;
 }
-/* line 144, scss/theme/_theme.scss */
+/* line 148, scss/theme/_theme.scss */
 form .wizard-label {
   margin-top: 0.5rem;
   margin-bottom: 0.3rem;
   font-weight: bold;
 }
-/* line 149, scss/theme/_theme.scss */
+/* line 153, scss/theme/_theme.scss */
 form .form-row-image img {
   max-width: 66%;
   max-height: 600px;
 }
-/* line 153, scss/theme/_theme.scss */
+/* line 157, scss/theme/_theme.scss */
 form .image-map-preview {
   max-width: 66%;
 }
 
-/* line 157, scss/theme/_theme.scss */
+/* line 161, scss/theme/_theme.scss */
 .wizard-submit-buttons {
   padding: 0px 10px;
 }
 
-/* line 161, scss/theme/_theme.scss */
+/* line 165, scss/theme/_theme.scss */
 .data-collector-instructions {
   background-color: #E0E0E0;
 }
-/* line 163, scss/theme/_theme.scss */
+/* line 167, scss/theme/_theme.scss */
 .data-collector-instructions .say {
   font-weight: bold;
   font-size: 0.9rem;
   padding-top: 0.3rem;
   white-space: pre-line;
 }
-/* line 169, scss/theme/_theme.scss */
+/* line 173, scss/theme/_theme.scss */
 .data-collector-instructions .do {
   font-weight: normal;
   font-size: 0.9rem;
   white-space: pre-line;
 }
 
-/* line 176, scss/theme/_theme.scss */
+/* line 180, scss/theme/_theme.scss */
 .other-option.item-radio .item-content,
 .other-option.item-checkbox .item-content {
   pointer-events: auto;
 }
 
-/* line 180, scss/theme/_theme.scss */
+/* line 184, scss/theme/_theme.scss */
 .other-option.item-radio .item-content input {
   position: relative;
   left: auto;
 }
 
-/* line 185, scss/theme/_theme.scss */
+/* line 189, scss/theme/_theme.scss */
 .survey-language-selector {
   min-height: 2.7rem;
   padding: 0.5rem;
@@ -221,7 +226,7 @@ form .image-map-preview {
   min-width: 12.0rem;
 }
 
-/* line 192, scss/theme/_theme.scss */
+/* line 196, scss/theme/_theme.scss */
 .session-prompt.modal {
   top: 0 !important;
   right: 0 !important;
@@ -230,38 +235,38 @@ form .image-map-preview {
   width: 100% !important;
   height: 100% !important;
 }
-/* line 200, scss/theme/_theme.scss */
+/* line 204, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form {
   margin-top: 10%;
   width: 100%;
 }
-/* line 203, scss/theme/_theme.scss */
+/* line 207, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form label.item-input {
   text-align: center;
   border: 0;
 }
-/* line 206, scss/theme/_theme.scss */
+/* line 210, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form label.item-input .input-label {
   margin-bottom: 1rem;
   font-size: 1.8rem;
 }
-/* line 211, scss/theme/_theme.scss */
+/* line 215, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form input {
   margin: 0 auto;
   margin-bottom: 0.5rem;
   width: 14rem;
 }
-/* line 216, scss/theme/_theme.scss */
+/* line 220, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form .button {
   min-width: 14rem;
 }
-/* line 219, scss/theme/_theme.scss */
+/* line 223, scss/theme/_theme.scss */
 .session-prompt.modal form.session-prompt-form .unlink-link {
   text-align: center;
   margin-top: 10%;
 }
 
-/* line 225, scss/theme/_theme.scss */
+/* line 229, scss/theme/_theme.scss */
 a.button.unlink-button {
   color: #00aaa0;
 }
