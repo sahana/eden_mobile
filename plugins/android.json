@@ -8,28 +8,28 @@
   },
   "installed_plugins": {
     "cordova-plugin-appversion": {
-      "PACKAGE_NAME": "org.sahanafoundation.eden_mobile.ucce"
+      "PACKAGE_NAME": "org.sahanafoundation.eden_mobile"
     },
     "cordova-plugin-camera": {
-      "PACKAGE_NAME": "org.sahanafoundation.eden_mobile.ucce"
+      "PACKAGE_NAME": "org.sahanafoundation.eden_mobile"
     },
     "cordova-plugin-file": {
-      "PACKAGE_NAME": "org.sahanafoundation.eden_mobile.ucce"
+      "PACKAGE_NAME": "org.sahanafoundation.eden_mobile"
     },
     "cordova-plugin-ionic-keyboard": {
-      "PACKAGE_NAME": "org.sahanafoundation.eden_mobile.ucce"
+      "PACKAGE_NAME": "org.sahanafoundation.eden_mobile"
     },
     "cordova-plugin-network-information": {
-      "PACKAGE_NAME": "org.sahanafoundation.eden_mobile.ucce"
+      "PACKAGE_NAME": "org.sahanafoundation.eden_mobile"
     },
     "cordova-plugin-statusbar": {
-      "PACKAGE_NAME": "org.sahanafoundation.eden_mobile.ucce"
+      "PACKAGE_NAME": "org.sahanafoundation.eden_mobile"
     },
     "cordova-plugin-whitelist": {
-      "PACKAGE_NAME": "org.sahanafoundation.eden_mobile.ucce"
+      "PACKAGE_NAME": "org.sahanafoundation.eden_mobile"
     },
     "cordova-sqlite-storage": {
-      "PACKAGE_NAME": "org.sahanafoundation.eden_mobile.ucce"
+      "PACKAGE_NAME": "org.sahanafoundation.eden_mobile"
     }
   },
   "dependent_plugins": {}
