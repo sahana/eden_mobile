@@ -61,7 +61,7 @@
 
         if (baseURL) {
             // Parse the baseURL
-            var pattern = /((\w+):\/\/)?([\w.:]+)(\/(\S*))?/,
+            var pattern = /((\w+):\/\/)?([\w.:-]+)(\/(\S*))?/,
                 parsed = baseURL.match(pattern);
             if (parsed === null) {
                 // Invalid baseURL
